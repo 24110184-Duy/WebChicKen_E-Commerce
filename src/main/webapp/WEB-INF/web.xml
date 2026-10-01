@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+    <display-name>WebChicKen</display-name>
+    <!--
+      Filter và Servlet đăng ký bằng annotation (@WebFilter, @WebServlet).
+      Thứ tự filter bắt buộc (ARCHITECTURE.md 1.6):
+        1. RequestIdFilter
+        2. GlobalExceptionFilter
+        3. CharacterEncodingFilter
+        4. CorsFilter
+        5. SecurityHeadersFilter
+        6. RateLimitFilter
+        7. AuthenticationFilter
+        8. CsrfGuardFilter
+        9. AuthorizationFilter
+    -->
+</web-app>
