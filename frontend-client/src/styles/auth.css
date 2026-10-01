@@ -1,21 +1,21 @@
 /* ==========================================================================
-   Modern Marketplace Auth Styling (Shopee / Lazada Inspired)
-   Thiết kế cao cấp, độc bản cho WebChicKen — KHÔNG nhái AWS/Amazon
+   Bright Fresh Yellow Marketplace Auth Styling
+   Tông màu vàng tươi sáng, hiện đại, tràn đầy năng lượng cho WebChicKen
    ========================================================================== */
 
 .auth-page-wrapper {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f8fafc;
+  background-color: #fafaf9;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #1e293b;
+  color: #1c1917;
 }
 
 /* ── 1. Top Auth Header ── */
 .auth-header {
   background: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f2f2f0;
   padding: 18px 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
@@ -37,16 +37,16 @@
 
 .auth-header-badge {
   font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #1c1917;
   margin-left: 8px;
 }
 
 .auth-header-help {
   font-size: 14px;
-  color: #ee4d2d;
+  color: #d97706;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   transition: opacity 150ms;
 }
 
@@ -55,10 +55,10 @@
   text-decoration: underline;
 }
 
-/* ── 2. Hero Split Banner Container ── */
+/* ── 2. Hero Banner: Bright Sunny Yellow Gradient ── */
 .auth-hero-banner {
   flex: 1;
-  background: linear-gradient(135deg, #ee4d2d 0%, #ff5722 45%, #f43f5e 100%);
+  background: linear-gradient(135deg, #facc15 0%, #fbbf24 35%, #fde047 70%, #fef08a 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -66,28 +66,28 @@
   padding: 48px 0;
 }
 
-/* Background subtle decorative circles */
+/* Soft decorative ambient circles */
 .auth-hero-banner::before {
   content: "";
   position: absolute;
-  top: -100px;
+  top: -120px;
   left: -80px;
-  width: 450px;
-  height: 450px;
+  width: 480px;
+  height: 480px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
   pointer-events: none;
 }
 
 .auth-hero-banner::after {
   content: "";
   position: absolute;
-  bottom: -120px;
+  bottom: -100px;
   right: 5%;
-  width: 500px;
-  height: 500px;
+  width: 520px;
+  height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
   pointer-events: none;
 }
 
@@ -97,7 +97,7 @@
   padding: 0 24px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: 48px;
   position: relative;
@@ -114,79 +114,81 @@
   }
 }
 
-/* ── 3. Hero Left Promo Column ── */
+/* ── 3. Hero Left Promo Column (Crisp Charcoal on Bright Yellow) ── */
 .auth-hero-left {
-  color: #ffffff;
+  color: #1c1917;
   padding-right: 20px;
 }
 
 .auth-hero-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  padding: 6px 14px;
+  gap: 8px;
+  background: #ffffff;
+  color: #b45309;
+  padding: 7px 16px;
   border-radius: 9999px;
   font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 20px;
+  font-weight: 700;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.15);
 }
 
 .auth-hero-title {
-  font-size: 38px;
-  font-weight: 800;
-  line-height: 1.25;
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.2;
   margin-bottom: 16px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  color: #0f172a;
+  letter-spacing: -0.8px;
 }
 
 .auth-hero-subtitle {
   font-size: 16px;
   line-height: 1.6;
-  opacity: 0.92;
+  color: #334155;
   margin-bottom: 32px;
-  max-width: 480px;
+  max-width: 500px;
 }
 
 .auth-hero-features {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .auth-feature-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(6px);
-  padding: 12px 18px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  font-size: 14px;
-  font-weight: 500;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.08);
 }
 
 .auth-feature-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #ee4d2d;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  color: #0f172a;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(202, 138, 4, 0.25);
 }
 
 /* ── 4. Floating Auth Card ── */
 .auth-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 32px 36px;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
   width: 100%;
   max-width: 440px;
   margin: 0 auto;
@@ -212,10 +214,11 @@
   padding: 0 4px 6px;
   position: relative;
   transition: color 150ms ease;
+  text-decoration: none;
 }
 
 .auth-tab-btn.active {
-  color: #1e293b;
+  color: #0f172a;
 }
 
 .auth-tab-btn.active::after {
@@ -224,12 +227,12 @@
   bottom: -14px;
   left: 0;
   right: 0;
-  height: 3px;
-  background: #ee4d2d;
+  height: 3.5px;
+  background: #eab308;
   border-radius: 3px 3px 0 0;
 }
 
-/* ── Form Inputs with Left Icon ── */
+/* ── Form Inputs ── */
 .form-group-modern {
   margin-bottom: 16px;
   text-align: left;
@@ -240,7 +243,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: #334155;
   margin-bottom: 6px;
 }
@@ -265,7 +268,7 @@
   height: 44px;
   padding: 0 42px 0 42px;
   font-size: 14px;
-  color: #1e293b;
+  color: #0f172a;
   background: #f8fafc;
   border: 1.5px solid #e2e8f0;
   border-radius: 10px;
@@ -276,14 +279,14 @@
 
 .input-modern:focus {
   background: #ffffff;
-  border-color: #ee4d2d;
-  box-shadow: 0 0 0 3px rgba(238, 77, 45, 0.12);
+  border-color: #eab308;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.25);
 }
 
 .input-modern.input-error {
   background: #fff5f5;
   border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
 .input-right-toggle {
@@ -300,32 +303,33 @@
 }
 
 .input-right-toggle:hover {
-  color: #475569;
+  color: #334155;
 }
 
 .form-field-error {
   font-size: 12px;
-  color: #ef4444;
+  color: #dc2626;
   margin-top: 5px;
   display: flex;
   align-items: center;
   gap: 4px;
+  font-weight: 500;
 }
 
-/* ── Modern Primary Gradient Button ── */
+/* ── Bright Yellow Primary Gradient Button ── */
 .btn-primary-gradient {
   width: 100%;
   height: 46px;
-  background: linear-gradient(135deg, #ee4d2d 0%, #ff5722 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  color: #0f172a;
   font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 6px 16px -2px rgba(238, 77, 45, 0.4);
-  transition: all 200ms ease;
+  box-shadow: 0 6px 18px -2px rgba(202, 138, 4, 0.4);
+  transition: all 180ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,14 +338,14 @@
 }
 
 .btn-primary-gradient:hover:not(:disabled) {
-  opacity: 0.94;
+  background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px -2px rgba(238, 77, 45, 0.5);
+  box-shadow: 0 8px 22px -2px rgba(202, 138, 4, 0.5);
 }
 
 .btn-primary-gradient:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 4px 10px -2px rgba(238, 77, 45, 0.4);
+  box-shadow: 0 4px 12px -2px rgba(202, 138, 4, 0.35);
 }
 
 .btn-primary-gradient:disabled {
@@ -408,7 +412,7 @@
 }
 
 .auth-switch-link {
-  color: #ee4d2d;
+  color: #b45309;
   font-weight: 700;
   text-decoration: none;
   margin-left: 4px;
@@ -416,6 +420,7 @@
 
 .auth-switch-link:hover {
   text-decoration: underline;
+  color: #92400e;
 }
 
 /* ── Alert Error Box ── */
@@ -436,7 +441,7 @@
 /* ── 5. Bottom Footer ── */
 .auth-footer {
   background: #ffffff;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #f2f2f0;
   padding: 32px 0 24px;
 }
 
@@ -464,7 +469,7 @@
 }
 
 .auth-footer-links a:hover {
-  color: #ee4d2d;
+  color: #b45309;
 }
 
 .auth-footer-copy {
