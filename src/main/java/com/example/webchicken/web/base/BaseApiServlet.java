@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.web.base;
+package com.example.webchicken.web.base;
 
 import com.example.webchicken.common.model.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;

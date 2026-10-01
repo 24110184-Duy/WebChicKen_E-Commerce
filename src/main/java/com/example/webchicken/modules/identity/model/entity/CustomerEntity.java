@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.identity.model.entity;
+package com.example.webchicken.modules.identity.model.entity;
 
 import com.example.webchicken.common.enums.LoyaltyTier;
 

@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.model;
+package com.example.webchicken.common.model;
 
 /** Tham số phân trang. Tối đa size=100 (CODE_PRINCIPLES PERF-01). */
 public record PageRequest(int page, int size) {

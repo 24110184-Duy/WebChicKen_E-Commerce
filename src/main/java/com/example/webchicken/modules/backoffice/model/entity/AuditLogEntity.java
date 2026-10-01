@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.backoffice.model.entity;
+package com.example.webchicken.modules.backoffice.model.entity;
 
 /** TODO: ánh xạ bảng $(AuditLogEntity.ToLower() -replace 'entity','s'). Chỉ chứa data + getter/setter, không có logic nghiệp vụ. */
 public class AuditLogEntity {

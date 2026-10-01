@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.payment.controller;
+package com.example.webchicken.modules.payment.controller;
 
 import com.example.webchicken.web.base.BaseApiServlet;
 import com.fasterxml.jackson.databind.ObjectMapper;

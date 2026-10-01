@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.identity.model.entity;
+package com.example.webchicken.modules.identity.model.entity;
 
 /** Ánh xạ bảng `policy_violation_types`. */
 public class PolicyViolationTypeEntity {

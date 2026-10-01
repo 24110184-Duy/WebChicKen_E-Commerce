@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.promotion.service;
+package com.example.webchicken.modules.promotion.service;
 
 /** Tạo Voucher, áp dụng, tính chiết khấu. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface VoucherService {

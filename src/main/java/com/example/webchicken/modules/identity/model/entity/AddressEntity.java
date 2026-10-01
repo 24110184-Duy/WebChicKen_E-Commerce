@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.identity.model.entity;
+package com.example.webchicken.modules.identity.model.entity;
 
 /** Ánh xạ bảng `addresses`. */
 public class AddressEntity {

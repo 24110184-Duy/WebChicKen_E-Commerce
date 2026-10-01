@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.exception;
+package com.example.webchicken.common.exception;
 
 /** Base exception. Mọi exception tùy biến trong dự án kế thừa lớp này. */
 public abstract class AppException extends RuntimeException {

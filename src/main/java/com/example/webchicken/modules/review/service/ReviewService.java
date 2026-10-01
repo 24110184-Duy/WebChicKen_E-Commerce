@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.review.service;
+package com.example.webchicken.modules.review.service;
 
 /** Gửi review, sửa, kiểm duyệt. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface ReviewService {

@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.review.controller;
+package com.example.webchicken.modules.review.controller;
 
 import com.example.webchicken.web.base.BaseApiServlet;
 import com.fasterxml.jackson.databind.ObjectMapper;

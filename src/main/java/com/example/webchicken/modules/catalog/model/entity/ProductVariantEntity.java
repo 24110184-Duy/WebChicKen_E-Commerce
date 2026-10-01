@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.catalog.model.entity;
+package com.example.webchicken.modules.catalog.model.entity;
 
 /** TODO: ánh xạ bảng $(ProductVariantEntity.ToLower() -replace 'entity','s'). Chỉ chứa data + getter/setter, không có logic nghiệp vụ. */
 public class ProductVariantEntity {

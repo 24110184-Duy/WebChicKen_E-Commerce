@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.identity.service;
+package com.example.webchicken.modules.identity.service;
 
 /** Quản lý user, ban/unlock tài khoản. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface AdminUserService {

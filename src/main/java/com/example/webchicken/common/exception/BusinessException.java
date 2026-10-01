@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.exception;
+package com.example.webchicken.common.exception;
 /** Vi phạm rule nghiệp vụ (state machine, hàng tồn kho...) */
 public class BusinessException extends AppException {
     public BusinessException(String errorCode, String message) {

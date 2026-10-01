@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.web.filter;
+package com.example.webchicken.web.filter;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;

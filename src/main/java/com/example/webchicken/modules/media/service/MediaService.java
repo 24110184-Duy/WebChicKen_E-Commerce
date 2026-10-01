@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.media.service;
+package com.example.webchicken.modules.media.service;
 
 /** Upload và quản lý MediaAsset. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface MediaService {

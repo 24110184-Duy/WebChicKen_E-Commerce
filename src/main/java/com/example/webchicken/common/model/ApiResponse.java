@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.model;
+package com.example.webchicken.common.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

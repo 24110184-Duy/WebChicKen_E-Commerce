@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.model;
+package com.example.webchicken.common.model;
 
 /**
  * Value Object đại diện cho tiền tệ.

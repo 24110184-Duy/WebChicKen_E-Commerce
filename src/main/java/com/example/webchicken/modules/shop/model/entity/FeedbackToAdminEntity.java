@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.shop.model.entity;
+package com.example.webchicken.modules.shop.model.entity;
 
 /** TODO: ánh xạ bảng $(FeedbackToAdminEntity.ToLower() -replace 'entity','s'). Chỉ chứa data + getter/setter, không có logic nghiệp vụ. */
 public class FeedbackToAdminEntity {

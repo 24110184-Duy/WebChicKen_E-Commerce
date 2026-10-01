@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.promotion.model.entity;
+package com.example.webchicken.modules.promotion.model.entity;
 
 /** TODO: ánh xạ bảng $(VoucherEntity.ToLower() -replace 'entity','s'). Chỉ chứa data + getter/setter, không có logic nghiệp vụ. */
 public class VoucherEntity {

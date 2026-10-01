@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.exception;
+package com.example.webchicken.common.exception;
 import java.util.List;
 public class ValidationException extends AppException {
     private final List<String> errors;

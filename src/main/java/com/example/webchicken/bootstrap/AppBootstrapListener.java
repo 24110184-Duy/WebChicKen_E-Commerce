@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.bootstrap;
+package com.example.webchicken.bootstrap;
 
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;

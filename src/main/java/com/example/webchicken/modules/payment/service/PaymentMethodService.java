@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.payment.service;
+package com.example.webchicken.modules.payment.service;
 
 /** Thêm/xóa/đặt mặc định PaymentMethod. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface PaymentMethodService {

@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.identity.service;
+package com.example.webchicken.modules.identity.service;
 
 /** Hồ sơ Seller, duyệt qua SellerApplication. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface SellerService {

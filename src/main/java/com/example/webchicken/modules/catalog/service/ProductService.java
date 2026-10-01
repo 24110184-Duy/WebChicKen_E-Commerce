@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.catalog.service;
+package com.example.webchicken.modules.catalog.service;
 
 /** CRUD Product, duyệt, đổi trạng thái. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface ProductService {

@@ -1,0 +1,67 @@
+:root {
+  /* ==========================================================================
+     WebChicKen Design Tokens — Nguồn sự thật duy nhất (Single Source of Truth)
+     Quy ước: CODE_PRINCIPLES NAM-05, NAM-06
+     ========================================================================== */
+
+  /* ── 1. Color Palette (Semantic) ────────────────────────────────────────── */
+  --color-primary: #ee4d2d;         /* Màu thương hiệu cam sàn TMĐT */
+  --color-primary-hover: #d73211;
+  --color-primary-light: #fff5f1;
+  --color-secondary: #00bfa5;
+  --color-price: #ee4d2d;           /* Màu hiển thị giá tiền */
+  
+  --color-bg-body: #f5f5f5;
+  --color-bg-surface: #ffffff;
+  --color-bg-muted: #fafafa;
+  
+  --color-text-main: #222222;
+  --color-text-secondary: #555555;
+  --color-text-muted: #888888;
+  --color-text-inverse: #ffffff;
+
+  --color-border: #e8e8e8;
+  --color-border-hover: #d0d0d0;
+
+  --color-success: #26aa99;
+  --color-warning: #ffba00;
+  --color-danger: #ff4742;
+  --color-info: #1890ff;
+
+  /* ── 2. Spacing Scale (Thang bội số 4px) ──────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── 3. Border Radius ───────────────────────────────────────────────────── */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ── 4. Box Shadows ─────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+
+  /* ── 5. Typography ──────────────────────────────────────────────────────── */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+
+  /* ── 6. Transitions ─────────────────────────────────────────────────────── */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}

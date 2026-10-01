@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.common.constant;
+package com.example.webchicken.common.constant;
 
 /** Tiền tố đường dẫn API (khớp ARCHITECTURE.md mục 6). */
 public final class ApiPaths {

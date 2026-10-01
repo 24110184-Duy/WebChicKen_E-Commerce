@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.media.model.entity;
+package com.example.webchicken.modules.media.model.entity;
 
 /** TODO: ánh xạ bảng $(MediaAssetEntity.ToLower() -replace 'entity','s'). Chỉ chứa data + getter/setter, không có logic nghiệp vụ. */
 public class MediaAssetEntity {

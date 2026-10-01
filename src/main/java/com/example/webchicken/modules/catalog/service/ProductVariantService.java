@@ -1,4 +1,4 @@
-﻿package com.example.webchicken.modules.catalog.service;
+package com.example.webchicken.modules.catalog.service;
 
 /** CRUD ProductVariant và ảnh. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
 public interface ProductVariantService {
