@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Zap, ShieldCheck, Truck, HelpCircle } from 'lucide-react'
 import { WebChicKenLogo } from '../features/auth/components/WebChicKenLogo'
+import chickenMascotImg from '../assets/chicken-mascot.png'
 import { PATHS } from '../app/router/paths'
 
 interface AuthLayoutProps {
@@ -35,8 +36,28 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
         <div className="auth-content-grid">
           {/* Left Column: Brand Showcase & Value Props */}
           <div className="auth-hero-left">
-            <div className="auth-hero-tag">
-              <span>🍗 WebChicKen E-Commerce Platform</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '18px', marginBottom: '16px' }}>
+              <div
+                style={{
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  border: '3.5px solid #ffffff',
+                  boxShadow: '0 8px 24px rgba(180, 83, 9, 0.25)',
+                  backgroundColor: '#fef08a',
+                  flexShrink: 0,
+                }}
+              >
+                <img
+                  src={chickenMascotImg}
+                  alt="WebChicKen Mascot"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.15) translateY(3px)' }}
+                />
+              </div>
+              <div className="auth-hero-tag" style={{ margin: 0 }}>
+                <span>🍗 WebChicKen Official Marketplace</span>
+              </div>
             </div>
             <h1 className="auth-hero-title">
               Effortless Shopping,
