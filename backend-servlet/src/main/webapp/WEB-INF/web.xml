@@ -1,20 +1,131 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-         version="6.0">
-    <display-name>WebChicKen</display-name>
+         version="6.0"
+         metadata-complete="false">
+
+    <display-name>WebChicKen E-Commerce API</display-name>
+
     <!--
-      Filter và Servlet đăng ký bằng annotation (@WebFilter, @WebServlet).
-      Thứ tự filter bắt buộc (ARCHITECTURE.md 1.6):
-        1. RequestIdFilter
-        2. GlobalExceptionFilter
-        3. CharacterEncodingFilter
-        4. CorsFilter
-        5. SecurityHeadersFilter
-        6. RateLimitFilter
-        7. AuthenticationFilter
-        8. CsrfGuardFilter
-        9. AuthorizationFilter
+      ==========================================================================
+      FILTER CHAIN PIPELINE (ARCHITECTURE.md 1.6)
+      Thứ tự khai báo dưới đây quy định CHÍNH XÁC thứ tự thực thi của các Filter:
+        1. RequestIdFilter        - Gán UUID truy vết vào MDC và Response header
+        2. GlobalExceptionFilter  - Bắt toàn bộ lỗi, format JSON ApiError
+        3. CharacterEncodingFilter- Ép UTF-8 và Content-Type JSON
+        4. CorsFilter             - Xử lý CORS và preflight OPTIONS
+        5. SecurityHeadersFilter  - Header bảo mật HSTS, CSP, X-Frame, X-Content-Type
+        6. RateLimitFilter        - Giới hạn tần suất request (chống spam/brute-force)
+        7. AuthenticationFilter   - Xác thực Bearer JWT, trích xuất Principal
+        8. CsrfGuardFilter        - Chống CSRF cho các endpoint dùng Cookie
+        9. AuthorizationFilter    - Phân quyền theo vai trò RBAC (Admin/Seller/Buyer)
+      ==========================================================================
     -->
+
+    <!-- 1. RequestIdFilter -->
+    <filter>
+        <filter-name>RequestIdFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.RequestIdFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>RequestIdFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 2. GlobalExceptionFilter -->
+    <filter>
+        <filter-name>GlobalExceptionFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.GlobalExceptionFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>GlobalExceptionFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 3. CharacterEncodingFilter -->
+    <filter>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.CharacterEncodingFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CharacterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 4. CorsFilter -->
+    <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.CorsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 5. SecurityHeadersFilter -->
+    <filter>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.SecurityHeadersFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>SecurityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 6. RateLimitFilter -->
+    <filter>
+        <filter-name>RateLimitFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.RateLimitFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>RateLimitFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 7. AuthenticationFilter -->
+    <filter>
+        <filter-name>AuthenticationFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.AuthenticationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 8. CsrfGuardFilter -->
+    <filter>
+        <filter-name>CsrfGuardFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.CsrfGuardFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CsrfGuardFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- 9. AuthorizationFilter -->
+    <filter>
+        <filter-name>AuthorizationFilter</filter-name>
+        <filter-class>com.example.webchicken.web.filter.AuthorizationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!--
+      CẤU HÌNH PHIÊN (SESSION HARDENING):
+      Dự án hoạt động Stateless qua JWT. Vô hiệu hóa session cookie tracking của container
+      để đảm bảo không vô tình phát sinh session ngầm (ADR-06).
+    -->
+    <session-config>
+        <session-timeout>15</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <secure>true</secure>
+            <same-site>Strict</same-site>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
 </web-app>

@@ -15,6 +15,7 @@ export interface PageMeta {
 export interface ApiResponse<T = unknown> {
   success: boolean
   data: T
+  error?: ApiError
   meta?: PageMeta
   requestId?: string
   timestamp?: string
