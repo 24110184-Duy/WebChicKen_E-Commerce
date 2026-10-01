@@ -35,7 +35,7 @@ public class UserSessionDAO extends BaseDAO {
 
     /** Vô hiệu hoá tất cả session của một user (logout all devices). */
     public int deactivateAllByUserId(String userId) {
-        return executeInTransaction(em -> em
+        return executeInTransactionReturning(em -> em
                 .createQuery("UPDATE UserSessionEntity s SET s.isActive = false WHERE s.userId = :uid")
                 .setParameter("uid", userId)
                 .executeUpdate());

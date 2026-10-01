@@ -52,6 +52,6 @@ public class UserDAO extends BaseDAO {
 
     /** Cập nhật user đã có. */
     public UserEntity update(UserEntity user) {
-        return executeInTransaction(em -> em.merge(user));
+        return executeInTransactionReturning(em -> em.merge(user));
     }
 }

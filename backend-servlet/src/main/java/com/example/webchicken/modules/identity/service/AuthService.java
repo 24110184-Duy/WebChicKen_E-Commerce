@@ -1,6 +1,26 @@
 package com.example.webchicken.modules.identity.service;
 
-/** Đăng ký, đăng nhập, refresh token, đổi mật khẩu. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
+import com.example.webchicken.modules.identity.model.dto.request.LoginRequest;
+import com.example.webchicken.modules.identity.model.dto.request.RegisterRequest;
+import com.example.webchicken.modules.identity.model.dto.response.AuthResponse;
+
+/**
+ * Interface nghiệp vụ xác thực (Authentication & Session Management).
+ */
 public interface AuthService {
-    // TODO: khai báo method theo ARCHITECTURE.md và class diagram
+
+    /** Đăng ký tài khoản khách hàng mới */
+    AuthResponse register(RegisterRequest request);
+
+    /** Đăng nhập hệ thống bằng email và mật khẩu */
+    AuthResponse login(LoginRequest request);
+
+    /** Xoay vòng Refresh Token (Token Rotation) tạo Access Token mới */
+    String refreshToken(String rawRefreshToken);
+
+    /** Tạo và lưu Refresh Token mới vào DB */
+    String createRefreshToken(String userId);
+
+    /** Đăng xuất phiên làm việc hiện tại */
+    void logout(String rawRefreshToken);
 }

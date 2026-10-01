@@ -24,6 +24,6 @@ public class AdminDAO extends BaseDAO {
 
     /** Cập nhật admin. */
     public AdminEntity update(AdminEntity admin) {
-        return executeInTransaction(em -> em.merge(admin));
+        return executeInTransactionReturning(em -> em.merge(admin));
     }
 }

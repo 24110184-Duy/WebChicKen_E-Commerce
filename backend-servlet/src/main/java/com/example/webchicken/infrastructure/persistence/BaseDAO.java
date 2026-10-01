@@ -23,6 +23,10 @@ public abstract class BaseDAO {
         this.emf = Objects.requireNonNull(emf, "EntityManagerFactory must not be null");
     }
 
+    public EntityManagerFactory getEntityManagerFactory() {
+        return emf;
+    }
+
     // ── EntityManager helpers ──────────────────────────────────────────────────
 
     /** Tạo EntityManager mới. Caller chịu trách nhiệm đóng (dùng qua executeQuery/executeInTransaction). */
@@ -71,7 +75,7 @@ public abstract class BaseDAO {
     /**
      * Thực thi một tác vụ ghi có trả về kết quả, với giao dịch tự động.
      */
-    protected <R> R executeInTransaction(Function<EntityManager, R> action) {
+    protected <R> R executeInTransactionReturning(Function<EntityManager, R> action) {
         EntityManager em = em();
         EntityTransaction tx = em.getTransaction();
         try {
@@ -81,7 +85,7 @@ public abstract class BaseDAO {
             return result;
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            throw translateException("executeInTransaction", e);
+            throw translateException("executeInTransactionReturning", e);
         } finally {
             closeQuietly(em);
         }

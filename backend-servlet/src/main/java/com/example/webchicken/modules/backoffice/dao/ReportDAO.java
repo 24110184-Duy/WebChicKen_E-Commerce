@@ -1,15 +1,15 @@
 package com.example.webchicken.modules.backoffice.dao;
 
 import com.example.webchicken.infrastructure.persistence.BaseDAO;
-import javax.sql.DataSource;
+import jakarta.persistence.EntityManagerFactory;
 
 /**
  * Data Access Object cho báo cáo và thống kê backoffice.
  */
 public class ReportDAO extends BaseDAO {
 
-    public ReportDAO(DataSource dataSource) {
-        super(dataSource);
+    public ReportDAO(EntityManagerFactory emf) {
+        super(emf);
     }
     // TODO: Triển khai các hàm truy vấn báo cáo với PreparedStatement
 }

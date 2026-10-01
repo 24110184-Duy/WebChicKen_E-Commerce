@@ -24,6 +24,6 @@ public class CustomerDAO extends BaseDAO {
 
     /** Cập nhật customer. */
     public CustomerEntity update(CustomerEntity customer) {
-        return executeInTransaction(em -> em.merge(customer));
+        return executeInTransactionReturning(em -> em.merge(customer));
     }
 }

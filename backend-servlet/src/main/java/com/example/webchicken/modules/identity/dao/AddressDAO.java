@@ -44,7 +44,7 @@ public class AddressDAO extends BaseDAO {
 
     /** Cập nhật địa chỉ. */
     public AddressEntity update(AddressEntity address) {
-        return executeInTransaction(em -> em.merge(address));
+        return executeInTransactionReturning(em -> em.merge(address));
     }
 
     /** Xóa địa chỉ theo ID. */

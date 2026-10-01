@@ -2,6 +2,7 @@ package com.example.webchicken.web.base;
 
 import com.example.webchicken.common.model.ApiError;
 import com.example.webchicken.common.model.ApiResponse;
+import com.example.webchicken.common.model.AuthenticatedUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServlet;
@@ -54,6 +55,10 @@ public abstract class BaseApiServlet extends HttpServlet {
             throw new IllegalStateException("Service [" + attributeName + "] chưa được khởi tạo trong ServletContext.");
         }
         return (T) service;
+    }
+
+    protected AuthenticatedUser getAuthenticatedUser(HttpServletRequest req) {
+        return (AuthenticatedUser) req.getAttribute("CURRENT_USER");
     }
 
     // ── Response Helpers ───────────────────────────────────────────────────────

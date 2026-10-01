@@ -24,6 +24,6 @@ public class SellerDAO extends BaseDAO {
 
     /** Cập nhật seller. */
     public SellerEntity update(SellerEntity seller) {
-        return executeInTransaction(em -> em.merge(seller));
+        return executeInTransactionReturning(em -> em.merge(seller));
     }
 }
