@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd"
+             version="3.1">
+
+    <persistence-unit name="webchicken-pu" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <!--
+            ╔══════════════════════════════════════════════════════════════╗
+            ║  Entity classes — identity module                            ║
+            ╚══════════════════════════════════════════════════════════════╝
+        -->
+        <class>com.example.webchicken.modules.identity.model.entity.UserEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.CustomerEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.SellerEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.AdminEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.AddressEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.UserSessionEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.AccountBanEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.PolicyViolationTypeEntity</class>
+
+        <!--
+            Các module khác sẽ thêm <class> tại đây khi triển khai.
+            Ví dụ: shop, catalog, inventory, cart, promotion, order, payment, review, media, backoffice
+        -->
+
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+        <properties>
+            <!--
+                ┌─────────────────────────────────────────────────────────┐
+                │  JDBC Connection — lấy từ biến môi trường               │
+                │  Đặt qua CATALINA_OPTS hoặc file .env (không commit)    │
+                └─────────────────────────────────────────────────────────┘
+                Giá trị mặc định chỉ dùng cho môi trường DEV local.
+                KHÔNG commit giá trị thật vào đây cho staging/prod.
+            -->
+            <property name="jakarta.persistence.jdbc.driver"   value="${env.DB_DRIVER:com.mysql.cj.jdbc.Driver}"/>
+            <property name="jakarta.persistence.jdbc.url"      value="${env.DB_URL:jdbc:mysql://localhost:3306/webchicken?useSSL=false&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC&amp;allowPublicKeyRetrieval=true}"/>
+            <property name="jakarta.persistence.jdbc.user"     value="${env.DB_USER:root}"/>
+            <property name="jakarta.persistence.jdbc.password" value="${env.DB_PASSWORD:}"/>
+
+            <!-- Hibernate Dialect -->
+            <property name="hibernate.dialect"       value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.show_sql"      value="false"/>
+            <property name="hibernate.format_sql"    value="true"/>
+            <property name="hibernate.highlight_sql" value="true"/>
+
+            <!-- Schema: Flyway là nguồn duy nhất — Hibernate KHÔNG được tự tạo/drop table -->
+            <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
+
+            <!-- HikariCP Connection Pool -->
+            <property name="hibernate.connection.provider_class" value="org.hibernate.hikaricp.internal.HikariCPConnectionProvider"/>
+            <property name="hibernate.hikari.minimumIdle"         value="5"/>
+            <property name="hibernate.hikari.maximumPoolSize"     value="20"/>
+            <property name="hibernate.hikari.idleTimeout"         value="600000"/>
+            <property name="hibernate.hikari.connectionTimeout"   value="5000"/>
+            <property name="hibernate.hikari.maxLifetime"         value="1800000"/>
+        </properties>
+    </persistence-unit>
+</persistence>

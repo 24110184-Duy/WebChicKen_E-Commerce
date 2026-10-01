@@ -1,10 +1,23 @@
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# ============================================================
+# Backend (Maven / Java)
+# ============================================================
+backend-servlet/target/
+!backend-servlet/.mvn/wrapper/maven-wrapper.jar
+!backend-servlet/**/src/main/**/target/
+!backend-servlet/**/src/test/**/target/
 .kotlin
 
-### IntelliJ IDEA ###
+# ============================================================
+# Frontend (Node / Vite)
+# ============================================================
+frontend-client/node_modules/
+frontend-client/dist/
+frontend-client/.env.local
+frontend-client/.env.*.local
+
+# ============================================================
+# IntelliJ IDEA
+# ============================================================
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
@@ -13,7 +26,9 @@ target/
 *.iml
 *.ipr
 
-### Eclipse ###
+# ============================================================
+# Eclipse
+# ============================================================
 .apt_generated
 .classpath
 .factorypath
@@ -22,7 +37,9 @@ target/
 .springBeans
 .sts4-cache
 
-### NetBeans ###
+# ============================================================
+# NetBeans
+# ============================================================
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -32,8 +49,22 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+# ============================================================
+# VS Code
+# ============================================================
 .vscode/
 
-### Mac OS ###
+# ============================================================
+# OS
+# ============================================================
 .DS_Store
+Thumbs.db
+
+# ============================================================
+# Secrets — KHÔNG BAO GIỜ COMMIT
+# ============================================================
+*.env
+!.env.example
+!frontend-client/.env.example
+application-local.properties
+application-prod.properties
