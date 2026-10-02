@@ -56,7 +56,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
                 />
               </div>
               <div className="auth-hero-tag" style={{ margin: 0 }}>
-                <span>🍗 WebChicKen Official Marketplace</span>
+                <span>🍗 ChickyMart Official Marketplace</span>
               </div>
             </div>
             <h1 className="auth-hero-title">
@@ -112,7 +112,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
       <footer className="auth-footer">
         <div className="auth-footer-container">
           <div className="auth-footer-links">
-            <a href="#about">About WebChicKen</a>
+            <a href="#about">About ChickyMart</a>
             <a href="#privacy">Privacy Policy</a>
             <a href="#terms">Terms of Service</a>
             <a href="#shipping">Shipping Policy</a>
@@ -120,7 +120,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             <Link to={PATHS.SELLER.REGISTER}>Seller Center</Link>
           </div>
           <div className="auth-footer-copy">
-            <div>&copy; 2026 WebChicKen Vietnam Ltd. All rights reserved.</div>
+            <div>&copy; 2026 ChickyMart Vietnam Ltd. All rights reserved.</div>
             <div style={{ marginTop: '4px' }}>Hi-Tech Park, Thu Duc City, Ho Chi Minh City — Hotline: 1900 1234</div>
           </div>
         </div>

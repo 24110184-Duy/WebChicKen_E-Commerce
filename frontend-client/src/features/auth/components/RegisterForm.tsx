@@ -266,7 +266,7 @@ export const RegisterForm: React.FC = () => {
             style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#ee4d2d', cursor: 'pointer' }}
           />
           <label htmlFor="agree-terms" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
-            I agree to WebChicKen's <a href="#terms" className="auth-switch-link">Terms of Service</a> and{' '}
+            I agree to ChickyMart's <a href="#terms" className="auth-switch-link">Terms of Service</a> and{' '}
             <a href="#privacy" className="auth-switch-link">Privacy Policy</a>
           </label>
         </div>
@@ -316,7 +316,7 @@ export const RegisterForm: React.FC = () => {
 
       {/* Switch to Login */}
       <div className="auth-switch-text">
-        Already have a WebChicKen account?
+        Already have a ChickyMart account?
         <Link to={PATHS.LOGIN} className="auth-switch-link">
           Sign In
         </Link>

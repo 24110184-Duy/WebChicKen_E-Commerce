@@ -228,7 +228,7 @@ export const LoginForm: React.FC = () => {
 
       {/* Switch to Register */}
       <div className="auth-switch-text">
-        New to WebChicKen?
+        New to ChickyMart?
         <Link to={PATHS.REGISTER} className="auth-switch-link">
           Sign Up Now
         </Link>

@@ -129,7 +129,7 @@ export const HomePage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
             <ShieldCheck size={32} color="#16a34a" />
             <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              WebChicKen Marketplace Identity & Auth
+              ChickyMart Identity & Authentication
             </h1>
           </div>
 
@@ -204,7 +204,7 @@ export const HomePage: React.FC = () => {
 
       {/* Footer */}
       <footer style={{ textAlign: 'center', padding: '24px', color: '#a8a29e', fontSize: '12px' }}>
-        WebChicKen Marketplace &copy; 2026 — Headless Monorepo Architecture
+        ChickyMart Marketplace &copy; 2026 — Headless Monorepo Architecture
       </footer>
     </div>
   )

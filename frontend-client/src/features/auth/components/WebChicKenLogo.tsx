@@ -39,7 +39,7 @@ export const WebChicKenLogo: React.FC<WebChicKenLogoProps> = ({ size = 'md', tex
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'baseline' }}>
           <span style={{ fontSize, fontWeight: 900, letterSpacing: '-0.5px', color: textColor }}>
-            Web<span style={{ color: '#d97706' }}>ChicKen</span>
+            Chicky<span style={{ color: '#d97706' }}>Mart</span>
           </span>
           <span style={{ fontSize: '11px', fontWeight: 800, color: '#f59e0b', marginLeft: '4px', textTransform: 'uppercase' }}>
             .vn
