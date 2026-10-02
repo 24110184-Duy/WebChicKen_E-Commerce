@@ -5,11 +5,11 @@
      ========================================================================== */
 
   /* ── 1. Color Palette (Semantic) ────────────────────────────────────────── */
-  --color-primary: #ee4d2d;         /* Màu thương hiệu cam sàn TMĐT */
-  --color-primary-hover: #d73211;
-  --color-primary-light: #fff5f1;
-  --color-secondary: #00bfa5;
-  --color-price: #ee4d2d;           /* Màu hiển thị giá tiền */
+  --color-primary: #eab308;         /* Màu thương hiệu vàng hoàng gia WebChicKen */
+  --color-primary-hover: #ca8a04;
+  --color-primary-light: #fefce8;
+  --color-secondary: #0f172a;
+  --color-price: #d97706;           /* Màu hiển thị giá tiền (hổ phách đậm rõ nét) */
   
   --color-bg-body: #f5f5f5;
   --color-bg-surface: #ffffff;

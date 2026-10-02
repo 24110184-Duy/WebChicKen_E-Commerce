@@ -263,7 +263,7 @@ export const RegisterForm: React.FC = () => {
             type="checkbox"
             checked={agreeTerms}
             onChange={(e) => setAgreeTerms(e.target.checked)}
-            style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#ee4d2d', cursor: 'pointer' }}
+            style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#eab308', cursor: 'pointer' }}
           />
           <label htmlFor="agree-terms" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
             I agree to ChickyMart's <a href="#terms" className="auth-switch-link">Terms of Service</a> and{' '}

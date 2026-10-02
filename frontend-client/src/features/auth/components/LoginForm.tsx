@@ -160,7 +160,7 @@ export const LoginForm: React.FC = () => {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            style={{ width: '16px', height: '16px', accentColor: '#ee4d2d', cursor: 'pointer' }}
+            style={{ width: '16px', height: '16px', accentColor: '#eab308', cursor: 'pointer' }}
           />
           <label htmlFor="remember-me" style={{ fontSize: '13px', color: '#475569', cursor: 'pointer' }}>
             Remember me on this device

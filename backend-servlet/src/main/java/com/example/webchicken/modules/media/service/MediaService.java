@@ -1,6 +1,20 @@
 package com.example.webchicken.modules.media.service;
 
-/** Upload và quản lý MediaAsset. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
+import com.example.webchicken.modules.media.model.dto.response.MediaUploadResponse;
+import java.io.InputStream;
+
+/**
+ * Service quản lý tải lên và lưu trữ các tệp đa phương tiện (Media).
+ */
 public interface MediaService {
-    // TODO: khai báo method theo ARCHITECTURE.md và class diagram
+
+    /**
+     * Tải lên một tệp ảnh với kiểm tra an toàn MIME, kích thước và đặt tên UUID ngẫu nhiên.
+     */
+    MediaUploadResponse uploadFile(String userId, String originalFilename, String contentType, long fileSize, InputStream inputStream);
+
+    /**
+     * Tra cứu thông tin metadata của tệp ảnh theo mã ID.
+     */
+    MediaUploadResponse getMediaById(String mediaId);
 }

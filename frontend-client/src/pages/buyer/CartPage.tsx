@@ -1,0 +1,390 @@
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { StorefrontLayout } from '../../layouts/StorefrontLayout'
+import { useCartStore } from '../../app/store/cartStore'
+import { formatMoney } from '../../shared/lib/formatMoney'
+import { PATHS } from '../../app/router/paths'
+import { MOCK_VOUCHERS } from '../../features/cart/types/cartTypes'
+import type { Voucher } from '../../features/cart/types/cartTypes'
+
+export const CartPage: React.FC = () => {
+  const navigate = useNavigate()
+  const {
+    items,
+    selectedItems,
+    itemsByStore,
+    totalQuantity,
+    selectedQuantity,
+    totalAmountMinor,
+    updateQuantity,
+    removeItem,
+    toggleSelect,
+    toggleSelectStore,
+    toggleSelectAll,
+  } = useCartStore()
+
+  const [voucherCodeInput, setVoucherCodeInput] = useState('')
+  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
+  const [voucherError, setVoucherError] = useState<string | null>(null)
+
+  const isAllSelected = items.length > 0 && items.every((i) => i.selected)
+
+  // Handle Voucher Apply
+  const handleApplyVoucher = (codeToApply?: string) => {
+    const code = (codeToApply || voucherCodeInput).trim().toUpperCase()
+    setVoucherError(null)
+
+    if (!code) {
+      setVoucherError('Please enter a voucher code')
+      return
+    }
+
+    const found = MOCK_VOUCHERS.find((v) => v.code === code && v.isActive)
+    if (!found) {
+      setVoucherError('Invalid or expired voucher code')
+      return
+    }
+
+    if (totalAmountMinor < found.minOrderValueMinor) {
+      setVoucherError(`Order must be at least ${formatMoney(found.minOrderValueMinor)} to apply this voucher`)
+      return
+    }
+
+    setAppliedVoucher(found)
+    setVoucherCodeInput(found.code)
+  }
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null)
+    setVoucherCodeInput('')
+    setVoucherError(null)
+  }
+
+  // Calculate voucher discount
+  let voucherDiscountMinor = 0
+  if (appliedVoucher && selectedQuantity > 0) {
+    if (appliedVoucher.discountType === 'AMOUNT') {
+      voucherDiscountMinor = Math.min(appliedVoucher.discountValue, totalAmountMinor)
+    } else {
+      const pct = (totalAmountMinor * appliedVoucher.discountValue) / 100
+      voucherDiscountMinor = Math.min(pct, appliedVoucher.maxDiscountMinor)
+    }
+  }
+
+  const finalTotalMinor = Math.max(0, totalAmountMinor - voucherDiscountMinor)
+
+  // Bulk remove selected
+  const handleRemoveSelected = () => {
+    if (window.confirm(`Are you sure you want to remove ${selectedQuantity} selected item(s)?`)) {
+      selectedItems.forEach((item) => removeItem(item.skuId))
+    }
+  }
+
+  const handleProceedCheckout = () => {
+    if (selectedQuantity === 0) return
+    // Persist applied voucher code in sessionStorage for checkout
+    if (appliedVoucher) {
+      sessionStorage.setItem('webchicken_checkout_voucher', JSON.stringify(appliedVoucher))
+    } else {
+      sessionStorage.removeItem('webchicken_checkout_voucher')
+    }
+    navigate(PATHS.CHECKOUT)
+  }
+
+  return (
+    <StorefrontLayout>
+      <div className="cart-page-container">
+        {/* Breadcrumb */}
+        <div className="cart-breadcrumb">
+          <Link to={PATHS.HOME}>Home</Link>
+          <span className="cart-breadcrumb-sep">/</span>
+          <span className="cart-breadcrumb-current">Shopping Cart</span>
+        </div>
+
+        {/* Title */}
+        <div className="cart-title-row">
+          <h1 className="cart-main-title">Shopping Cart</h1>
+          <span className="cart-item-count-badge">
+            {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in your cart
+          </span>
+        </div>
+
+        {items.length === 0 ? (
+          /* Empty State */
+          <div className="cart-empty-state">
+            <div className="cart-empty-icon-box">0</div>
+            <h2 className="cart-empty-title">Your shopping cart is empty</h2>
+            <p className="cart-empty-desc">
+              Explore our selection of pasture-raised, organic fresh poultry, duck, and specialized cuts delivered directly from certified farms.
+            </p>
+            <Link to={PATHS.SEARCH} className="cart-empty-btn">
+              Explore Fresh Products
+            </Link>
+          </div>
+        ) : (
+          /* Two Column Layout */
+          <div className="cart-layout">
+            {/* Left Column: Cart Items grouped by Store */}
+            <div>
+              {/* Header Bar */}
+              <div className="cart-table-header">
+                <div>
+                  <input
+                    type="checkbox"
+                    className="cart-checkbox"
+                    checked={isAllSelected}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    title="Select all items"
+                  />
+                </div>
+                <div>Product</div>
+                <div style={{ textAlign: 'center' }}>Unit Price</div>
+                <div style={{ textAlign: 'center' }}>Quantity</div>
+                <div style={{ textAlign: 'right' }}>Total</div>
+                <div style={{ textAlign: 'center' }}>Action</div>
+              </div>
+
+              {/* Grouped by Store */}
+              {itemsByStore.map((storeGroup) => {
+                const isStoreAllSelected = storeGroup.items.every((i) => i.selected)
+
+                return (
+                  <div key={storeGroup.storeId} className="cart-store-group">
+                    {/* Store Title Bar */}
+                    <div className="cart-store-header">
+                      <input
+                        type="checkbox"
+                        className="cart-checkbox"
+                        checked={isStoreAllSelected}
+                        onChange={(e) => toggleSelectStore(storeGroup.storeId, e.target.checked)}
+                        title={`Select all from ${storeGroup.storeName}`}
+                      />
+                      <span className="cart-store-tag">Farm Store</span>
+                      <span className="cart-store-name">{storeGroup.storeName}</span>
+                    </div>
+
+                    {/* Store Items List */}
+                    {storeGroup.items.map((item) => (
+                      <div key={item.skuId} className="cart-item-row">
+                        <div>
+                          <input
+                            type="checkbox"
+                            className="cart-checkbox"
+                            checked={item.selected}
+                            onChange={() => toggleSelect(item.skuId)}
+                            title="Select this item"
+                          />
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="cart-item-info">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="cart-item-img"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=150&q=80'
+                            }}
+                          />
+                          <div className="cart-item-details">
+                            <Link to={`/products/${item.productId}`} className="cart-item-title">
+                              {item.name}
+                            </Link>
+                            {item.skuName && (
+                              <span className="cart-item-sku-tag">
+                                Variant: {item.skuName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        <div style={{ textAlign: 'center' }} className="cart-item-price">
+                          {formatMoney(item.priceMinor)}
+                        </div>
+
+                        {/* Quantity Stepper */}
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <div className="cart-stepper">
+                            <button
+                              type="button"
+                              className="cart-stepper-btn"
+                              onClick={() => updateQuantity(item.skuId, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              aria-label="Decrease quantity"
+                            >
+                              -
+                            </button>
+                            <span className="cart-stepper-val">{item.quantity}</span>
+                            <button
+                              type="button"
+                              className="cart-stepper-btn"
+                              onClick={() => updateQuantity(item.skuId, item.quantity + 1)}
+                              aria-label="Increase quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Line Total */}
+                        <div style={{ textAlign: 'right' }} className="cart-item-total">
+                          {formatMoney(item.priceMinor * item.quantity)}
+                        </div>
+
+                        {/* Delete Action */}
+                        <div style={{ textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            className="cart-delete-btn"
+                            onClick={() => removeItem(item.skuId)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+
+              {/* Bottom Actions Toolbar */}
+              <div className="cart-toolbar">
+                <div className="cart-toolbar-left">
+                  <label className="cart-toolbar-label">
+                    <input
+                      type="checkbox"
+                      className="cart-checkbox"
+                      checked={isAllSelected}
+                      onChange={(e) => toggleSelectAll(e.target.checked)}
+                    />
+                    <span>Select All ({totalQuantity})</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="cart-bulk-delete-btn"
+                    disabled={selectedQuantity === 0}
+                    onClick={handleRemoveSelected}
+                  >
+                    Delete Selected ({selectedQuantity})
+                  </button>
+                </div>
+                <div style={{ fontSize: 13, color: '#64748b' }}>
+                  {selectedQuantity} of {totalQuantity} items selected
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Order Summary & Voucher */}
+            <div>
+              <div className="cart-summary-card">
+                <h2 className="cart-summary-title">Order Summary</h2>
+
+                {/* Voucher Box */}
+                <div className="cart-voucher-box">
+                  <label className="cart-voucher-label">Platform & Shop Voucher</label>
+                  <div className="cart-voucher-form">
+                    <input
+                      type="text"
+                      className="cart-voucher-input"
+                      placeholder="ENTER CODE"
+                      value={voucherCodeInput}
+                      onChange={(e) => setVoucherCodeInput(e.target.value)}
+                    />
+                    {appliedVoucher ? (
+                      <button
+                        type="button"
+                        className="cart-voucher-apply-btn"
+                        style={{ backgroundColor: '#ef4444' }}
+                        onClick={handleRemoveVoucher}
+                      >
+                        Remove
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="cart-voucher-apply-btn"
+                        onClick={() => handleApplyVoucher()}
+                      >
+                        Apply
+                      </button>
+                    )}
+                  </div>
+
+                  {voucherError && (
+                    <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 500 }}>
+                      {voucherError}
+                    </div>
+                  )}
+
+                  {appliedVoucher && (
+                    <div style={{ fontSize: 12, color: '#16a34a', marginTop: 6, fontWeight: 600 }}>
+                      Applied: {appliedVoucher.code} ({appliedVoucher.title})
+                    </div>
+                  )}
+
+                  {/* Quick Voucher Chips */}
+                  <div className="cart-voucher-chips">
+                    {MOCK_VOUCHERS.map((v) => (
+                      <button
+                        key={v.code}
+                        type="button"
+                        className={`cart-voucher-chip ${appliedVoucher?.code === v.code ? 'applied' : ''}`}
+                        onClick={() => handleApplyVoucher(v.code)}
+                      >
+                        {v.code} ({v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : formatMoney(v.discountValue)})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subtotal */}
+                <div className="cart-summary-row">
+                  <span>Selected Subtotal ({selectedQuantity} items)</span>
+                  <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                    {formatMoney(totalAmountMinor)}
+                  </span>
+                </div>
+
+                {/* Voucher Discount */}
+                {voucherDiscountMinor > 0 && (
+                  <div className="cart-summary-row discount">
+                    <span>Voucher Discount</span>
+                    <span>- {formatMoney(voucherDiscountMinor)}</span>
+                  </div>
+                )}
+
+                {/* Shipping Note */}
+                <div className="cart-summary-row">
+                  <span>Estimated Shipping</span>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>Calculated at Checkout</span>
+                </div>
+
+                {/* Grand Total */}
+                <div className="cart-summary-row total">
+                  <span>Grand Total</span>
+                  <span className="cart-summary-total-val">{formatMoney(finalTotalMinor)}</span>
+                </div>
+
+                {/* Checkout CTA Button */}
+                <button
+                  type="button"
+                  className="cart-checkout-btn"
+                  disabled={selectedQuantity === 0}
+                  onClick={handleProceedCheckout}
+                >
+                  Proceed to Checkout ({selectedQuantity})
+                </button>
+
+                <span className="cart-guarantee-note">
+                  Fresh Farm Guarantee & 100% Cold-Chain Safety
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </StorefrontLayout>
+  )
+}

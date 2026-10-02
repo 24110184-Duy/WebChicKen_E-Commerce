@@ -1,6 +1,10 @@
 @import './tokens.css';
 @import './auth.css';
 @import './account.css';
+@import './storefront.css';
+@import './product.css';
+@import './cart.css';
+@import './checkout.css';
 
 
 *,

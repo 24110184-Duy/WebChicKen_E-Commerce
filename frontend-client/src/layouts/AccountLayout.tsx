@@ -1,7 +1,7 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { User, MapPin, ShoppingBag, Ticket, Star, LogOut } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../app/store/authStore'
+import { useAccountNav } from '../app/store/accountNavStore'
 import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
 
@@ -9,29 +9,14 @@ interface AccountLayoutProps {
   children: React.ReactNode
 }
 
-const NAV_ITEMS = [
-  {
-    section: 'My Account',
-    items: [
-      { label: 'My Profile', icon: User, path: PATHS.ACCOUNT.PROFILE },
-      { label: 'Address Book', icon: MapPin, path: PATHS.ACCOUNT.ADDRESSES },
-    ],
-  },
-  {
-    section: 'Shopping',
-    items: [
-      { label: 'My Orders', icon: ShoppingBag, path: PATHS.ACCOUNT.ORDERS },
-      { label: 'My Vouchers', icon: Ticket, path: PATHS.ACCOUNT.VOUCHERS },
-      { label: 'My Reviews', icon: Star, path: PATHS.ACCOUNT.REVIEWS },
-    ],
-  },
-]
-
 export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const { isAccountOpen, openAccountMenu, closeAccountMenu, toggleAccountMenu } = useAccountNav()
 
   const handleLogout = async () => {
+    closeAccountMenu()
     try { await authApi.logout() } catch { /* ignore */ }
     logout()
   }
@@ -40,73 +25,181 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
     ? user.fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? 'U'
 
+  const displayName = user?.fullName || user?.email?.split('@')[0] || 'volyquocduy'
+
+  // Check active routes
+  const isProfileActive = location.pathname === PATHS.ACCOUNT.PROFILE
+  const isCardsActive = location.pathname === PATHS.ACCOUNT.CARDS
+  const isAddressesActive = location.pathname === PATHS.ACCOUNT.ADDRESSES
+  const isPasswordActive = location.pathname === PATHS.ACCOUNT.PASSWORD
+  const isAccountGroupActive = isProfileActive || isCardsActive || isAddressesActive || isPasswordActive
+
+  const isNotificationsActive = location.pathname === PATHS.ACCOUNT.NOTIFICATIONS
+  const isOrdersActive = location.pathname === PATHS.ACCOUNT.ORDERS
+  const isVouchersActive = location.pathname === PATHS.ACCOUNT.VOUCHERS
+
+  const handleAccountHeaderClick = () => {
+    if (!isAccountOpen) {
+      openAccountMenu()
+      if (!isAccountGroupActive) {
+        navigate(PATHS.ACCOUNT.PROFILE)
+      }
+    } else {
+      toggleAccountMenu()
+    }
+  }
+
   return (
-    <div className="account-page">
-      {/* Topbar */}
+    <div className="shopee-page">
+      {/* Topbar ChickyMart Yellow Style */}
       <nav className="account-topbar">
         <div className="account-topbar-inner">
+          {/* Brand */}
           <Link to={PATHS.HOME} className="account-topbar-brand">
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="account-topbar-title">ChickyMart</span>
-              <span className="account-topbar-subtitle">My Account</span>
+              <span className="account-topbar-subtitle">Account Center</span>
             </div>
           </Link>
-          <div className="account-topbar-user">
-            <div className="account-topbar-avatar">{initials}</div>
-            <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user?.fullName || user?.email}
-            </span>
+
+          {/* Search bar matching style */}
+          <div style={{ flex: 1, maxWidth: 500, margin: '0 28px', display: 'flex', alignItems: 'center', background: '#ffffff', borderRadius: 8, padding: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1.5px solid #fde68a' }}>
+            <input
+              type="text"
+              placeholder="Search products, orders and vouchers..."
+              style={{ flex: 1, height: 34, border: 'none', outline: 'none', padding: '0 12px', fontSize: 13, color: '#333' }}
+              readOnly
+            />
+            <button
+              type="button"
+              style={{ height: 34, padding: '0 18px', background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)', color: '#0f172a', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+            >
+              Search
+            </button>
+          </div>
+
+          {/* Right Header items */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <Link
+              to={PATHS.ACCOUNT.PROFILE}
+              onClick={openAccountMenu}
+              className="account-topbar-user"
+              style={{ textDecoration: 'none', color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <div className="account-topbar-avatar">
+                {initials}
+              </div>
+              <span style={{ maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 700 }}>
+                {displayName}
+              </span>
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              style={{ background: 'rgba(15, 23, 42, 0.08)', border: 'none', color: '#0f172a', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '6px 12px', borderRadius: 6 }}
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Body */}
-      <div className="account-layout">
-        {/* Sidebar */}
-        <aside className="account-sidebar">
-          <div className="account-sidebar-user">
-            <div className="account-sidebar-avatar">{initials}</div>
-            <div>
-              <div className="account-sidebar-name">{user?.fullName || user?.email}</div>
-              <div className="account-sidebar-edit">
-                <Link to={PATHS.ACCOUNT.PROFILE} style={{ color: '#b45309', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
-                  Edit Profile
-                </Link>
-              </div>
+      {/* Main Layout: 4 Sections Sidebar + Content */}
+      <div className="shopee-layout">
+        {/* Left Sidebar */}
+        <aside className="shopee-sidebar">
+          {/* User profile header */}
+          <div className="shopee-sidebar-user">
+            <div className="shopee-sidebar-avatar">
+              {initials}
+            </div>
+            <div className="shopee-sidebar-info">
+              <span className="shopee-sidebar-username">{displayName}</span>
+              <Link to={PATHS.ACCOUNT.PROFILE} onClick={openAccountMenu} className="shopee-sidebar-edit-link">
+                Edit Profile
+              </Link>
             </div>
           </div>
 
-          <nav className="account-sidebar-nav">
-            {NAV_ITEMS.map((group) => (
-              <div key={group.section}>
-                <div className="account-sidebar-section">{group.section}</div>
-                {group.items.map((item) => {
-                  const Icon = item.icon
-                  const isActive = location.pathname === item.path
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`account-nav-item ${isActive ? 'active' : ''}`}
-                    >
-                      <Icon size={15} />
-                      {item.label}
-                    </Link>
-                  )
-                })}
-              </div>
-            ))}
+          {/* 4 Sections Navigation */}
+          <nav className="shopee-sidebar-nav">
+            {/* 1. Notifications */}
+            <Link
+              to={PATHS.ACCOUNT.NOTIFICATIONS}
+              onClick={closeAccountMenu}
+              className={`shopee-nav-header ${isNotificationsActive ? 'active' : ''}`}
+            >
+              Notifications
+            </Link>
 
-            <div className="account-sidebar-section">Other</div>
-            <button className="account-nav-item" onClick={handleLogout}>
-              <LogOut size={15} />
+            {/* 2. My Account (Expandable / Accordion group with sub-items) */}
+            <div>
+              <button
+                type="button"
+                onClick={handleAccountHeaderClick}
+                className={`shopee-nav-header ${isAccountGroupActive ? 'active' : ''}`}
+              >
+                <span>My Account</span>
+              </button>
+              <div className={`shopee-nav-sublist ${isAccountOpen ? 'open' : ''}`}>
+                <Link
+                  to={PATHS.ACCOUNT.PROFILE}
+                  className={`shopee-nav-subitem ${isProfileActive ? 'active' : ''}`}
+                >
+                  Profile
+                </Link>
+                <Link
+                  to={PATHS.ACCOUNT.CARDS}
+                  className={`shopee-nav-subitem ${isCardsActive ? 'active' : ''}`}
+                >
+                  Banks & Cards
+                </Link>
+                <Link
+                  to={PATHS.ACCOUNT.ADDRESSES}
+                  className={`shopee-nav-subitem ${isAddressesActive ? 'active' : ''}`}
+                >
+                  Addresses
+                </Link>
+                <Link
+                  to={PATHS.ACCOUNT.PASSWORD}
+                  className={`shopee-nav-subitem ${isPasswordActive ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    alert('Change Password is under maintenance')
+                  }}
+                >
+                  Change Password
+                </Link>
+              </div>
+            </div>
+
+            {/* 3. My Purchase */}
+            <Link
+              to={PATHS.ACCOUNT.ORDERS}
+              onClick={closeAccountMenu}
+              className={`shopee-nav-header ${isOrdersActive ? 'active' : ''}`}
+            >
+              My Purchase
+            </Link>
+
+            {/* 4. My Vouchers */}
+            <Link
+              to={PATHS.ACCOUNT.VOUCHERS}
+              onClick={closeAccountMenu}
+              className={`shopee-nav-header ${isVouchersActive ? 'active' : ''}`}
+            >
+              My Vouchers
+            </Link>
+
+            {/* Sign Out */}
+            <button className="shopee-sidebar-signout" onClick={handleLogout}>
               Sign Out
             </button>
           </nav>
         </aside>
 
-        {/* Content */}
-        <main className="account-content">
+        {/* Right Content */}
+        <main style={{ minWidth: 0 }}>
           {children}
         </main>
       </div>

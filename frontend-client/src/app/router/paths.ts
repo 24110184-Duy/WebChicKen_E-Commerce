@@ -26,9 +26,12 @@ export const PATHS = {
   ACCOUNT: {
     PROFILE: '/account/profile',
     ADDRESSES: '/account/addresses',
+    CARDS: '/account/cards',
     ORDERS: '/account/orders',
     ORDER_DETAIL: (orderId: string) => `/account/orders/${orderId}`,
     VOUCHERS: '/account/vouchers',
+    NOTIFICATIONS: '/account/notifications',
+    PASSWORD: '/account/password',
     REVIEWS: '/account/reviews',
   },
 

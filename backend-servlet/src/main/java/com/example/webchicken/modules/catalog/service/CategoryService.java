@@ -1,6 +1,22 @@
 package com.example.webchicken.modules.catalog.service;
 
-/** CRUD Category. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
+import com.example.webchicken.modules.catalog.model.dto.request.CreateCategoryRequest;
+import com.example.webchicken.modules.catalog.model.dto.request.UpdateCategoryRequest;
+import com.example.webchicken.modules.catalog.model.dto.response.CategoryResponse;
+import java.util.List;
+
+/**
+ * Service quản lý danh mục sản phẩm (Category).
+ */
 public interface CategoryService {
-    // TODO: khai báo method theo ARCHITECTURE.md và class diagram
+
+    List<CategoryResponse> getAllCategories();
+
+    CategoryResponse getCategoryById(String id);
+
+    CategoryResponse createCategory(CreateCategoryRequest request);
+
+    CategoryResponse updateCategory(String id, UpdateCategoryRequest request);
+
+    void deleteCategory(String id);
 }

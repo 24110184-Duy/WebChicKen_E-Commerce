@@ -21,10 +21,19 @@
         <class>com.example.webchicken.modules.identity.model.entity.AccountBanEntity</class>
         <class>com.example.webchicken.modules.identity.model.entity.PolicyViolationTypeEntity</class>
 
-        <!--
-            Các module khác sẽ thêm <class> tại đây khi triển khai.
-            Ví dụ: shop, catalog, inventory, cart, promotion, order, payment, review, media, backoffice
-        -->
+        <!-- shop module -->
+        <class>com.example.webchicken.modules.shop.model.entity.StoreEntity</class>
+        <class>com.example.webchicken.modules.shop.model.entity.SellerApplicationEntity</class>
+
+        <!-- media module -->
+        <class>com.example.webchicken.modules.media.model.entity.MediaAssetEntity</class>
+
+        <!-- catalog module -->
+        <class>com.example.webchicken.modules.catalog.model.entity.CategoryEntity</class>
+        <class>com.example.webchicken.modules.catalog.model.entity.ProductEntity</class>
+        <class>com.example.webchicken.modules.catalog.model.entity.ProductImageEntity</class>
+        <class>com.example.webchicken.modules.catalog.model.entity.ProductVariantEntity</class>
+
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

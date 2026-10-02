@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { Plus, X, MapPin } from 'lucide-react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
 import { customerApi } from '../../../features/auth/api/customerApi'
 
@@ -198,11 +197,10 @@ export const AddressesPage: React.FC = () => {
         <div className="account-card-body">
           {addresses.length === 0 ? (
             <div className="address-empty">
-              <div className="address-empty-icon">📦</div>
               <p className="account-card-title" style={{ fontSize: 16, marginBottom: 8 }}>No addresses yet</p>
               <p className="address-empty-text">Add an address to make checkout faster!</p>
               <button className="btn-save-primary" style={{ marginTop: 20 }} onClick={openAddModal}>
-                <Plus size={15} /> Add Your First Address
+                Add Your First Address
               </button>
             </div>
           ) : (
@@ -210,7 +208,6 @@ export const AddressesPage: React.FC = () => {
               {addresses.map(addr => (
                 <div key={addr.id} className={`address-card ${addr.isDefault ? 'is-default' : ''}`}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                    <MapPin size={16} color={addr.isDefault ? '#b45309' : '#94a3b8'} style={{ marginTop: 2, flexShrink: 0 }} />
                     <div className="address-info">
                       <div className="address-recipient">
                         <span className="address-name">{addr.recipientName}</span>
@@ -248,7 +245,7 @@ export const AddressesPage: React.FC = () => {
 
               {addresses.length < 5 && (
                 <button className="btn-add-address" onClick={openAddModal}>
-                  <Plus size={16} /> Add New Address
+                  Add New Address
                 </button>
               )}
             </div>
@@ -262,8 +259,8 @@ export const AddressesPage: React.FC = () => {
           <div className="modal-box">
             <div className="modal-header">
               <h2 className="modal-title">{editingId ? 'Edit Address' : 'Add New Address'}</h2>
-              <button className="modal-close" onClick={closeModal}>
-                <X size={18} />
+              <button type="button" className="modal-close-text" onClick={closeModal}>
+                Close
               </button>
             </div>
 
@@ -278,7 +275,7 @@ export const AddressesPage: React.FC = () => {
                     onChange={e => handleFormChange('recipientName', e.target.value)}
                     placeholder="Full name"
                   />
-                  {formErrors.recipientName && <span className="profile-input-error">⚠ {formErrors.recipientName}</span>}
+                  {formErrors.recipientName && <span className="profile-input-error">{formErrors.recipientName}</span>}
                 </div>
                 <div className="profile-form-group">
                   <label className="profile-label">Phone Number</label>
@@ -289,7 +286,7 @@ export const AddressesPage: React.FC = () => {
                     placeholder="0912 345 678"
                     type="tel"
                   />
-                  {formErrors.phone && <span className="profile-input-error">⚠ {formErrors.phone}</span>}
+                  {formErrors.phone && <span className="profile-input-error">{formErrors.phone}</span>}
                 </div>
               </div>
 
@@ -306,7 +303,7 @@ export const AddressesPage: React.FC = () => {
                     <option value="">-- Select City --</option>
                     {VN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  {formErrors.city && <span className="profile-input-error">⚠ {formErrors.city}</span>}
+                  {formErrors.city && <span className="profile-input-error">{formErrors.city}</span>}
                 </div>
                 <div className="profile-form-group">
                   <label className="profile-label">District</label>
@@ -316,7 +313,7 @@ export const AddressesPage: React.FC = () => {
                     onChange={e => handleFormChange('district', e.target.value)}
                     placeholder="e.g. District 7"
                   />
-                  {formErrors.district && <span className="profile-input-error">⚠ {formErrors.district}</span>}
+                  {formErrors.district && <span className="profile-input-error">{formErrors.district}</span>}
                 </div>
               </div>
 
@@ -329,7 +326,7 @@ export const AddressesPage: React.FC = () => {
                   onChange={e => handleFormChange('addressLine1', e.target.value)}
                   placeholder="House number, street name, ward..."
                 />
-                {formErrors.addressLine1 && <span className="profile-input-error">⚠ {formErrors.addressLine1}</span>}
+                {formErrors.addressLine1 && <span className="profile-input-error">{formErrors.addressLine1}</span>}
               </div>
             </div>
 
@@ -346,7 +343,7 @@ export const AddressesPage: React.FC = () => {
       {/* Toast */}
       {toast && (
         <div className={`account-toast ${toast.type}`}>
-          {toast.type === 'success' ? '✓ ' : '✗ '}{toast.message}
+          {toast.message}
         </div>
       )}
     </AccountLayout>

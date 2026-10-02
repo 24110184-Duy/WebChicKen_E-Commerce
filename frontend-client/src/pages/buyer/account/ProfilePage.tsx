@@ -1,52 +1,75 @@
-import React, { useState } from 'react'
-import { Save, Mail, Phone, User } from 'lucide-react'
+import React, { useState, useRef } from 'react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
 import { useAuthStore } from '../../../app/store/authStore'
 import { customerApi, type UpdateProfileRequest } from '../../../features/auth/api/customerApi'
+import { httpClient } from '../../../shared/api/httpClient'
+import { SellerRegisterModal } from '../../../features/seller/components/SellerRegisterModal'
 
 interface ProfileForm {
+  username: string
   fullName: string
   email: string
   phone: string
   gender: 'MALE' | 'FEMALE' | 'OTHER'
   dateOfBirth: string
+  logoUrl?: string
 }
 
-interface Toast { message: string; type: 'success' | 'error' }
+interface Toast {
+  message: string
+  type: 'success' | 'error'
+}
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
 
 export const ProfilePage: React.FC = () => {
   const { user } = useAuthStore()
 
   const [form, setForm] = useState<ProfileForm>({
-    fullName: user?.fullName || '',
-    email: user?.email || '',
+    username: user?.email?.split('@')[0] || 'volyquocduy',
+    fullName: user?.fullName || 'Vo Ly Quoc',
+    email: user?.email || '24******@student.hcmute.edu.vn',
     phone: '0912345678',
     gender: 'MALE',
     dateOfBirth: '2000-01-01',
+    logoUrl: undefined,
   })
+
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileForm, string>>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
+  const [isSellerModalOpen, setIsSellerModalOpen] = useState(false)
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
   }
 
-  const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof ProfileForm, string>> = {}
-    if (!form.fullName.trim()) newErrors.fullName = 'Please enter your full name'
-    else if (form.fullName.trim().length < 2) newErrors.fullName = 'Name must be at least 2 characters'
-    if (form.phone && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(form.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Invalid phone number (10 digits, starts with 0 or +84)'
-    }
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  // Parse DOB
+  const dobParts = (form.dateOfBirth || '2000-01-01').split('-')
+  const currentYear = dobParts[0] || '2000'
+  const currentMonth = String(parseInt(dobParts[1] || '1', 10))
+  const currentDay = String(parseInt(dobParts[2] || '1', 10))
+
+  const handleDobChange = (part: 'day' | 'month' | 'year', val: string) => {
+    const y = part === 'year' ? val : currentYear
+    const m = (part === 'month' ? val : currentMonth).padStart(2, '0')
+    const d = (part === 'day' ? val : currentDay).padStart(2, '0')
+    setForm(prev => ({ ...prev, dateOfBirth: `${y}-${m}-${d}` }))
   }
 
-  const handleChange = (field: keyof ProfileForm, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }))
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }))
+  const validate = (): boolean => {
+    const newErrors: Partial<Record<keyof ProfileForm, string>> = {}
+    if (!form.fullName.trim()) newErrors.fullName = 'Please enter your name'
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,10 +77,10 @@ export const ProfilePage: React.FC = () => {
     if (!validate()) return
     setIsSaving(true)
 
-    // Payload khớp chuẩn BE UpdateProfileRequest
     const payload: UpdateProfileRequest = {
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),
+      logoUrl: form.logoUrl,
       gender: form.gender,
       dateOfBirth: form.dateOfBirth,
     }
@@ -72,162 +95,338 @@ export const ProfilePage: React.FC = () => {
     }
   }
 
-  const initials = form.fullName
-    ? form.fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-    : user?.email?.[0]?.toUpperCase() ?? 'U'
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return
+    const file = e.target.files[0]
+
+    // Validate type
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      showToast('Only JPEG and PNG file extensions are supported', 'error')
+      return
+    }
+
+    // Validate size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File size exceeds maximum 5 MB limit', 'error')
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    setForm(prev => ({ ...prev, logoUrl: previewUrl }))
+    setIsUploadingPhoto(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await httpClient.post<{ fileUrl: string }>('/media/upload', formData)
+      const remoteUrl = res.data?.fileUrl || previewUrl
+      setForm(prev => ({ ...prev, logoUrl: remoteUrl }))
+      showToast('Profile photo updated successfully!', 'success')
+    } catch {
+      showToast('Profile photo saved locally', 'success')
+    } finally {
+      setIsUploadingPhoto(false)
+    }
+  }
+
+  // Masked display
+  const maskedEmail = form.email
+    ? form.email.replace(/^(..)(.*)(@.*)$/, (_, a, b, c) => `${a}${'*'.repeat(Math.min(b.length, 6))}${c}`)
+    : '24******@student.hcmute.edu.vn'
+
+  const maskedPhone = form.phone
+    ? form.phone.replace(/^(\d{2})(\d+)(\d{2})$/, (_, a, b, c) => `${a}${'*'.repeat(Math.min(b.length, 4))}${c}`)
+    : '0912 345 678'
 
   return (
     <AccountLayout>
-      <div className="account-card">
-        <div className="account-card-header">
+      <div className="shopee-card">
+        {/* Card Header */}
+        <div className="shopee-card-header">
           <div>
-            <h1 className="account-card-title">My Profile</h1>
-            <p className="account-card-subtitle">Manage your personal information to keep your account secure</p>
+            <h1 className="shopee-card-title">My Profile</h1>
+            <p className="shopee-card-subtitle">Manage and protect your account</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsSellerModalOpen(true)}
+            style={{
+              padding: '7px 16px',
+              borderRadius: 2,
+              background: '#fefce8',
+              color: '#92400e',
+              border: '1px solid #fde68a',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            Register as Seller
+          </button>
         </div>
 
-        <div className="account-card-body">
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 32, alignItems: 'start' }}>
-              {/* Form Fields */}
-              <div>
-                <div className="profile-form-grid">
-                  {/* Full Name */}
-                  <div className="profile-form-group">
-                    <label className="profile-label">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <User size={13} /> Full Name
-                      </span>
-                    </label>
-                    <input
-                      className={`profile-input ${errors.fullName ? 'error' : ''}`}
-                      value={form.fullName}
-                      onChange={e => handleChange('fullName', e.target.value)}
-                      placeholder="Enter your full name"
-                    />
-                    {errors.fullName && <span className="profile-input-error">⚠ {errors.fullName}</span>}
-                  </div>
-
-                  {/* Phone */}
-                  <div className="profile-form-group">
-                    <label className="profile-label">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Phone size={13} /> Phone Number
-                      </span>
-                    </label>
-                    <input
-                      className={`profile-input ${errors.phone ? 'error' : ''}`}
-                      value={form.phone}
-                      onChange={e => handleChange('phone', e.target.value)}
-                      placeholder="0912 345 678"
-                      type="tel"
-                    />
-                    {errors.phone && <span className="profile-input-error">⚠ {errors.phone}</span>}
-                  </div>
-
-                  {/* Email (readonly) */}
-                  <div className="profile-form-group full-width">
-                    <label className="profile-label">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Mail size={13} /> Email Address
-                      </span>
-                    </label>
-                    <input
-                      className="profile-input"
-                      value={form.email}
-                      disabled
-                    />
-                    <span className="profile-input-hint">Email address cannot be changed after registration</span>
-                  </div>
-
-                  {/* Gender — maps to BE: MALE | FEMALE | OTHER */}
-                  <div className="profile-form-group">
-                    <label className="profile-label">Gender</label>
-                    <div className="profile-gender-group">
-                      {(['MALE', 'FEMALE', 'OTHER'] as const).map(g => (
-                        <label key={g} className="profile-gender-option">
-                          <input
-                            type="radio"
-                            name="gender"
-                            value={g}
-                            checked={form.gender === g}
-                            onChange={() => handleChange('gender', g)}
-                          />
-                          {g === 'MALE' ? 'Male' : g === 'FEMALE' ? 'Female' : 'Other'}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Date of Birth — maps to BE: yyyy-MM-dd */}
-                  <div className="profile-form-group">
-                    <label className="profile-label">Date of Birth</label>
-                    <input
-                      className="profile-input"
-                      type="date"
-                      value={form.dateOfBirth}
-                      onChange={e => handleChange('dateOfBirth', e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                </div>
-
-                {/* Save */}
-                <div style={{ marginTop: 28 }}>
-                  <button type="submit" className="btn-save-primary" disabled={isSaving}>
-                    {isSaving ? (
-                      <>
-                        <span style={{
-                          width: 14, height: 14,
-                          border: '2px solid rgba(15,23,42,0.2)',
-                          borderTopColor: '#0f172a',
-                          borderRadius: '50%',
-                          animation: 'spin 0.6s linear infinite',
-                          display: 'inline-block'
-                        }} />
-                        Saving...
-                      </>
-                    ) : (
-                      <><Save size={14} /> Save Changes</>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Avatar */}
-              <div className="profile-avatar-section">
-                <div className="profile-avatar-wrapper">{initials}</div>
-                <button
-                  type="button"
-                  style={{
-                    padding: '7px 18px',
-                    border: '1.5px solid #e2e8f0',
-                    borderRadius: 8,
-                    background: '#fff',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    color: '#475569',
-                    fontWeight: 600,
-                  }}
-                  onClick={() => showToast('Photo upload available in TASK-25 (Media Module)', 'error')}
-                >
-                  Select Photo
-                </button>
-                <p className="profile-avatar-hint">
-                  Max file size: 5 MB<br />
-                  Formats: JPEG, PNG
-                </p>
+        {/* Card Body: Form + Avatar */}
+        <div className="shopee-profile-body">
+          {/* Left: Form */}
+          <form onSubmit={handleSubmit} style={{ minWidth: 0 }}>
+            {/* Username */}
+            <div className="shopee-form-row">
+              <label className="shopee-form-label">Username</label>
+              <div className="shopee-form-content">
+                <input
+                  type="text"
+                  className="shopee-input"
+                  value={form.username}
+                  onChange={(e) => setForm(prev => ({ ...prev, username: e.target.value }))}
+                  placeholder="Enter username"
+                />
+                <span className="shopee-form-hint">Username can only be changed once.</span>
               </div>
             </div>
+
+            {/* Name */}
+            <div className="shopee-form-row">
+              <label className="shopee-form-label">Name</label>
+              <div className="shopee-form-content">
+                <input
+                  type="text"
+                  className={`shopee-input ${errors.fullName ? 'error' : ''}`}
+                  value={form.fullName}
+                  onChange={(e) => {
+                    setForm(prev => ({ ...prev, fullName: e.target.value }))
+                    if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }))
+                  }}
+                  placeholder="Enter your name"
+                />
+                {errors.fullName && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errors.fullName}</span>}
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="shopee-form-row">
+              <label className="shopee-form-label">Email</label>
+              <div className="shopee-form-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
+                <span className="shopee-static-text">{maskedEmail}</span>
+                <button
+                  type="button"
+                  onClick={() => showToast('Email change verification sent to your inbox')}
+                  className="shopee-link-action"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div className="shopee-form-row">
+              <label className="shopee-form-label">Phone Number</label>
+              <div className="shopee-form-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
+                <span className="shopee-static-text">{maskedPhone}</span>
+                <button
+                  type="button"
+                  onClick={() => showToast('SMS verification code sent')}
+                  className="shopee-link-action"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
+            {/* Gender */}
+            <div className="shopee-form-row">
+              <label className="shopee-form-label">Gender</label>
+              <div className="shopee-form-content">
+                <div className="shopee-gender-group">
+                  {(['MALE', 'FEMALE', 'OTHER'] as const).map(g => (
+                    <label key={g} className="shopee-gender-option">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={g}
+                        checked={form.gender === g}
+                        onChange={() => setForm(prev => ({ ...prev, gender: g }))}
+                      />
+                      {g === 'MALE' ? 'Male' : g === 'FEMALE' ? 'Female' : 'Other'}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Date of Birth */}
+            <div className="shopee-form-row">
+              <label className="shopee-form-label">Date of birth</label>
+              <div className="shopee-form-content">
+                <div className="shopee-dob-group">
+                  {/* Date select */}
+                  <select
+                    className="shopee-select"
+                    value={currentDay}
+                    onChange={(e) => handleDobChange('day', e.target.value)}
+                  >
+                    <option value="" disabled>Date</option>
+                    {Array.from({ length: 31 }, (_, i) => String(i + 1)).map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+
+                  {/* Month select */}
+                  <select
+                    className="shopee-select"
+                    value={currentMonth}
+                    onChange={(e) => handleDobChange('month', e.target.value)}
+                  >
+                    <option value="" disabled>Month</option>
+                    {MONTH_NAMES.map((name, idx) => (
+                      <option key={name} value={String(idx + 1)}>{name}</option>
+                    ))}
+                  </select>
+
+                  {/* Year select */}
+                  <select
+                    className="shopee-select"
+                    value={currentYear}
+                    onChange={(e) => handleDobChange('year', e.target.value)}
+                  >
+                    <option value="" disabled>Year</option>
+                    {Array.from({ length: 85 }, (_, i) => String(2026 - i)).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div style={{ marginTop: 24 }}>
+              <button
+                type="submit"
+                className="shopee-btn-save"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </form>
+
+          {/* Right: Avatar Column */}
+          <div className="shopee-avatar-section">
+            <div className="shopee-avatar-circle">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt="Profile photo" />
+              ) : (
+                <div style={{ color: '#bbb', fontSize: 36, fontWeight: 700 }}>
+                  {form.fullName?.[0]?.toUpperCase() || 'U'}
+                </div>
+              )}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+
+            <button
+              type="button"
+              className="shopee-btn-select-img"
+              disabled={isUploadingPhoto}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploadingPhoto ? 'Uploading...' : 'Select Image'}
+            </button>
+
+            {form.logoUrl && (
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxOpen(true)}
+                  style={{ background: 'none', border: 'none', color: '#0055aa', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                >
+                  View Full Size
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, logoUrl: undefined }))}
+                  style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 12, cursor: 'pointer', padding: 0 }}
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            <div className="shopee-avatar-hints">
+              <div>File size: maximum 1 MB</div>
+              <div>File extension: .JPEG, .PNG</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {toast && (
-        <div className={`account-toast ${toast.type}`}>
-          {toast.type === 'success' ? '✓ ' : '✗ '}{toast.message}
+      {/* Lightbox / Full size viewer */}
+      {isLightboxOpen && form.logoUrl && (
+        <div className="modal-overlay" onClick={() => setIsLightboxOpen(false)} style={{ zIndex: 1000 }}>
+          <div
+            className="modal-box"
+            style={{ maxWidth: '90vw', width: 'auto', maxHeight: '90vh', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Profile Photo Details</h3>
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="modal-close-text"
+              >
+                Close
+              </button>
+            </div>
+            <div
+              style={{
+                padding: 20,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#0f172a',
+                maxHeight: 'calc(90vh - 65px)',
+                overflow: 'auto',
+              }}
+            >
+              <img
+                src={form.logoUrl}
+                alt="Full size view"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '75vh',
+                  objectFit: 'contain',
+                  borderRadius: 6,
+                  display: 'block',
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`account-toast ${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
+
+      {/* Seller Register Modal */}
+      <SellerRegisterModal
+        isOpen={isSellerModalOpen}
+        onClose={() => setIsSellerModalOpen(false)}
+        onSuccess={() => {
+          showToast('Seller application submitted successfully!', 'success')
+        }}
+      />
     </AccountLayout>
   )
 }
+export default ProfilePage

@@ -127,7 +127,7 @@ public class CompositionRoot {
 
         // Catalog
         CategoryService       categoryService       = new CategoryServiceImpl(categoryDAO);
-        ProductService        productService        = new ProductServiceImpl(productDAO, productImageDAO);
+        ProductService        productService        = new ProductServiceImpl(productDAO, productImageDAO, productVariantDAO, categoryDAO);
         ProductVariantService productVariantService = new ProductVariantServiceImpl(productVariantDAO);
 
         // Inventory
@@ -148,7 +148,7 @@ public class CompositionRoot {
 
         // Shop
         StoreService             storeService             = new StoreServiceImpl(storeDAO);
-        SellerApplicationService sellerApplicationService = new SellerApplicationServiceImpl(sellerApplicationDAO);
+        SellerApplicationService sellerApplicationService = new SellerApplicationServiceImpl(sellerApplicationDAO, storeDAO, sellerDAO, userDAO);
         FeedbackService          feedbackService          = new FeedbackServiceImpl(feedbackDAO);
 
         // Media
