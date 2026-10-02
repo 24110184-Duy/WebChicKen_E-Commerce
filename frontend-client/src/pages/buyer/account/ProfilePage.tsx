@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Save, Mail, Phone, User } from 'lucide-react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
 import { useAuthStore } from '../../../app/store/authStore'
+import { customerApi, type UpdateProfileRequest } from '../../../features/auth/api/customerApi'
 
 interface ProfileForm {
   fullName: string
@@ -23,7 +24,7 @@ export const ProfilePage: React.FC = () => {
     gender: 'MALE',
     dateOfBirth: '2000-01-01',
   })
-  const [errors, setErrors] = useState<Partial<ProfileForm>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof ProfileForm, string>>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
 
@@ -33,7 +34,7 @@ export const ProfilePage: React.FC = () => {
   }
 
   const validate = (): boolean => {
-    const newErrors: Partial<ProfileForm> = {}
+    const newErrors: Partial<Record<keyof ProfileForm, string>> = {}
     if (!form.fullName.trim()) newErrors.fullName = 'Please enter your full name'
     else if (form.fullName.trim().length < 2) newErrors.fullName = 'Name must be at least 2 characters'
     if (form.phone && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(form.phone.replace(/\s/g, ''))) {
@@ -52,9 +53,23 @@ export const ProfilePage: React.FC = () => {
     e.preventDefault()
     if (!validate()) return
     setIsSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 700))
-    setIsSaving(false)
-    showToast('Profile updated successfully!', 'success')
+
+    // Payload khớp chuẩn BE UpdateProfileRequest
+    const payload: UpdateProfileRequest = {
+      fullName: form.fullName.trim(),
+      phone: form.phone.trim(),
+      gender: form.gender,
+      dateOfBirth: form.dateOfBirth,
+    }
+
+    try {
+      await customerApi.updateProfile(payload)
+      showToast('Profile updated successfully!', 'success')
+    } catch {
+      showToast('Failed to update profile. Please try again.', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const initials = form.fullName
@@ -125,7 +140,7 @@ export const ProfilePage: React.FC = () => {
                     <span className="profile-input-hint">Email address cannot be changed after registration</span>
                   </div>
 
-                  {/* Gender */}
+                  {/* Gender — maps to BE: MALE | FEMALE | OTHER */}
                   <div className="profile-form-group">
                     <label className="profile-label">Gender</label>
                     <div className="profile-gender-group">
@@ -144,7 +159,7 @@ export const ProfilePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Date of Birth */}
+                  {/* Date of Birth — maps to BE: yyyy-MM-dd */}
                   <div className="profile-form-group">
                     <label className="profile-label">Date of Birth</label>
                     <input
@@ -193,9 +208,8 @@ export const ProfilePage: React.FC = () => {
                     cursor: 'pointer',
                     color: '#475569',
                     fontWeight: 600,
-                    transition: 'all 150ms'
                   }}
-                  onClick={() => showToast('Photo upload will be available in TASK-25 (Media Module)', 'error')}
+                  onClick={() => showToast('Photo upload available in TASK-25 (Media Module)', 'error')}
                 >
                   Select Photo
                 </button>
@@ -209,7 +223,6 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Toast */}
       {toast && (
         <div className={`account-toast ${toast.type}`}>
           {toast.type === 'success' ? '✓ ' : '✗ '}{toast.message}

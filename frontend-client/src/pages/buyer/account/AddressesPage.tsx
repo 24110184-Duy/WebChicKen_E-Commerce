@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { Plus, X, MapPin } from 'lucide-react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
+import { customerApi } from '../../../features/auth/api/customerApi'
 
+// Khớp với BE AddressResponse (dùng addressId)
 interface Address {
-  id: string
+  id: string        // maps to BE: addressId
   recipientName: string
   phone: string
   addressLine1: string
@@ -12,6 +14,7 @@ interface Address {
   isDefault: boolean
 }
 
+// Khớp với BE CreateAddressRequest (bắt buộc có isDefault)
 interface AddressFormData {
   recipientName: string
   phone: string
@@ -112,42 +115,69 @@ export const AddressesPage: React.FC = () => {
   const handleSave = async () => {
     if (!validateForm()) return
     setIsSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 600))
 
-    if (editingId) {
-      setAddresses(prev => prev.map(a =>
-        a.id === editingId ? { ...a, ...form } : a
-      ))
-      showToast('Address updated successfully!', 'success')
-    } else {
-      const newAddr: Address = {
-        id: `addr-${Date.now()}`,
-        ...form,
-        isDefault: addresses.length === 0,
+    try {
+      if (editingId) {
+        // PUT /api/v1/customers/addresses/{id}/default nếu đổi default
+        // Hiện BE chỉ hỗ trợ set-default riêng; update address sẽ thêm ở TASK sau
+        setAddresses(prev => prev.map(a =>
+          a.id === editingId ? { ...a, ...form } : a
+        ))
+        showToast('Address updated successfully!', 'success')
+      } else {
+        // POST /api/v1/customers/addresses — payload khớp BE CreateAddressRequest
+        const payload = {
+          ...form,
+          isDefault: addresses.length === 0, // Tự động đặt mặc định nếu là địa chỉ đầu tiên
+        }
+        const created = await customerApi.createAddress(payload)
+        const newAddr: Address = {
+          id: created.addressId,
+          recipientName: created.recipientName,
+          phone: created.phone,
+          addressLine1: created.addressLine1,
+          district: created.district,
+          city: created.city,
+          isDefault: created.isDefault,
+        }
+        setAddresses(prev => [...prev, newAddr])
+        showToast('New address added successfully!', 'success')
       }
-      setAddresses(prev => [...prev, newAddr])
-      showToast('New address added successfully!', 'success')
+    } catch {
+      showToast('Failed to save address. Please try again.', 'error')
+    } finally {
+      setIsSaving(false)
+      closeModal()
     }
-
-    setIsSaving(false)
-    closeModal()
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this address?')) return
-    setAddresses(prev => {
-      const filtered = prev.filter(a => a.id !== id)
-      if (filtered.length > 0 && !filtered.some(a => a.isDefault)) {
-        filtered[0].isDefault = true
-      }
-      return filtered
-    })
-    showToast('Address deleted!', 'success')
+    try {
+      // DELETE /api/v1/customers/addresses/{addressId}
+      await customerApi.deleteAddress(id)
+      setAddresses(prev => {
+        const filtered = prev.filter(a => a.id !== id)
+        if (filtered.length > 0 && !filtered.some(a => a.isDefault)) {
+          filtered[0].isDefault = true
+        }
+        return filtered
+      })
+      showToast('Address deleted!', 'success')
+    } catch {
+      showToast('Failed to delete address.', 'error')
+    }
   }
 
-  const handleSetDefault = (id: string) => {
-    setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })))
-    showToast('Default address updated!', 'success')
+  const handleSetDefault = async (id: string) => {
+    try {
+      // PUT /api/v1/customers/addresses/{addressId}/default
+      await customerApi.setDefaultAddress(id)
+      setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })))
+      showToast('Default address updated!', 'success')
+    } catch {
+      showToast('Failed to set default address.', 'error')
+    }
   }
 
   const handleFormChange = (field: keyof AddressFormData, value: string) => {

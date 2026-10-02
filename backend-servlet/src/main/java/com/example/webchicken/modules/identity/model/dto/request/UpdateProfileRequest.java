@@ -4,5 +4,8 @@ package com.example.webchicken.modules.identity.model.dto.request;
 public record UpdateProfileRequest(
         String fullName,
         String phone,
-        String logoUrl
+        String logoUrl,
+        String gender,       // MALE | FEMALE | OTHER
+        String dateOfBirth   // ISO format: yyyy-MM-dd
 ) {}
+
