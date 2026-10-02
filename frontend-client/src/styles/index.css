@@ -1,5 +1,7 @@
 @import './tokens.css';
 @import './auth.css';
+@import './account.css';
+
 
 *,
 *::before,
