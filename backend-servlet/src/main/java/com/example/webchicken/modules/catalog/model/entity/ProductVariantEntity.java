@@ -27,6 +27,9 @@ public class ProductVariantEntity {
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
 
+    @Column(name = "reserved_quantity", nullable = false)
+    private int reservedQuantity = 0;
+
     public ProductVariantEntity() {}
 
     public ProductVariantEntity(String id, String productId, String attribute, long basePriceMinor, int stockQuantity) {
@@ -35,6 +38,16 @@ public class ProductVariantEntity {
         this.attribute = attribute;
         this.basePriceMinor = basePriceMinor;
         this.stockQuantity = stockQuantity;
+        this.reservedQuantity = 0;
+    }
+
+    public ProductVariantEntity(String id, String productId, String attribute, long basePriceMinor, int stockQuantity, int reservedQuantity) {
+        this.id = id;
+        this.productId = productId;
+        this.attribute = attribute;
+        this.basePriceMinor = basePriceMinor;
+        this.stockQuantity = stockQuantity;
+        this.reservedQuantity = reservedQuantity;
     }
 
     public String getId() { return id; }
@@ -51,4 +64,7 @@ public class ProductVariantEntity {
 
     public int getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
+
+    public int getReservedQuantity() { return reservedQuantity; }
+    public void setReservedQuantity(int reservedQuantity) { this.reservedQuantity = reservedQuantity; }
 }

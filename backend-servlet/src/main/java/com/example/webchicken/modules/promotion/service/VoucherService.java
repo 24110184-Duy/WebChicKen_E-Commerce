@@ -1,6 +1,18 @@
 package com.example.webchicken.modules.promotion.service;
 
-/** Tạo Voucher, áp dụng, tính chiết khấu. Mọi logic nghiệp vụ nằm trong impl, không trong Servlet/Entity. */
+import com.example.webchicken.modules.promotion.model.dto.request.ValidateVoucherRequest;
+import com.example.webchicken.modules.promotion.model.dto.response.ValidateVoucherResponse;
+import com.example.webchicken.modules.promotion.model.dto.response.VoucherResponse;
+
+import java.util.List;
+
 public interface VoucherService {
-    // TODO: khai báo method theo ARCHITECTURE.md và class diagram
+
+    List<VoucherResponse> getAvailableVouchers(String storeId, long orderValueMinor);
+
+    ValidateVoucherResponse validateVoucher(ValidateVoucherRequest request);
+
+    VoucherResponse getVoucherByCode(String code);
+
+    void markVoucherUsed(String voucherId);
 }

@@ -1,5 +1,39 @@
 export type DiscountType = 'PERCENTAGE' | 'AMOUNT'
 
+export interface BackendCartItem {
+  itemId: string
+  productId: string
+  variantId: string
+  productName: string
+  variantAttribute: string
+  thumbnailUrl: string
+  currentPriceMinor: number
+  quantity: number
+  availableStock: number
+  itemTotalMinor: number
+  isAvailable: boolean
+  priceChanged: boolean
+  storeId: string
+  storeName: string
+}
+
+export interface BackendCartStoreGroup {
+  storeId: string
+  storeName: string
+  items: BackendCartItem[]
+  storeSubtotalMinor: number
+}
+
+export interface BackendCartResponse {
+  cartId: string
+  customerId: string
+  storeGroups: BackendCartStoreGroup[]
+  totalQuantity: number
+  totalAmountMinor: number
+  hasOutOfStockItems: boolean
+  hasPriceChanges: boolean
+}
+
 export interface Voucher {
   voucherId: string
   code: string

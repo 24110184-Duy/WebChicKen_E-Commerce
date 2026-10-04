@@ -1,6 +1,9 @@
 import { useSyncExternalStore } from 'react'
+import { cartApi } from '../../features/cart/api/cartApi'
+import { authStore } from './authStore'
 
 export interface CartItem {
+  id?: string // Cart item ID in backend
   skuId: string
   productId: string
   name: string
@@ -15,6 +18,7 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[]
+  isLoading: boolean
 }
 
 const STORAGE_KEY = 'webchicken_guest_cart'
@@ -38,6 +42,7 @@ function saveToStorage(items: CartItem[]) {
 
 let state: CartState = {
   items: loadFromStorage(),
+  isLoading: false,
 }
 
 const listeners = new Set<() => void>()
@@ -55,7 +60,45 @@ export const cartStore = {
     return () => listeners.delete(listener)
   },
 
-  addItem: (item: Omit<CartItem, 'selected'>) => {
+  syncWithBackend: async () => {
+    if (!authStore.getState().isAuthenticated) return
+    state = { ...state, isLoading: true }
+    emitChange()
+
+    try {
+      const backendCart = await cartApi.getCart()
+      if (backendCart && backendCart.storeGroups) {
+        const syncedItems: CartItem[] = []
+        backendCart.storeGroups.forEach((group) => {
+          group.items.forEach((item) => {
+            syncedItems.push({
+              id: item.id,
+              skuId: item.variantId || item.id,
+              productId: item.productId,
+              name: item.productName,
+              skuName: item.variantName,
+              priceMinor: item.unitPriceMinor,
+              imageUrl: item.imageUrl,
+              quantity: item.quantity,
+              storeId: group.storeId,
+              storeName: group.storeName,
+              selected: true,
+            })
+          })
+        })
+        state = { items: syncedItems, isLoading: false }
+        emitChange()
+      } else {
+        state = { ...state, isLoading: false }
+        emitChange()
+      }
+    } catch {
+      state = { ...state, isLoading: false }
+      emitChange()
+    }
+  },
+
+  addItem: async (item: Omit<CartItem, 'selected'>) => {
     const existingIndex = state.items.findIndex((i) => i.skuId === item.skuId)
     let newItems: CartItem[]
 
@@ -67,30 +110,49 @@ export const cartStore = {
       newItems = [...state.items, { ...item, selected: true }]
     }
 
-    state = { items: newItems }
+    state = { ...state, items: newItems }
     emitChange()
+
+    // Async sync with backend if authenticated
+    if (authStore.getState().isAuthenticated) {
+      cartApi.addItem(item.productId, item.skuId, item.quantity).catch(() => {})
+    }
   },
 
-  updateQuantity: (skuId: string, quantity: number) => {
+  updateQuantity: async (skuId: string, quantity: number) => {
     if (quantity <= 0) {
       cartStore.removeItem(skuId)
       return
     }
+
+    const item = state.items.find((i) => i.skuId === skuId)
     state = {
+      ...state,
       items: state.items.map((i) => (i.skuId === skuId ? { ...i, quantity } : i)),
     }
     emitChange()
+
+    if (authStore.getState().isAuthenticated && item?.id) {
+      cartApi.updateQuantity(item.id, quantity).catch(() => {})
+    }
   },
 
-  removeItem: (skuId: string) => {
+  removeItem: async (skuId: string) => {
+    const item = state.items.find((i) => i.skuId === skuId)
     state = {
+      ...state,
       items: state.items.filter((i) => i.skuId !== skuId),
     }
     emitChange()
+
+    if (authStore.getState().isAuthenticated && item?.id) {
+      cartApi.removeItem(item.id).catch(() => {})
+    }
   },
 
   toggleSelect: (skuId: string) => {
     state = {
+      ...state,
       items: state.items.map((i) => (i.skuId === skuId ? { ...i, selected: !i.selected } : i)),
     }
     emitChange()
@@ -98,6 +160,7 @@ export const cartStore = {
 
   toggleSelectStore: (storeId: string, selected: boolean) => {
     state = {
+      ...state,
       items: state.items.map((i) => (i.storeId === storeId ? { ...i, selected } : i)),
     }
     emitChange()
@@ -105,14 +168,19 @@ export const cartStore = {
 
   toggleSelectAll: (selected: boolean) => {
     state = {
+      ...state,
       items: state.items.map((i) => ({ ...i, selected })),
     }
     emitChange()
   },
 
-  clearCart: () => {
-    state = { items: [] }
+  clearCart: async () => {
+    state = { ...state, items: [] }
     emitChange()
+
+    if (authStore.getState().isAuthenticated) {
+      cartApi.clearCart().catch(() => {})
+    }
   },
 }
 
@@ -139,11 +207,13 @@ export function useCartStore() {
 
   return {
     items: current.items,
+    isLoading: current.isLoading,
     selectedItems,
     itemsByStore: Object.values(itemsByStore),
     totalQuantity,
     selectedQuantity,
     totalAmountMinor,
+    syncWithBackend: cartStore.syncWithBackend,
     addItem: cartStore.addItem,
     updateQuantity: cartStore.updateQuantity,
     removeItem: cartStore.removeItem,

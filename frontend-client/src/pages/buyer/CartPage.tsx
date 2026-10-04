@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { useCartStore } from '../../app/store/cartStore'
@@ -11,17 +11,23 @@ export const CartPage: React.FC = () => {
   const navigate = useNavigate()
   const {
     items,
+    isLoading,
     selectedItems,
     itemsByStore,
     totalQuantity,
     selectedQuantity,
     totalAmountMinor,
+    syncWithBackend,
     updateQuantity,
     removeItem,
     toggleSelect,
     toggleSelectStore,
     toggleSelectAll,
   } = useCartStore()
+
+  useEffect(() => {
+    syncWithBackend()
+  }, [])
 
   const [voucherCodeInput, setVoucherCodeInput] = useState('')
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)

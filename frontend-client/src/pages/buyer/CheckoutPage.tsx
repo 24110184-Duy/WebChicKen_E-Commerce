@@ -6,6 +6,8 @@ import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import { MOCK_SHIPPING_METHODS, MOCK_VOUCHERS } from '../../features/cart/types/cartTypes'
 import type { ShippingMethod, Voucher } from '../../features/cart/types/cartTypes'
+import { orderApi } from '../../features/orders/api/orderApi'
+import { VoucherModal } from '../../features/cart/components/VoucherModal'
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
@@ -33,6 +35,7 @@ export const CheckoutPage: React.FC = () => {
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
   const [voucherCodeInput, setVoucherCodeInput] = useState('')
   const [voucherError, setVoucherError] = useState<string | null>(null)
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false)
 
   // Order Placement Loading State
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -126,16 +129,34 @@ export const CheckoutPage: React.FC = () => {
   }
 
   // Handle Place Order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (isSubmitting) return
     setIsSubmitting(true)
 
-    // Simulate order placement
-    setTimeout(() => {
-      const randomOrderNum = Math.floor(100000 + Math.random() * 900000)
-      const orderCode = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${randomOrderNum}`
+    try {
+      const checkoutReq = {
+        items: selectedItems.map((i) => ({
+          productId: i.productId,
+          variantId: i.skuId !== i.productId ? i.skuId : undefined,
+          quantity: i.quantity,
+        })),
+        recipientName: address.recipientName,
+        recipientPhone: address.phoneNumber,
+        shippingAddress: `${address.streetAddress}, ${address.district}, ${address.city}`,
+        voucherCode: appliedVoucher?.code,
+        paymentMethod: paymentMethod === 'COD' ? 'COD' as const : 'VNPAY' as const,
+        note: 'Customer order from storefront checkout',
+      }
+
+      const res = await orderApi.checkout(checkoutReq)
+      const primaryOrderCode = res && res.orders && res.orders.length > 0
+        ? res.orders[0].orderCode
+        : `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100000 + Math.random() * 900000)}`
 
       const orderSummary = {
-        orderCode,
+        orderCode: primaryOrderCode,
+        orderGroupId: res?.orderGroupId,
+        orders: res?.orders,
         createdAt: new Date().toISOString(),
         recipient: address,
         items: selectedItems,
@@ -147,16 +168,16 @@ export const CheckoutPage: React.FC = () => {
         grandTotalMinor,
       }
 
-      // Save for payment result page
       sessionStorage.setItem('webchicken_last_order', JSON.stringify(orderSummary))
-
-      // Remove placed items from cart
       selectedItems.forEach((i) => removeItem(i.skuId))
       sessionStorage.removeItem('webchicken_checkout_voucher')
 
       setIsSubmitting(false)
       navigate(PATHS.PAYMENT_RESULT)
-    }, 900)
+    } catch {
+      setIsSubmitting(false)
+      alert('Không thể hoàn tất đặt hàng. Vui lòng thử lại.')
+    }
   }
 
   if (selectedItems.length === 0) {
@@ -450,13 +471,23 @@ export const CheckoutPage: React.FC = () => {
                       Remove
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      className="cart-voucher-apply-btn"
-                      onClick={() => handleApplyVoucher()}
-                    >
-                      Apply
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="cart-voucher-apply-btn"
+                        onClick={() => handleApplyVoucher()}
+                      >
+                        Apply
+                      </button>
+                      <button
+                        type="button"
+                        className="cart-voucher-apply-btn"
+                        style={{ backgroundColor: '#f59e0b', color: '#111827', whiteSpace: 'nowrap' }}
+                        onClick={() => setIsVoucherModalOpen(true)}
+                      >
+                        Chọn mã
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -517,6 +548,26 @@ export const CheckoutPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <VoucherModal
+        isOpen={isVoucherModalOpen}
+        onClose={() => setIsVoucherModalOpen(false)}
+        orderValueMinor={merchandiseSubtotalMinor}
+        onSelectVoucher={(v) => {
+          setAppliedVoucher({
+            id: v.voucherId,
+            code: v.code,
+            title: v.code,
+            discountType: 'AMOUNT',
+            discountValue: v.discountAmountMinor,
+            minOrderValueMinor: 0,
+            maxDiscountMinor: v.discountAmountMinor,
+            isActive: true,
+            expiryDate: '',
+          })
+          setVoucherCodeInput(v.code)
+        }}
+      />
     </StorefrontLayout>
   )
 }

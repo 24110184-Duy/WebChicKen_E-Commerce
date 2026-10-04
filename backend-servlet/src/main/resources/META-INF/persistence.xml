@@ -34,6 +34,20 @@
         <class>com.example.webchicken.modules.catalog.model.entity.ProductImageEntity</class>
         <class>com.example.webchicken.modules.catalog.model.entity.ProductVariantEntity</class>
 
+        <!-- inventory module -->
+        <class>com.example.webchicken.modules.inventory.model.entity.StockReservationEntity</class>
+
+        <!-- cart module -->
+        <class>com.example.webchicken.modules.cart.model.entity.CartEntity</class>
+        <class>com.example.webchicken.modules.cart.model.entity.CartItemEntity</class>
+
+        <!-- promotion module -->
+        <class>com.example.webchicken.modules.promotion.model.entity.VoucherEntity</class>
+
+        <!-- order module -->
+        <class>com.example.webchicken.modules.order.model.entity.OrderEntity</class>
+        <class>com.example.webchicken.modules.order.model.entity.OrderItemEntity</class>
+        <class>com.example.webchicken.modules.order.model.entity.OrderCancellationEntity</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

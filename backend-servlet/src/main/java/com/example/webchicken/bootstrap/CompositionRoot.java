@@ -12,6 +12,10 @@ import com.example.webchicken.modules.inventory.dao.*;
 import com.example.webchicken.modules.inventory.service.*;
 import com.example.webchicken.modules.inventory.service.impl.*;
 
+import com.example.webchicken.modules.cart.dao.*;
+import com.example.webchicken.modules.cart.service.*;
+import com.example.webchicken.modules.cart.service.impl.*;
+
 import com.example.webchicken.modules.order.dao.*;
 import com.example.webchicken.modules.order.service.*;
 import com.example.webchicken.modules.order.service.impl.*;
@@ -95,6 +99,10 @@ public class CompositionRoot {
         // Inventory
         InventoryDAO inventoryDAO = new InventoryDAO(emf);
 
+        // Cart
+        CartDAO     cartDAO     = new CartDAO(emf);
+        CartItemDAO cartItemDAO = new CartItemDAO(emf);
+
         // Order
         OrderDAO             orderDAO             = new OrderDAO(emf);
         OrderItemDAO         orderItemDAO         = new OrderItemDAO(emf);
@@ -133,15 +141,24 @@ public class CompositionRoot {
         // Inventory
         InventoryService inventoryService = new InventoryServiceImpl(inventoryDAO);
 
+        // Cart
+        CartService cartService = new CartServiceImpl(
+                cartDAO, cartItemDAO, productDAO, productVariantDAO, productImageDAO, storeDAO, inventoryService
+        );
+
+        // Promotion
+        VoucherService voucherService = new VoucherServiceImpl(voucherDAO);
+
         // Order
-        OrderService orderService = new OrderServiceImpl(orderDAO, orderItemDAO, orderCancellationDAO);
+        OrderService orderService = new OrderServiceImpl(
+                orderDAO, orderItemDAO, orderCancellationDAO,
+                cartDAO, cartItemDAO, productDAO, productVariantDAO, productImageDAO,
+                storeDAO, inventoryService, voucherService
+        );
 
         // Payment
         PaymentService       paymentService       = new PaymentServiceImpl(paymentDAO);
         PaymentMethodService paymentMethodService = new PaymentMethodServiceImpl(paymentMethodDAO);
-
-        // Promotion
-        VoucherService voucherService = new VoucherServiceImpl(voucherDAO);
 
         // Review
         ReviewService reviewService = new ReviewServiceImpl(reviewDAO);
@@ -165,6 +182,7 @@ public class CompositionRoot {
         ctx.setAttribute("productVariantService",    productVariantService);
 
         ctx.setAttribute("inventoryService",        inventoryService);
+        ctx.setAttribute("cartService",             cartService);
         ctx.setAttribute("orderService",            orderService);
 
         ctx.setAttribute("paymentService",          paymentService);
