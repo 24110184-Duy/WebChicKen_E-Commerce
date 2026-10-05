@@ -564,26 +564,26 @@ export const SellersPage: React.FC = () => {
               )}
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: 1120, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12 }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, minWidth: 280 }}>
                       GIAN HÀNG & CHỦ SỞ HỮU
                     </th>
-                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12 }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, minWidth: 200 }}>
                       MÔ HÌNH & ĐỊA ĐIỂM
                     </th>
-                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12 }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, minWidth: 230 }}>
                       CHỨNG NHẬN TIÊU CHUẨN
                     </th>
-                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12 }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, minWidth: 120, whiteSpace: 'nowrap' }}>
                       NGÀY NỘP ĐƠN
                     </th>
-                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12 }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, minWidth: 140, whiteSpace: 'nowrap' }}>
                       TRẠNG THÁI
                     </th>
-                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, textAlign: 'right' }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 700, color: '#475569', fontSize: 12, minWidth: 260, whiteSpace: 'nowrap', textAlign: 'right' }}>
                       THAO TÁC
                     </th>
                   </tr>
@@ -604,13 +604,13 @@ export const SellersPage: React.FC = () => {
                         }}
                       >
                         {/* Shop Name & Owner */}
-                        <td style={{ padding: '16px 18px', verticalAlign: 'top' }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <td style={{ padding: '16px 18px', verticalAlign: 'top', minWidth: 280 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                             <div
                               style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 8,
+                                width: 40,
+                                height: 40,
+                                borderRadius: 10,
                                 backgroundColor: isPending ? '#fef3c7' : isApproved ? '#ecfdf5' : '#fef2f2',
                                 color: isPending ? '#d97706' : isApproved ? '#059669' : '#dc2626',
                                 display: 'flex',
@@ -618,18 +618,19 @@ export const SellersPage: React.FC = () => {
                                 justifyContent: 'center',
                                 flexShrink: 0,
                                 marginTop: 2,
+                                border: isPending ? '1px solid #fde68a' : isApproved ? '1px solid #a7f3d0' : '1px solid #fecaca',
                               }}
                             >
-                              <Store style={{ width: 18, height: 18 }} />
+                              <Store style={{ width: 20, height: 20 }} />
                             </div>
                             <div>
-                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 14 }}>
+                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 14, lineHeight: 1.4 }}>
                                 {app.shopName}
                               </div>
-                              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                              <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>
                                 Đại diện: <strong>{app.ownerName || 'Chưa cập nhật'}</strong>
                               </div>
-                              <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 1 }}>
+                              <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
                                 SĐT: {app.phone || '—'} • MST: {app.taxCode || '—'}
                               </div>
                             </div>
@@ -637,11 +638,11 @@ export const SellersPage: React.FC = () => {
                         </td>
 
                         {/* Farm type & location */}
-                        <td style={{ padding: '16px 18px', verticalAlign: 'top' }}>
+                        <td style={{ padding: '16px 18px', verticalAlign: 'top', minWidth: 200 }}>
                           <div style={{ fontWeight: 600, color: '#334155' }}>
                             {app.farmType || 'Gia cầm thương phẩm'}
                           </div>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
                             {app.farmLocation || 'Đang cập nhật'}
                           </div>
                           {app.dailyCapacity && (
@@ -652,78 +653,129 @@ export const SellersPage: React.FC = () => {
                         </td>
 
                         {/* Certificate */}
-                        <td style={{ padding: '16px 18px', verticalAlign: 'top' }}>
+                        <td style={{ padding: '16px 18px', verticalAlign: 'top', minWidth: 230 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Award style={{ width: 14, height: 14, color: '#059669' }} />
+                            <Award style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                             <span style={{ fontWeight: 600, color: '#059669' }}>
                               {app.certificateType || 'VietGAP'}
                             </span>
                           </div>
                           {app.certificateNumber && (
-                            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
+                            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 3 }}>
                               Số hiệu: {app.certificateNumber}
                             </div>
                           )}
                           {app.certificateExpiry && (
-                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                               Hạn đến: {app.certificateExpiry}
                             </div>
                           )}
                         </td>
 
                         {/* Submitted date */}
-                        <td style={{ padding: '16px 18px', verticalAlign: 'top', color: '#475569', fontSize: 12.5 }}>
-                          <div>{new Date(app.submittedAt).toLocaleDateString('vi-VN')}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                        <td style={{ padding: '16px 18px', verticalAlign: 'top', color: '#475569', fontSize: 12.5, whiteSpace: 'nowrap', minWidth: 120 }}>
+                          <div style={{ fontWeight: 600 }}>{new Date(app.submittedAt).toLocaleDateString('vi-VN')}</div>
+                          <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
                             {new Date(app.submittedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </td>
 
                         {/* Status */}
-                        <td style={{ padding: '16px 18px', verticalAlign: 'top' }}>
+                        <td style={{ padding: '16px 18px', verticalAlign: 'top', whiteSpace: 'nowrap', minWidth: 140 }}>
                           {isPending && (
-                            <span className="admin-status-badge pending">
-                              <span className="admin-pulse-dot" style={{ backgroundColor: '#d97706' }} />
+                            <span
+                              className="admin-status-badge pending"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '5px 12px',
+                                borderRadius: 20,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                backgroundColor: '#fef3c7',
+                                color: '#b45309',
+                                border: '1px solid #fde68a',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <span className="admin-pulse-dot" style={{ backgroundColor: '#d97706', width: 7, height: 7, borderRadius: '50%' }} />
                               Chờ duyệt
                             </span>
                           )}
                           {isApproved && (
-                            <span className="admin-status-badge approved">
-                              <CheckCircle2 style={{ width: 13, height: 13 }} />
+                            <span
+                              className="admin-status-badge approved"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '5px 12px',
+                                borderRadius: 20,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                backgroundColor: '#ecfdf5',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <CheckCircle2 style={{ width: 14, height: 14, color: '#059669' }} />
                               Đã duyệt
                             </span>
                           )}
                           {isRejected && (
-                            <span className="admin-status-badge rejected" title={app.rejectionReason}>
-                              <XCircle style={{ width: 13, height: 13 }} />
+                            <span
+                              className="admin-status-badge rejected"
+                              title={app.rejectionReason}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '5px 12px',
+                                borderRadius: 20,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                backgroundColor: '#fef2f2',
+                                color: '#b91c1c',
+                                border: '1px solid #fecaca',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <XCircle style={{ width: 14, height: 14, color: '#dc2626' }} />
                               Đã từ chối
                             </span>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td style={{ padding: '16px 18px', verticalAlign: 'top', textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <td style={{ padding: '16px 18px', verticalAlign: 'top', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 260 }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexWrap: 'nowrap' }}>
                             {/* View Detail button */}
                             <button
                               type="button"
                               onClick={() => handleOpenDetail(app)}
                               title="Xem chi tiết hồ sơ thẩm định"
                               style={{
-                                padding: '6px 10px',
-                                borderRadius: 6,
+                                height: 32,
+                                padding: '0 12px',
+                                borderRadius: 8,
                                 border: '1px solid #cbd5e1',
                                 backgroundColor: '#ffffff',
                                 color: '#334155',
-                                fontSize: 12,
+                                fontSize: 12.5,
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: 4,
+                                justifyContent: 'center',
+                                gap: 5,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                transition: 'all 0.15s ease',
                               }}
                             >
-                              <Eye style={{ width: 13, height: 13 }} />
+                              <Eye style={{ width: 14, height: 14 }} />
                               <span>Hồ sơ</span>
                             </button>
 
@@ -736,20 +788,26 @@ export const SellersPage: React.FC = () => {
                                   disabled={isSubmitting}
                                   title="Phê duyệt nhanh gian hàng"
                                   style={{
-                                    padding: '6px 10px',
-                                    borderRadius: 6,
+                                    height: 32,
+                                    padding: '0 12px',
+                                    borderRadius: 8,
                                     border: 'none',
                                     backgroundColor: '#10b981',
                                     color: '#ffffff',
-                                    fontSize: 12,
+                                    fontSize: 12.5,
                                     fontWeight: 600,
                                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: 4,
+                                    justifyContent: 'center',
+                                    gap: 5,
+                                    whiteSpace: 'nowrap',
+                                    flexShrink: 0,
+                                    boxShadow: '0 1px 3px rgba(16, 185, 129, 0.25)',
+                                    transition: 'all 0.15s ease',
                                   }}
                                 >
-                                  <CheckCircle2 style={{ width: 13, height: 13 }} />
+                                  <CheckCircle2 style={{ width: 14, height: 14 }} />
                                   <span>Duyệt</span>
                                 </button>
 
@@ -759,20 +817,25 @@ export const SellersPage: React.FC = () => {
                                   disabled={isSubmitting}
                                   title="Từ chối hồ sơ này"
                                   style={{
-                                    padding: '6px 10px',
-                                    borderRadius: 6,
+                                    height: 32,
+                                    padding: '0 12px',
+                                    borderRadius: 8,
                                     border: '1px solid #fecaca',
                                     backgroundColor: '#fee2e2',
                                     color: '#b91c1c',
-                                    fontSize: 12,
+                                    fontSize: 12.5,
                                     fontWeight: 600,
                                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: 4,
+                                    justifyContent: 'center',
+                                    gap: 5,
+                                    whiteSpace: 'nowrap',
+                                    flexShrink: 0,
+                                    transition: 'all 0.15s ease',
                                   }}
                                 >
-                                  <XCircle style={{ width: 13, height: 13 }} />
+                                  <XCircle style={{ width: 14, height: 14 }} />
                                   <span>Từ chối</span>
                                 </button>
                               </>
