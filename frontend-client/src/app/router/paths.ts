@@ -62,6 +62,7 @@ export const PATHS = {
     ORDERS: '/admin/orders',
     REVIEWS: '/admin/reviews',
     CAMPAIGNS: '/admin/campaigns',
+    VOUCHERS: '/admin/vouchers',
     REPORTS: '/admin/reports',
     SETTINGS: '/admin/settings',
     AUDIT_LOGS: '/admin/audit-logs',

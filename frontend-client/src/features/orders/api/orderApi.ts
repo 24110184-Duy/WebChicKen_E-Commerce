@@ -37,7 +37,7 @@ export const orderApi = {
   cancelOrder: async (orderCode: string, reason?: string): Promise<OrderResponse | null> => {
     try {
       const res = await httpClient.post<OrderResponse>(`/orders/${orderCode}/cancel`, {
-        reason: reason || 'Khách hàng yêu cầu hủy đơn',
+        reason: reason || 'Customer requested order cancellation',
       })
       return res.data || null
     } catch {

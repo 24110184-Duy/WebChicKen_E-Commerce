@@ -11,7 +11,6 @@ export const CartPage: React.FC = () => {
   const navigate = useNavigate()
   const {
     items,
-    isLoading,
     selectedItems,
     itemsByStore,
     totalQuantity,

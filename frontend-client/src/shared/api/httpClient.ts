@@ -124,11 +124,11 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
         onAuthFailedFn()
         throw {
           code: 'UNAUTHORIZED',
-          message: 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.',
+          message: 'Session expired. Please sign in again.',
         } as ApiError
       }
     } else {
-      // Đợi refresh token hoàn thành
+      // Wait for refresh token to complete
       return new Promise<ApiResponse<T>>((resolve, reject) => {
         subscribeTokenRefresh((newToken: string) => {
           headers.set('Authorization', `Bearer ${newToken}`)
@@ -155,14 +155,14 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
   } catch {
     throw {
       code: 'PARSE_ERROR',
-      message: 'Không thể giải mã phản hồi từ máy chủ.',
+      message: 'Unable to parse server response.',
     } as ApiError
   }
 
   if (!response.ok || !json.success) {
     const error: ApiError = json.error || {
       code: `HTTP_${response.status}`,
-      message: response.statusText || 'Yêu cầu thất bại.',
+      message: response.statusText || 'Request failed.',
     }
     throw error
   }

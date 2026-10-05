@@ -507,6 +507,18 @@
   border: 1px solid #bbf7d0;
 }
 
+.result-badge.danger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.result-badge.warning {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
 .result-title {
   font-size: 26px;
   font-weight: 800;
@@ -593,4 +605,304 @@
 
 .result-btn-secondary:hover {
   background-color: #e2e8f0;
+}
+
+/* ==========================================================================
+   TASK-53: Enhanced Payment Result Page Styles
+   ========================================================================== */
+
+.result-header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-icon-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  animation: result-scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.result-icon-wrapper.success {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #15803d;
+  box-shadow: 0 0 0 8px rgba(220, 252, 231, 0.5);
+}
+
+.result-icon-wrapper.danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #b91c1c;
+  box-shadow: 0 0 0 8px rgba(254, 226, 226, 0.5);
+}
+
+@keyframes result-scale-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Stepper */
+.result-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 28px 0 32px;
+  padding: 0 16px;
+}
+
+.result-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 1;
+}
+
+.result-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-step.completed .result-step-circle {
+  background-color: #15803d;
+  color: #ffffff;
+}
+
+.result-step.active .result-step-circle {
+  background-color: #facc15;
+  color: #0f172a;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.25);
+}
+
+.result-step-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.result-step.completed .result-step-title {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.result-step.active .result-step-title {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.result-step-line {
+  flex: 1;
+  height: 3px;
+  background-color: #e2e8f0;
+  margin: 0 8px 18px;
+}
+
+.result-step-line.completed {
+  background-color: #15803d;
+}
+
+.result-step-line.active {
+  background: linear-gradient(90deg, #15803d 0%, #facc15 100%);
+}
+
+/* Box Header with Print */
+.result-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.result-box-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.result-print-btn {
+  background: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.result-print-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.result-code-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-copy-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.result-copy-btn:hover {
+  background-color: #eff6ff;
+}
+
+.result-mono-text {
+  font-family: monospace;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Itemized Products */
+.result-items-list {
+  margin: 16px 0;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 0;
+}
+
+.result-items-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.result-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.result-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.result-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.result-item-sku {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.result-item-qty {
+  font-size: 12px;
+  color: #475569;
+}
+
+.result-item-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.result-total-amount {
+  color: #b45309;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* Quality Guarantee Box */
+.result-guarantee-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: left;
+  margin-bottom: 28px;
+}
+
+.result-guarantee-icon {
+  font-size: 24px;
+}
+
+.result-guarantee-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 4px;
+}
+
+.result-guarantee-desc {
+  font-size: 13px;
+  color: #15803d;
+  line-height: 1.5;
+}
+
+/* Print Styles */
+@media print {
+  .no-print,
+  header,
+  footer,
+  nav,
+  .storefront-header {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  .checkout-page-container {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .result-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
 }

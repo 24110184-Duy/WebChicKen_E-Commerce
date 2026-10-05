@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { useCartStore } from '../../app/store/cartStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
-import { MOCK_SHIPPING_METHODS, MOCK_VOUCHERS } from '../../features/cart/types/cartTypes'
-import type { ShippingMethod, Voucher } from '../../features/cart/types/cartTypes'
+import {
+  MOCK_SHIPPING_METHODS,
+  MOCK_VOUCHERS,
+  type ShippingMethod,
+  type Voucher,
+} from '../../features/cart/types/cartTypes'
 import { orderApi } from '../../features/orders/api/orderApi'
+import { paymentApi } from '../../features/payment/api/paymentApi'
 import { VoucherModal } from '../../features/cart/components/VoucherModal'
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
   const { selectedItems, removeItem } = useCartStore()
+  const isOrderPlacedRef = useRef(false)
 
   // Delivery Address State
   const [address, setAddress] = useState({
@@ -29,7 +35,7 @@ export const CheckoutPage: React.FC = () => {
   )
 
   // Payment Method Selection
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER' | 'CARD'>('COD')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER' | 'VNPAY'>('COD')
 
   // Voucher State
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
@@ -52,9 +58,9 @@ export const CheckoutPage: React.FC = () => {
     }
   }, [])
 
-  // If no items are selected, redirect back to cart
+  // If no items are selected, redirect back to cart (only if order is not placed yet)
   useEffect(() => {
-    if (selectedItems.length === 0) {
+    if (selectedItems.length === 0 && !isOrderPlacedRef.current) {
       navigate(PATHS.CART, { replace: true })
     }
   }, [selectedItems, navigate])
@@ -144,7 +150,7 @@ export const CheckoutPage: React.FC = () => {
         recipientPhone: address.phoneNumber,
         shippingAddress: `${address.streetAddress}, ${address.district}, ${address.city}`,
         voucherCode: appliedVoucher?.code,
-        paymentMethod: paymentMethod === 'COD' ? 'COD' as const : 'VNPAY' as const,
+        paymentMethod: paymentMethod === 'COD' ? ('COD' as const) : paymentMethod === 'BANK_TRANSFER' ? ('BANKING' as const) : ('VNPAY' as const),
         note: 'Customer order from storefront checkout',
       }
 
@@ -168,19 +174,30 @@ export const CheckoutPage: React.FC = () => {
         grandTotalMinor,
       }
 
+      isOrderPlacedRef.current = true
       sessionStorage.setItem('webchicken_last_order', JSON.stringify(orderSummary))
       selectedItems.forEach((i) => removeItem(i.skuId))
       sessionStorage.removeItem('webchicken_checkout_voucher')
 
+      // If VNPAY is selected, request VNPay gateway URL
+      if (paymentMethod === 'VNPAY') {
+        const vnpayUrl = await paymentApi.createVNPayUrl(primaryOrderCode, grandTotalMinor)
+        if (vnpayUrl) {
+          setIsSubmitting(false)
+          window.location.href = vnpayUrl
+          return
+        }
+      }
+
       setIsSubmitting(false)
-      navigate(PATHS.PAYMENT_RESULT)
+      navigate(PATHS.PAYMENT_RESULT, { replace: true })
     } catch {
       setIsSubmitting(false)
-      alert('Không thể hoàn tất đặt hàng. Vui lòng thử lại.')
+      alert('Unable to complete order placement. Please try again.')
     }
   }
 
-  if (selectedItems.length === 0) {
+  if (selectedItems.length === 0 && !isOrderPlacedRef.current) {
     return null
   }
 
@@ -407,22 +424,22 @@ export const CheckoutPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 3. Card */}
+                {/* 3. VNPAY Gateway */}
                 <div
-                  className={`checkout-payment-card ${paymentMethod === 'CARD' ? 'selected' : ''}`}
-                  onClick={() => setPaymentMethod('CARD')}
+                  className={`checkout-payment-card ${paymentMethod === 'VNPAY' ? 'selected' : ''}`}
+                  onClick={() => setPaymentMethod('VNPAY')}
                 >
                   <input
                     type="radio"
                     name="payment_method"
                     className="checkout-payment-radio"
-                    checked={paymentMethod === 'CARD'}
-                    onChange={() => setPaymentMethod('CARD')}
+                    checked={paymentMethod === 'VNPAY'}
+                    onChange={() => setPaymentMethod('VNPAY')}
                   />
                   <div className="checkout-payment-details">
-                    <div className="checkout-payment-name">Credit or Debit Card (Visa, MasterCard, JCB)</div>
+                    <div className="checkout-payment-name">VNPAY-QR / Online Payment (Sandbox)</div>
                     <div className="checkout-payment-desc">
-                      Encrypted 256-bit SSL transaction processed through official payment gateway.
+                      Pay securely via Domestic ATM Card, VietQR, Visa/MasterCard, or VNPAY E-Wallet through official sandbox gateway.
                     </div>
                   </div>
                 </div>
@@ -485,7 +502,7 @@ export const CheckoutPage: React.FC = () => {
                         style={{ backgroundColor: '#f59e0b', color: '#111827', whiteSpace: 'nowrap' }}
                         onClick={() => setIsVoucherModalOpen(true)}
                       >
-                        Chọn mã
+                        Select Voucher
                       </button>
                     </div>
                   )}
@@ -555,15 +572,17 @@ export const CheckoutPage: React.FC = () => {
         orderValueMinor={merchandiseSubtotalMinor}
         onSelectVoucher={(v) => {
           setAppliedVoucher({
-            id: v.voucherId,
+            voucherId: v.voucherId,
             code: v.code,
             title: v.code,
+            description: `Discount ${formatMoney(v.discountAmountMinor)}`,
             discountType: 'AMOUNT',
             discountValue: v.discountAmountMinor,
             minOrderValueMinor: 0,
             maxDiscountMinor: v.discountAmountMinor,
             isActive: true,
-            expiryDate: '',
+            startDate: '',
+            endDate: '',
           })
           setVoucherCodeInput(v.code)
         }}

@@ -98,4 +98,52 @@ public class OrderDAO extends BaseDAO {
                     .executeUpdate();
         });
     }
+
+    public List<OrderEntity> findByStoreId(String storeId, OrderStatus status, int offset, int limit) {
+        return executeQuery(em -> {
+            String jpql = "SELECT o FROM OrderEntity o WHERE o.storeId = :storeId ";
+            if (status != null) {
+                jpql += "AND o.status = :status ";
+            }
+            jpql += "ORDER BY o.orderDate DESC";
+
+            TypedQuery<OrderEntity> query = em.createQuery(jpql, OrderEntity.class)
+                    .setParameter("storeId", storeId);
+            if (status != null) {
+                query.setParameter("status", status);
+            }
+            query.setFirstResult(Math.max(0, offset));
+            query.setMaxResults(Math.min(100, Math.max(1, limit)));
+            return query.getResultList();
+        });
+    }
+
+    public long countByStoreId(String storeId, OrderStatus status) {
+        return executeQuery(em -> {
+            String jpql = "SELECT COUNT(o) FROM OrderEntity o WHERE o.storeId = :storeId ";
+            if (status != null) {
+                jpql += "AND o.status = :status";
+            }
+            TypedQuery<Long> query = em.createQuery(jpql, Long.class)
+                    .setParameter("storeId", storeId);
+            if (status != null) {
+                query.setParameter("status", status);
+            }
+            return query.getSingleResult();
+        });
+    }
+
+    public Optional<OrderEntity> findByOrderCodeAndStoreId(String orderCode, String storeId) {
+        if (orderCode == null || orderCode.isBlank() || storeId == null || storeId.isBlank()) return Optional.empty();
+        return executeQuery(em -> {
+            List<OrderEntity> list = em.createQuery(
+                    "SELECT o FROM OrderEntity o WHERE o.orderCode = :orderCode AND o.storeId = :storeId", OrderEntity.class)
+                    .setParameter("orderCode", orderCode.trim())
+                    .setParameter("storeId", storeId.trim())
+                    .setMaxResults(1)
+                    .getResultList();
+            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        });
+    }
 }
+

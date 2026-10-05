@@ -1,0 +1,829 @@
+/* ==========================================================================
+   WebChicKen Review Module Styles (Shopee & Amazon Inspired)
+   Golden Yellow & Amber Theme matching WebChicKen Design System
+   ========================================================================== */
+
+/* ── 1. Review Modal Backdrop & Container ── */
+.review-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: rvmFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-modal-container {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rvmScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rvmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rvmScaleUp {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── 2. Modal Header ── */
+.review-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.review-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.review-modal-close-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+/* ── 3. Shopee Incentive Banner ── */
+.review-incentive-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-bottom: 1px solid #fde68a;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.review-coin-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);
+}
+
+/* ── 4. Product Info Bar ── */
+.review-product-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.review-product-img {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.review-product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-product-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+
+.review-product-variant {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.review-product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  border: 1px solid #a7f3d0;
+}
+
+/* ── 5. Modal Scrollable Body ── */
+.review-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── 6. Rating Section (Shopee Stars) ── */
+.review-rating-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #fafaf9;
+  border-radius: 12px;
+  border: 1px solid #f5f5f4;
+}
+
+.review-stars-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.review-star-btn:hover {
+  transform: scale(1.25);
+}
+
+.review-star-icon {
+  width: 34px;
+  height: 34px;
+  transition: color 0.15s ease, fill 0.15s ease;
+}
+
+.review-rating-label {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #d97706;
+  min-height: 20px;
+}
+
+/* ── 7. Media Upload Area (Shopee Dashed Squares) ── */
+.review-media-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-media-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.review-media-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.review-upload-box {
+  width: 84px;
+  height: 84px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #f8fafc;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.review-upload-box:hover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.review-media-thumb {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  border: 1.5px solid #e2e8f0;
+}
+
+.review-media-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.review-media-remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+}
+
+.review-media-remove-btn:hover {
+  background: #ef4444;
+}
+
+.review-url-input-wrap {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.review-url-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.review-url-input:focus {
+  border-color: #f59e0b;
+}
+
+.review-url-add-btn {
+  padding: 8px 14px;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.review-url-add-btn:hover {
+  background: #d97706;
+}
+
+/* ── 8. Comment Textarea Area ── */
+.review-textarea-wrap {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.review-textarea-wrap:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.review-textarea {
+  width: 100%;
+  min-height: 140px;
+  max-height: 480px;
+  border: none;
+  outline: none;
+  resize: vertical;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 14px;
+  color: #0f172a;
+  line-height: 1.6;
+}
+
+.review-textarea::placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.review-textarea-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed #f1f5f9;
+  font-size: 12px;
+}
+
+.review-char-count {
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.review-char-count.warning {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.review-reward-hint {
+  color: #d97706;
+  font-weight: 600;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.review-reward-hint.achieved {
+  color: #059669;
+}
+
+/* ── 9. Quick Suggestion Pills (Shopee Style) ── */
+.review-quick-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-quick-tags-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.review-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-pill-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.review-pill-btn:hover {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+  transform: translateY(-1px);
+}
+
+.review-pill-btn.selected {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #f59e0b;
+  font-weight: 700;
+}
+
+/* ── 10. Anonymous Switch (Shopee Style) ── */
+.review-anonymous-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.review-anonymous-info h5 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.review-anonymous-info p {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.review-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.review-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.review-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cbd5e1;
+  transition: 0.2s;
+  border-radius: 24px;
+}
+
+.review-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+input:checked + .review-slider {
+  background-color: #f59e0b;
+}
+
+input:checked + .review-slider:before {
+  transform: translateX(20px);
+}
+
+/* ── 11. Modal Footer Actions ── */
+.review-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.review-cancel-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.review-cancel-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.review-submit-btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.35);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.review-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(234, 179, 8, 0.45);
+}
+
+.review-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── 12. Shopee-Style Product Reviews Section (PDP) ── */
+.shopee-review-card {
+  margin-top: 32px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.shopee-review-header {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Rating Overview Banner */
+.shopee-overview-box {
+  background: #fffdf5;
+  border: 1px solid #fef08a;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .shopee-overview-box {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+}
+
+.shopee-score-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  text-align: center;
+}
+
+.shopee-score-num {
+  font-size: 38px;
+  font-weight: 900;
+  color: #d97706;
+  line-height: 1;
+}
+
+.shopee-score-num span {
+  font-size: 18px;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.shopee-score-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 6px 0;
+}
+
+.shopee-filters-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+}
+
+.shopee-filter-chip {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shopee-filter-chip:hover {
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.shopee-filter-chip.active {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Reviews List */
+.shopee-review-item {
+  padding: 24px 0;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  gap: 16px;
+}
+
+.shopee-review-item:last-child {
+  border-bottom: none;
+}
+
+.shopee-reviewer-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fde68a;
+  flex-shrink: 0;
+}
+
+.shopee-review-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.shopee-reviewer-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.shopee-review-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.shopee-review-meta {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shopee-review-meta .divider {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.shopee-review-meta .verified {
+  color: #059669;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.shopee-review-comment {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+  margin-bottom: 14px;
+  white-space: pre-line;
+}
+
+.shopee-review-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.shopee-review-thumb-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.shopee-review-thumb-btn:hover {
+  transform: scale(1.05);
+  border-color: #f59e0b;
+}
+
+.shopee-review-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shopee-seller-reply-card {
+  background: #f8fafc;
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px 8px 8px 4px;
+  padding: 12px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.shopee-seller-reply-title {
+  font-weight: 700;
+  color: #b45309;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shopee-seller-reply-text {
+  color: #475569;
+  line-height: 1.6;
+}
+
+.shopee-helpful-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 8px;
+}
+
+.shopee-helpful-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.shopee-helpful-btn.voted {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+  font-weight: 700;
+}

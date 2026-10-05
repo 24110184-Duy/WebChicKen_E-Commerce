@@ -1,0 +1,335 @@
+/* ==========================================================================
+   WebChicKen Backoffice Admin CSS Styles (Enterprise Management Console)
+   Professional Dark-Slate Command Center with Amber/Gold Brand Accents
+   ========================================================================== */
+
+/* ── 1. Page Shell & Layout ── */
+.admin-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ── 2. Admin Topbar ── */
+.admin-topbar {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.admin-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.admin-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.admin-brand-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  border: 1px solid #334155;
+}
+
+.admin-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-brand-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-brand-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #d97706;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-system-health-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #047857;
+}
+
+.admin-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+  animation: adminPulse 2s infinite ease-in-out;
+}
+
+@keyframes adminPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+.admin-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-operator-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px;
+  background-color: #f1f5f9;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-operator-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-operator-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.admin-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7c3aed;
+  background-color: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.admin-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.admin-switch-btn:hover {
+  color: #0f172a;
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* ── 3. Workspace Layout: Sidebar + Main Content ── */
+.admin-workspace {
+  display: flex;
+  flex: 1;
+}
+
+/* Dark Slate Sidebar */
+.admin-sidebar {
+  width: 260px;
+  background-color: #0f172a;
+  color: #94a3b8;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid #1e293b;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.admin-nav-group {
+  margin-bottom: 22px;
+}
+
+.admin-nav-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 12px 8px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  margin-bottom: 2px;
+  border-left: 3px solid transparent;
+}
+
+.admin-nav-item-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-nav-item:hover {
+  color: #f8fafc;
+  background-color: #1e293b;
+}
+
+.admin-nav-item.active {
+  color: #ffffff;
+  background-color: #1e293b;
+  font-weight: 600;
+  border-left-color: #f59e0b;
+}
+
+.admin-nav-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background-color: #f59e0b;
+  color: #0f172a;
+}
+
+.admin-nav-badge.danger {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.admin-sidebar-footer {
+  padding-top: 14px;
+  border-top: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── 4. Main Content Area ── */
+.admin-main {
+  flex: 1;
+  padding: 28px 36px;
+  max-width: 1480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.admin-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-page-title-group h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-page-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.admin-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    width: 220px;
+  }
+  .admin-main {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-workspace {
+    flex-direction: column;
+  }
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+}

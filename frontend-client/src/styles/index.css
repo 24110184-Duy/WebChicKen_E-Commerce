@@ -5,7 +5,15 @@
 @import './product.css';
 @import './cart.css';
 @import './checkout.css';
+@import './review.css';
+@import './seller.css';
+@import './admin.css';
 
+
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
 
 *,
 *::before,

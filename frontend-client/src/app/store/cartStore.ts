@@ -72,13 +72,13 @@ export const cartStore = {
         backendCart.storeGroups.forEach((group) => {
           group.items.forEach((item) => {
             syncedItems.push({
-              id: item.id,
-              skuId: item.variantId || item.id,
+              id: item.itemId,
+              skuId: item.variantId || item.itemId,
               productId: item.productId,
               name: item.productName,
-              skuName: item.variantName,
-              priceMinor: item.unitPriceMinor,
-              imageUrl: item.imageUrl,
+              skuName: item.variantAttribute,
+              priceMinor: item.currentPriceMinor,
+              imageUrl: item.thumbnailUrl,
               quantity: item.quantity,
               storeId: group.storeId,
               storeName: group.storeName,

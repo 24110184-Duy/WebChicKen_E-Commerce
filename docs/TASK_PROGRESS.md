@@ -10,8 +10,8 @@
 | Chỉ số | Giá trị |
 |---|---|
 | **Tổng số công việc (Total Tasks)** | **85** |
-| **Đã hoàn thành (Done)** | **49** (57.6%) |
-| **Chưa thực hiện (Pending)** | **36** (42.4%) |
+| **Đã hoàn thành (Done)** | **64** (75.3%) |
+| **Chưa thực hiện (Pending)** | **21** (24.7%) |
 
 ### Tiến độ theo từng giai đoạn (Phase Breakdown)
 
@@ -19,14 +19,14 @@
 |---|---|:---:|:---:|:---:|:---:|
 | **Giai đoạn 1** | Nền tảng Hạ tầng & Core Engine | 15 | 15 | 0 | **100%** |
 | **Giai đoạn 2** | Nghiệp vụ Lõi - Phase 1: Identity, Store & Catalog | 20 | 20 | 0 | **100%** |
-| **Giai đoạn 3** | Nghiệp vụ Giao dịch - Phase 2: Inventory, Cart, Promo, Order & Payment | 20 | 14 | 6 | **70%** |
-| **Giai đoạn 4** | Hậu mãi, Seller Portal & Backoffice | 15 | 0 | 15 | **0%** |
+| **Giai đoạn 3** | Nghiệp vụ Giao dịch - Phase 2: Inventory, Cart, Promo, Order & Payment | 20 | 20 | 0 | **100%** |
+| **Giai đoạn 4** | Hậu mãi, Seller Portal & Backoffice | 15 | 9 | 6 | **60.0%** |
 | **Giai đoạn 5** | Kiểm thử, Bảo mật & Tối ưu Hiệu năng | 10 | 0 | 10 | **0%** |
 | **Giai đoạn 6** | Containerization, CI/CD & Go-Live | 5 | 0 | 5 | **0%** |
 
 ---
 
-## 📋 Chi tiết các công việc đã hoàn thành (TASK-01 → TASK-49)
+## 📋 Chi tiết các công việc đã hoàn thành (TASK-01 → TASK-62)
 
 ### Giai đoạn 1: Nền tảng Hạ tầng & Core Engine (TASK-01 → TASK-15) — ĐÃ XONG 100%
 - [x] **TASK-01**: Khởi tạo cấu trúc Monorepo & Quy chuẩn Clean Architecture (`backend-servlet/`, `frontend-client/`, `docs/`, `infra/`).
@@ -67,7 +67,7 @@
 - [x] **TASK-34**: Xây dựng Trang Danh sách sản phẩm & Bộ lọc (PLP - `ProductListingPage.tsx`).
 - [x] **TASK-35**: Xây dựng Trang Chi tiết sản phẩm (PDP - `ProductDetailPage.tsx`, chọn biến thể SKU động, gallery).
 
-### Giai đoạn 3: Nghiệp vụ Giao dịch - Phase 2 (TASK-36 → TASK-49) — ĐÃ XONG 14 TASKS
+### Giai đoạn 3: Nghiệp vụ Giao dịch - Phase 2 (TASK-36 → TASK-55) — ĐÃ XONG 100%
 - [x] **TASK-36**: Hoàn thiện InventoryDAO với Khóa chống Bán vượt tồn (`reserveStockAtomic` trừ `stock_quantity`, tăng `reserved_quantity` nguyên tử).
 - [x] **TASK-37**: Hoàn thiện InventoryServiceImpl (Cơ chế Stock Reservation có TTL 15 phút, `StockReservationEntity`, commit/release reservation).
 - [x] **TASK-38**: Xây dựng CartDAO, CartItemDAO và Entity Giỏ hàng (`CartEntity`, `CartItemEntity` JPA).
@@ -82,14 +82,33 @@
 - [x] **TASK-47**: Xây dựng Màn hình Checkout nhiều bước Frontend (`CheckoutPage.tsx`: chọn địa chỉ, phân nhóm shop, phí ship từng shop, áp voucher modal, tổng thanh toán, nút chống double-click).
 - [x] **TASK-48**: Xây dựng Màn hình Quản lý Đơn hàng Người mua (`OrdersPage.tsx`: Tab trạng thái Chờ xử lý, Đã xác nhận, Đang giao, Đã giao, Đã hủy, xem chi tiết từng đơn và timeline).
 - [x] **TASK-49**: Hoàn thiện Logic Hủy Đơn hàng (OrderCancellationDAO & `POST /api/v1/orders/{order_code}/cancel`: Hủy đơn an toàn khi ở PENDING/CONFIRMED, tự động gọi `InventoryService.releaseReservation()` nhả lại kho).
+- [x] **TASK-50**: Triển khai Phương thức Thanh toán COD (`PaymentEntity`, `PaymentDAO`, `PaymentServiceImpl`, `PaymentServlet`: tự động tạo giao dịch COD khi checkout, tra cứu thanh toán theo đơn, xác nhận thu tiền mặt COD).
+- [x] **TASK-51**: Tích hợp Cổng thanh toán trực tuyến (Sandbox / VNPay HMAC-SHA512 Gateway: `PaymentGateway`, `VNPayGateway`, `CreateVNPayPaymentRequest`, `PaymentUrlResponse`, `PaymentServlet`, `paymentApi.ts`, `CheckoutPage.tsx` & `PaymentResultPage.tsx`).
+- [x] **TASK-52**: Xử lý Webhook / IPN Thanh toán an toàn (Idempotency: `VNPayIpnResponse`, `processVNPayIpn` trong `PaymentServiceImpl`, xác minh chữ ký, chống lặp, cập nhật trạng thái đơn sang `CONFIRMED` và thanh toán sang `PAID`, 6 unit tests tự động).
+- [x] **TASK-53**: Xây dựng Màn hình Kết quả Thanh toán Frontend (`PaymentResultPage.tsx`: Thông báo trạng thái thanh toán thành công / thất bại theo phản hồi VNPay và COD, 4-step progress timeline, hiển thị mã đơn hàng dạng copyable, chi tiết đơn hàng dạng hóa đơn kèm nút in Receipt, cam kết chuỗi lạnh Cold-Chain, và action buttons điều hướng).
+- [x] **TASK-54**: Xây dựng State Machine chuyển đổi trạng thái Đơn hàng (`OrderStateMachine` trong `modules/order/policy/`: Ma trận chuyển đổi nghiêm ngặt PENDING→CONFIRMED→SHIPPING→DELIVERED và CANCELLED/RETURNED, bảng audit `order_status_histories` theo migration V005, tự động xử lý tác vụ phụ giữ/nhả kho và cập nhật thanh toán COD/Refund, 10 unit tests tự động).
+- [x] **TASK-55**: Xây dựng Worker Giải phóng Kho Quá Hạn (`ExpiredReservationWorker` trong `modules/inventory/worker/`: `ScheduledJobsListener` chạy ngầm định kỳ 60s có shutdown hook an toàn chuẩn `RES-06`, nhả tồn kho nguyên tử `releaseStockAtomic`, tự động hủy đơn PENDING quá hạn qua `OrderStateMachine` và cập nhật payment sang `FAILED`, `JobServlet` kích hoạt thủ công, 5 unit tests tự động).
+
+### Giai đoạn 4: Hậu mãi, Seller Portal & Backoffice (TASK-56 → TASK-70)
+
+- [x] **TASK-56**: Hoàn thiện ReviewDAO và ReviewServiceImpl (`modules/review/dao/ReviewDAO.java`, `ReviewServiceImpl.java`, migration V006, ràng buộc đơn DELIVERED, chống review lặp 1-1, 1-5 sao, làm sạch XSS).
+- [x] **TASK-57**: Tự động tính toán lại Điểm Đánh giá Sản phẩm (`ReviewDAO.calculateSummary()`, `ReviewDAO.updateProductRating()`, cập nhật `avg_rating` và `review_count` vào catalog).
+- [x] **TASK-58**: Hoàn thiện ReviewServlet và Component Đánh giá phía Frontend (`ReviewServlet.java`, `ReviewModal.tsx`, `ProductReviews.tsx`, `reviewApi.ts`, tích hợp PLP/PDP/Orders).
+- [x] **TASK-59**: Xây dựng Layout Seller Center Frontend (`SellerLayout.tsx`, Sidebar điều hướng, Header thương hiệu, Topbar trạng thái cửa hàng, bảo vệ Seller).
+- [x] **TASK-60**: Seller Portal - API và Giao diện Thống kê Bán hàng (`SellerAnalyticsServlet.java`, `SellerDashboardStatsResponse.java`, `SellerDashboardPage.tsx`, Bento KPI, biểu đồ doanh thu theo ngày, số dư khả dụng Withdrawable Balance, ký quỹ Pending Settlement, kênh xử lý đơn hàng, cảnh báo tồn kho gia cầm, bảng xếp hạng Top-Selling Poultry).
+- [x] **TASK-61**: Seller Portal - Quản lý Sản phẩm Shop (`SellerProductServlet.java`, `SellerProductListPage.tsx`, `ProductFormModal.tsx`, quản lý SPU/SKU, bộ đếm KPI danh mục cố định, bộ lọc live, chống co dãn giao diện).
+- [x] **TASK-62**: Seller Portal - Quản lý & Xử lý Đơn hàng Shop (`SellerOrderServlet.java`, `SellerOrdersPage.tsx`, Bento KPI, bộ lọc tab tức thì không reload trang, `FulfillmentModal.tsx` phân bổ vận chuyển chuỗi lạnh, `SellerOrderDetailModal.tsx` in phiếu đóng gói).
+- [x] **TASK-63**: Backoffice Admin - Xây dựng Layout Backoffice Admin Frontend (`AdminLayout.tsx`: Topbar thương hiệu WebChicKen PRO, chỉ báo SLA 99.98% Core Engine, Sidebar nền tối Dark Slate chuẩn ARCHITECTURE 3.5.12 phân cụm Governance/Security/Operations, `AdminDashboardPage.tsx` với Bento KPI GMV 48.25M ₫, 42 Stores, 1,280 Products, 3,850 Orders và Alert Banner phê duyệt).
+- [x] **TASK-64**: Backoffice Admin - Module Duyệt Đơn Đăng ký Gian hàng (`SellerApplicationServlet.java`, `Sellers.tsx` / `ShopApprovalPage.tsx`, `adminShopApi.ts`, `ShopDetailModal.tsx`, `RejectReasonModal.tsx`: Thẩm định tiêu chuẩn VietGAP/HACCP/thú y, duyệt mở shop tự động kích hoạt vai trò SELLER & khởi tạo `StoreEntity`, từ chối kèm lý do tùy biến, bộ lọc đa trạng thái, tìm kiếm tức thì).
 
 ---
 
-## 📌 Các công việc tiếp theo trong Kế hoạch (Bắt đầu từ TASK-50)
+## 📌 Các công việc tiếp theo (Pending Tasks)
 
-- [ ] **TASK-50**: Triển khai Phương thức Thanh toán COD (Payment Module).
-- [ ] **TASK-51**: Tích hợp Cổng thanh toán trực tuyến (Sandbox / VNPay HMAC-SHA512 Gateway).
-- [ ] **TASK-52**: Xử lý Webhook / IPN Thanh toán an toàn (Idempotency).
-- [ ] **TASK-53**: Xây dựng Màn hình Kết quả Thanh toán Frontend (`PaymentResultPage.tsx`).
-- [ ] **TASK-54**: Xây dựng State Machine chuyển đổi trạng thái Đơn hàng.
-- [ ] **TASK-55**: Xây dựng Worker Giải phóng Kho Quá Hạn (Expired Reservation Worker).
+- [ ] **TASK-65**: Backoffice Admin - Module Kiểm duyệt Sản phẩm (`pages/admin/Products.tsx`).
+- [ ] **TASK-66**: Backoffice Admin - Module Quản lý Người dùng & Khóa Tài khoản (`AccountBanDAO`,...).
+- [ ] **TASK-67**: Backoffice Admin - Cơ chế Ghi Nhật ký Quản trị (`audit_logs`, `AuditLogDAO`).
+- [ ] **TASK-68 → TASK-70**: Background Workers (Shipping simulation, Feedback, Voucher expiry).
+- [ ] **TASK-71 → TASK-80**: Giai đoạn 5 (Kiểm thử, Bảo mật OWASP, k6 Load test, Database indexing).
+- [ ] **TASK-81 → TASK-85**: Giai đoạn 6 (Docker multi-stage, Nginx, docker-compose, CI/CD, Go-live).
+

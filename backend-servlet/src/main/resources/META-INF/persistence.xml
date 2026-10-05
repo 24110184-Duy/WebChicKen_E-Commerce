@@ -48,6 +48,10 @@
         <class>com.example.webchicken.modules.order.model.entity.OrderEntity</class>
         <class>com.example.webchicken.modules.order.model.entity.OrderItemEntity</class>
         <class>com.example.webchicken.modules.order.model.entity.OrderCancellationEntity</class>
+        <class>com.example.webchicken.modules.order.model.entity.OrderStatusHistoryEntity</class>
+
+        <!-- review module -->
+        <class>com.example.webchicken.modules.review.model.entity.ProductReviewEntity</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

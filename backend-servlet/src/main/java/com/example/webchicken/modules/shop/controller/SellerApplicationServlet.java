@@ -23,7 +23,7 @@ import java.util.List;
  *   <li>PUT  /{id}/review: Quản trị viên duyệt (APPROVED) hoặc từ chối (REJECTED)</li>
  * </ul>
  */
-@WebServlet(name = "SellerApplicationServlet", urlPatterns = {"/api/v1/seller-applications/*"})
+@WebServlet(name = "SellerApplicationServlet", urlPatterns = {"/api/v1/seller-applications/*", "/api/v1/admin/shops/*"})
 public class SellerApplicationServlet extends BaseApiServlet {
 
     public SellerApplicationServlet() {
@@ -105,8 +105,8 @@ public class SellerApplicationServlet extends BaseApiServlet {
         String pathInfo = req.getPathInfo();
         if (pathInfo == null) pathInfo = "";
 
-        // Khớp route: /{id}/review
-        if (pathInfo.endsWith("/review")) {
+        // Khớp route: /{id}/review hoặc /{id}/approval
+        if (pathInfo.endsWith("/review") || pathInfo.endsWith("/approval")) {
             if (!isAdmin(user)) {
                 forbidden(resp, "Chỉ Quản trị viên mới có quyền duyệt đơn đăng ký.");
                 return;

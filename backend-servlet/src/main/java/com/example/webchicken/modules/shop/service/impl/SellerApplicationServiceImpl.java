@@ -102,6 +102,11 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
         }
 
         String targetStatus = request.status().trim().toUpperCase();
+        if ("APPROVE".equals(targetStatus)) {
+            targetStatus = "APPROVED";
+        } else if ("REJECT".equals(targetStatus)) {
+            targetStatus = "REJECTED";
+        }
         if (!"APPROVED".equals(targetStatus) && !"REJECTED".equals(targetStatus)) {
             throw new ValidationException("Trạng thái chỉ được phép là APPROVED hoặc REJECTED.");
         }

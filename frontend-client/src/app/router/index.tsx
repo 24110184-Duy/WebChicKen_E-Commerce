@@ -14,6 +14,11 @@ import { BanksCardsPage } from '../../pages/buyer/account/BanksCardsPage'
 import { VouchersPage } from '../../pages/buyer/account/VouchersPage'
 import { OrdersPage } from '../../pages/buyer/account/OrdersPage'
 import { NotificationsPage } from '../../pages/buyer/account/NotificationsPage'
+import { SellerProductListPage } from '../../pages/seller/SellerProductListPage'
+import { SellerOrdersPage } from '../../pages/seller/SellerOrdersPage'
+import { SellerDashboardPage } from '../../pages/seller/SellerDashboardPage'
+import { AdminDashboardPage } from '../../pages/admin/AdminDashboardPage'
+import { SellersPage } from '../../pages/admin/Sellers'
 
 export const AppRouter = () => {
   return (
@@ -38,7 +43,22 @@ export const AppRouter = () => {
       <Route path={PATHS.ACCOUNT.CARDS} element={<BanksCardsPage />} />
       <Route path={PATHS.ACCOUNT.VOUCHERS} element={<VouchersPage />} />
       <Route path={PATHS.ACCOUNT.ORDERS} element={<OrdersPage />} />
+      <Route path="/buyer/orders" element={<OrdersPage />} />
       <Route path={PATHS.ACCOUNT.NOTIFICATIONS} element={<NotificationsPage />} />
+
+      {/* Seller Center Routes (TASK-58, TASK-59, TASK-60) */}
+      <Route path={PATHS.SELLER.DASHBOARD} element={<SellerDashboardPage />} />
+      <Route path="/seller/dashboard" element={<SellerDashboardPage />} />
+      <Route path={PATHS.SELLER.PRODUCTS} element={<SellerProductListPage />} />
+      <Route path="/seller/products/new" element={<SellerProductListPage />} />
+      <Route path={PATHS.SELLER.ORDERS} element={<SellerOrdersPage />} />
+      <Route path="/seller/orders/:id" element={<SellerOrdersPage />} />
+
+      {/* Backoffice Admin Routes (TASK-63, TASK-64, TASK-65) */}
+      <Route path={PATHS.ADMIN.DASHBOARD} element={<AdminDashboardPage />} />
+      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+      <Route path={PATHS.ADMIN.SHOPS} element={<SellersPage />} />
+      <Route path="/admin/sellers" element={<SellersPage />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={PATHS.HOME} replace />} />

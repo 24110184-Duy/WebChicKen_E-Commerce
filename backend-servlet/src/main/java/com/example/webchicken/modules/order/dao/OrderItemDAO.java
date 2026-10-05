@@ -5,6 +5,7 @@ import com.example.webchicken.modules.order.model.entity.OrderItemEntity;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 public class OrderItemDAO extends BaseDAO {
 
@@ -21,6 +22,11 @@ public class OrderItemDAO extends BaseDAO {
                 em.merge(item);
             }
         });
+    }
+
+    public Optional<OrderItemEntity> findById(String id) {
+        if (id == null || id.isBlank()) return Optional.empty();
+        return executeQuery(em -> Optional.ofNullable(em.find(OrderItemEntity.class, id)));
     }
 
     public List<OrderItemEntity> findByOrderId(String orderId) {

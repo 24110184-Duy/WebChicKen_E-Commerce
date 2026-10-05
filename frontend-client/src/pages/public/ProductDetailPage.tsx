@@ -6,6 +6,7 @@ import type { Product, ProductVariant } from '../../features/catalog/types/catal
 import { useCartStore } from '../../app/store/cartStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
+import { ProductReviews } from '../../features/reviews/components/ProductReviews'
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -246,6 +247,9 @@ export const ProductDetailPage: React.FC = () => {
             </ul>
           </div>
         </div>
+
+        {/* Customer Reviews & Feedback Section */}
+        <ProductReviews productId={product.id} productTitle={product.name} />
       </div>
 
       {/* Toast Notification */}

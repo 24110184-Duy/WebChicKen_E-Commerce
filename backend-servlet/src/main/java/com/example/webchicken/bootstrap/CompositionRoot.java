@@ -17,6 +17,7 @@ import com.example.webchicken.modules.cart.service.*;
 import com.example.webchicken.modules.cart.service.impl.*;
 
 import com.example.webchicken.modules.order.dao.*;
+import com.example.webchicken.modules.order.policy.OrderStateMachine;
 import com.example.webchicken.modules.order.service.*;
 import com.example.webchicken.modules.order.service.impl.*;
 
@@ -107,6 +108,7 @@ public class CompositionRoot {
         OrderDAO             orderDAO             = new OrderDAO(emf);
         OrderItemDAO         orderItemDAO         = new OrderItemDAO(emf);
         OrderCancellationDAO orderCancellationDAO = new OrderCancellationDAO(emf);
+        OrderStatusHistoryDAO orderStatusHistoryDAO = new OrderStatusHistoryDAO(emf);
 
         // Payment
         PaymentDAO       paymentDAO       = new PaymentDAO(emf);
@@ -149,19 +151,22 @@ public class CompositionRoot {
         // Promotion
         VoucherService voucherService = new VoucherServiceImpl(voucherDAO);
 
+        // Payment
+        com.example.webchicken.infrastructure.payment.VNPayGateway vnPayGateway = new com.example.webchicken.infrastructure.payment.VNPayGateway();
+        PaymentService       paymentService       = new PaymentServiceImpl(paymentDAO, orderDAO, vnPayGateway);
+        PaymentMethodService paymentMethodService = new PaymentMethodServiceImpl(paymentMethodDAO);
+
         // Order
+        OrderStateMachine orderStateMachine = new OrderStateMachine(orderDAO, orderStatusHistoryDAO, inventoryService, paymentDAO);
         OrderService orderService = new OrderServiceImpl(
                 orderDAO, orderItemDAO, orderCancellationDAO,
                 cartDAO, cartItemDAO, productDAO, productVariantDAO, productImageDAO,
-                storeDAO, inventoryService, voucherService
+                storeDAO, inventoryService, voucherService, paymentService,
+                orderStatusHistoryDAO, orderStateMachine
         );
 
-        // Payment
-        PaymentService       paymentService       = new PaymentServiceImpl(paymentDAO);
-        PaymentMethodService paymentMethodService = new PaymentMethodServiceImpl(paymentMethodDAO);
-
         // Review
-        ReviewService reviewService = new ReviewServiceImpl(reviewDAO);
+        ReviewService reviewService = new ReviewServiceImpl(reviewDAO, orderDAO, orderItemDAO, userDAO);
 
         // Shop
         StoreService             storeService             = new StoreServiceImpl(storeDAO);
@@ -184,6 +189,7 @@ public class CompositionRoot {
         ctx.setAttribute("inventoryService",        inventoryService);
         ctx.setAttribute("cartService",             cartService);
         ctx.setAttribute("orderService",            orderService);
+        ctx.setAttribute("orderStateMachine",       orderStateMachine);
 
         ctx.setAttribute("paymentService",          paymentService);
         ctx.setAttribute("paymentMethodService",    paymentMethodService);
@@ -195,9 +201,14 @@ public class CompositionRoot {
         ctx.setAttribute("sellerApplicationService", sellerApplicationService);
         ctx.setAttribute("feedbackService",          feedbackService);
 
+        // Worker (TASK-55)
+        com.example.webchicken.modules.inventory.worker.ExpiredReservationWorker expiredReservationWorker =
+                new com.example.webchicken.modules.inventory.worker.ExpiredReservationWorker(inventoryDAO, orderDAO, orderStateMachine);
+        ctx.setAttribute("expiredReservationWorker", expiredReservationWorker);
+
         ctx.setAttribute("mediaService",            mediaService);
 
-        log.info("Composition root initialized — toàn bộ 16 Services đã sẵn sàng.");
+        log.info("Composition root initialized — toàn bộ 16 Services & Background Workers đã sẵn sàng.");
     }
 
     public void shutdown() {

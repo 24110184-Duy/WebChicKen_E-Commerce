@@ -47,7 +47,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
             <span style={{ color: '#facc15', fontWeight: 700 }}>Free Express Shipping on orders over 300,000 VND</span>
           </div>
           <div className="storefront-top-links">
-            <Link to={PATHS.ACCOUNT.PROFILE} className="storefront-top-link">Seller Center</Link>
+            <Link to={PATHS.SELLER.PRODUCTS} className="storefront-top-link">Seller Center</Link>
             <span style={{ opacity: 0.3 }}>|</span>
             <Link to={PATHS.ACCOUNT.NOTIFICATIONS} className="storefront-top-link">Notifications</Link>
             <span style={{ opacity: 0.3 }}>|</span>
