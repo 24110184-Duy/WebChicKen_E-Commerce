@@ -26,7 +26,7 @@
 
 ---
 
-## 📋 Chi tiết các công việc đã hoàn thành (TASK-01 → TASK-62)
+## 📋 Chi tiết các công việc đã hoàn thành (TASK-01 → TASK-64)
 
 ### Giai đoạn 1: Nền tảng Hạ tầng & Core Engine (TASK-01 → TASK-15) — ĐÃ XONG 100%
 - [x] **TASK-01**: Khởi tạo cấu trúc Monorepo & Quy chuẩn Clean Architecture (`backend-servlet/`, `frontend-client/`, `docs/`, `infra/`).
