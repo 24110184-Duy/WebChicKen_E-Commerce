@@ -117,6 +117,20 @@ public class SellerApplicationServlet extends BaseApiServlet {
                 String applicationId = parts[1];
                 ReviewApplicationRequest body = readBody(req, ReviewApplicationRequest.class);
                 SellerApplicationResponse response = service().review(applicationId, user.userId(), body);
+
+                try {
+                    com.example.webchicken.modules.backoffice.service.AuditLogService auditService = getService("auditLogService");
+                    if (auditService != null) {
+                        boolean isApproved = body != null && "APPROVED".equalsIgnoreCase(body.status());
+                        String act = isApproved ? "APPROVE_SELLER" : "REJECT_SELLER";
+                        String shopName = (response != null && response.shopName() != null) ? response.shopName() : applicationId;
+                        String detail = isApproved
+                                ? "Duyệt đơn đăng ký gian hàng: " + shopName
+                                : "Từ chối đơn đăng ký gian hàng: " + shopName + ". Lý do: " + (body != null ? body.rejectionReason() : "");
+                        auditService.log(user.userId(), act, "SELLER_APPLICATION", applicationId, detail, req.getRemoteAddr());
+                    }
+                } catch (Exception ignored) {}
+
                 ok(resp, response);
                 return;
             }

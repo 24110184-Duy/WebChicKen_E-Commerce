@@ -10,8 +10,8 @@
 | Chỉ số | Giá trị |
 |---|---|
 | **Tổng số công việc (Total Tasks)** | **85** |
-| **Đã hoàn thành (Done)** | **64** (75.3%) |
-| **Chưa thực hiện (Pending)** | **21** (24.7%) |
+| **Đã hoàn thành (Done)** | **70** (82.4%) |
+| **Chưa thực hiện (Pending)** | **15** (17.6%) |
 
 ### Tiến độ theo từng giai đoạn (Phase Breakdown)
 
@@ -20,13 +20,13 @@
 | **Giai đoạn 1** | Nền tảng Hạ tầng & Core Engine | 15 | 15 | 0 | **100%** |
 | **Giai đoạn 2** | Nghiệp vụ Lõi - Phase 1: Identity, Store & Catalog | 20 | 20 | 0 | **100%** |
 | **Giai đoạn 3** | Nghiệp vụ Giao dịch - Phase 2: Inventory, Cart, Promo, Order & Payment | 20 | 20 | 0 | **100%** |
-| **Giai đoạn 4** | Hậu mãi, Seller Portal & Backoffice | 15 | 9 | 6 | **60.0%** |
+| **Giai đoạn 4** | Hậu mãi, Seller Portal & Backoffice | 15 | 15 | 0 | **100%** |
 | **Giai đoạn 5** | Kiểm thử, Bảo mật & Tối ưu Hiệu năng | 10 | 0 | 10 | **0%** |
 | **Giai đoạn 6** | Containerization, CI/CD & Go-Live | 5 | 0 | 5 | **0%** |
 
 ---
 
-## 📋 Chi tiết các công việc đã hoàn thành (TASK-01 → TASK-64)
+## 📋 Chi tiết các công việc đã hoàn thành (TASK-01 → TASK-67)
 
 ### Giai đoạn 1: Nền tảng Hạ tầng & Core Engine (TASK-01 → TASK-15) — ĐÃ XONG 100%
 - [x] **TASK-01**: Khởi tạo cấu trúc Monorepo & Quy chuẩn Clean Architecture (`backend-servlet/`, `frontend-client/`, `docs/`, `infra/`).
@@ -100,15 +100,19 @@
 - [x] **TASK-62**: Seller Portal - Quản lý & Xử lý Đơn hàng Shop (`SellerOrderServlet.java`, `SellerOrdersPage.tsx`, Bento KPI, bộ lọc tab tức thì không reload trang, `FulfillmentModal.tsx` phân bổ vận chuyển chuỗi lạnh, `SellerOrderDetailModal.tsx` in phiếu đóng gói).
 - [x] **TASK-63**: Backoffice Admin - Xây dựng Layout Backoffice Admin Frontend (`AdminLayout.tsx`: Topbar thương hiệu WebChicKen PRO, chỉ báo SLA 99.98% Core Engine, Sidebar nền tối Dark Slate chuẩn ARCHITECTURE 3.5.12 phân cụm Governance/Security/Operations, `AdminDashboardPage.tsx` với Bento KPI GMV 48.25M ₫, 42 Stores, 1,280 Products, 3,850 Orders và Alert Banner phê duyệt).
 - [x] **TASK-64**: Backoffice Admin - Module Duyệt Đơn Đăng ký Gian hàng (`SellerApplicationServlet.java`, `Sellers.tsx` / `ShopApprovalPage.tsx`, `adminShopApi.ts`, `ShopDetailModal.tsx`, `RejectReasonModal.tsx`: Thẩm định tiêu chuẩn VietGAP/HACCP/thú y, duyệt mở shop tự động kích hoạt vai trò SELLER & khởi tạo `StoreEntity`, từ chối kèm lý do tùy biến, bộ lọc đa trạng thái, tìm kiếm tức thì).
+- [x] **TASK-65**: Backoffice Admin - Module Kiểm duyệt Sản phẩm (`ProductModerationTest`, `ProductServlet.java` (`PUT /{id}/review`), `ProductEntity.rejectionReason`, `V007__add_rejection_reason_to_products.sql`, `adminProductApi.ts`, `ProductDetailModal.tsx`, `ProductRejectModal.tsx`, `pages/admin/Products.tsx`: Bento KPI, danh sách kiểm duyệt đa trạng thái PENDING_APPROVAL/ACTIVE/INACTIVE, thẩm định an toàn sinh học VietGAP, duyệt mở bán công khai hoặc từ chối kèm lý do gửi Người bán).
+- [x] **TASK-66**: Backoffice Admin - Module Quản lý Người dùng & Khóa Tài khoản (`AdminUserModerationTest`, `V008__add_banned_until_to_account_bans.sql`, `AccountBanEntity`, `AccountBanDAO.findActiveBanByUserId`, `UserDAO.findAll/countAll`, `AdminUserServiceImpl.banUser/unbanUser`, `AdminUserServlet.java`, `adminUserApi.ts`, `BanUserModal.tsx`, `UnbanUserModal.tsx`, `UserDetailModal.tsx`, `pages/admin/Users.tsx`: Phân trang danh bạ thành viên, bộ lọc vai trò/trạng thái, khóa tài khoản ghi nhận thời gian bắt đầu cấm, thời gian kết thúc, lý do cấm, tự động thu hồi ngay lập tức mọi active session qua `UserSessionDAO.deactivateAllByUserId`, mở khóa tài khoản, timeline kiểm toán vi phạm).
+- [x] **TASK-67**: Backoffice Admin - Cơ chế Ghi Nhật ký Quản trị (`V009__add_ip_address_to_audit_logs.sql`, `AuditLogEntity`, `AuditLogDAO`, `AuditLogService`, `AuditLogServiceImpl`, `AuditLogServlet`, `AuditLogServiceTest`: 6 unit tests; tự động ghi nhận lưu vết các thao tác nhạy cảm của Admin gồm `BAN_USER`, `UNBAN_USER`, `APPROVE_PRODUCT`, `REJECT_PRODUCT`, `APPROVE_SELLER`, `REJECT_SELLER`; Frontend: `adminAuditApi.ts`, `AuditLogDetailModal.tsx`, `AuditLogsPage.tsx` Bento KPI, bộ lọc hành động/tài nguyên, tìm kiếm, phân trang, tem bất biến WORM (Write Once, Read Many), tích hợp route `/admin/audit-logs`).
+- [x] **TASK-68**: Background Worker - Worker Mô phỏng Quá trình Vận chuyển (`ShippingSimulationWorker.java`, `ShippingSimulationWorkerTest`: 6 unit tests; `OrderDAO.findByStatus`, `OrderStatusHistoryDAO.findLatestHistoryByOrderIdAndToStatus`, `ScheduledJobsListener.java` chu kỳ 30s với 2 threads worker; `JobServlet.java` hỗ trợ endpoint kích hoạt tức thì `POST /api/v1/jobs/simulate-shipping`, tự động chuyển đơn hàng `SHIPPING` sang `DELIVERED`, tự động đồng bộ COD sang `PAID` và ghi nhận nhật ký audit trail `order_status_histories`).
+- [x] **TASK-69**: Shop & Feedback - Phản hồi & Khiếu nại từ Nhà Bán (`V010__enhance_feedback_to_admins.sql`, `FeedbackEntity.java`, `FeedbackDAO.java`, `FeedbackService.java`, `FeedbackServiceImpl.java`, `FeedbackServlet.java`, `FeedbackServiceTest.java`: 6 unit tests 100% pass; endpoints `/api/v1/seller/feedbacks`, `/api/v1/admin/feedbacks/*`, tự động ghi sổ nhật ký kiểm toán `RESPOND_FEEDBACK` qua `AuditLogService`; Frontend: `feedbackTypes.ts`, `feedbackApi.ts`, `RespondFeedbackModal.tsx`, `SellerFeedbackPage.tsx` tab gửi phiếu & tra cứu lịch sử, `AdminFeedbacksPage.tsx` Bento KPI, bộ lọc trạng thái/loại khiếu nại, tìm kiếm, tích hợp routes `/seller/feedback` và `/admin/feedbacks`, menu sidebar Seller & Admin).
+- [x] **TASK-70**: Background Worker - Quét & Vô hiệu hóa Voucher Hết hạn (`VoucherExpiryWorker.java`, `VoucherExpiryWorkerTest.java`: 6 unit tests 100% pass; `VoucherDAO.findExpiredActiveVouchers/deactivateVoucher/deactivateExpiredVouchers`, `ScheduledJobsListener.java` chu kỳ 60s với 3 threads worker, `JobServlet.java` endpoint kích hoạt tức thì `POST /api/v1/jobs/deactivate-expired-vouchers`, tự động ghi sổ nhật ký audit trail `DEACTIVATE_EXPIRED_VOUCHERS` qua `AuditLogService`; Frontend: `voucherTypes.ts`, `adminVoucherApi.ts`, `AdminVouchersPage.tsx` Bento KPI, bộ lọc trạng thái/loại voucher, tìm kiếm, nút kích hoạt quét tức thì kèm báo cáo kết quả, tích hợp route `/admin/vouchers`).
 
 ---
 
 ## 📌 Các công việc tiếp theo (Pending Tasks)
 
-- [ ] **TASK-65**: Backoffice Admin - Module Kiểm duyệt Sản phẩm (`pages/admin/Products.tsx`).
-- [ ] **TASK-66**: Backoffice Admin - Module Quản lý Người dùng & Khóa Tài khoản (`AccountBanDAO`,...).
-- [ ] **TASK-67**: Backoffice Admin - Cơ chế Ghi Nhật ký Quản trị (`audit_logs`, `AuditLogDAO`).
-- [ ] **TASK-68 → TASK-70**: Background Workers (Shipping simulation, Feedback, Voucher expiry).
 - [ ] **TASK-71 → TASK-80**: Giai đoạn 5 (Kiểm thử, Bảo mật OWASP, k6 Load test, Database indexing).
 - [ ] **TASK-81 → TASK-85**: Giai đoạn 6 (Docker multi-stage, Nginx, docker-compose, CI/CD, Go-live).
+
+
 

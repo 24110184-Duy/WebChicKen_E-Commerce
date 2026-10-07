@@ -15,6 +15,10 @@ import java.io.IOException;
 @WebServlet(name = "SellerServlet", urlPatterns = {"/api/v1/sellers/*"})
 public class SellerServlet extends BaseApiServlet {
 
+    public SellerServlet() {
+        super();
+    }
+
     public SellerServlet(ObjectMapper objectMapper) {
         super(objectMapper);
     }

@@ -39,9 +39,9 @@ public class ScheduledJobsListener implements ServletContextListener {
             return thread;
         };
 
-        scheduler = Executors.newScheduledThreadPool(1, threadFactory);
+        scheduler = Executors.newScheduledThreadPool(3, threadFactory);
 
-        // Chu kỳ quét kho hết hạn: bắt đầu sau 15 giây, lặp lại mỗi 60 giây
+        // 1. Chu kỳ quét kho hết hạn: bắt đầu sau 15 giây, lặp lại mỗi 60 giây (TASK-55)
         scheduler.scheduleWithFixedDelay(() -> {
             try {
                 ExpiredReservationWorker worker = (ExpiredReservationWorker) ctx.getAttribute("expiredReservationWorker");
@@ -49,11 +49,37 @@ public class ScheduledJobsListener implements ServletContextListener {
                     worker.runCleanup();
                 }
             } catch (Throwable t) {
-                log.error("Unhandled error in scheduled background job: {}", t.getMessage(), t);
+                log.error("Unhandled error in scheduled background cleanup job: {}", t.getMessage(), t);
             }
         }, 15, 60, TimeUnit.SECONDS);
 
-        log.info("ScheduledJobsListener initialized successfully (interval: 60s).");
+        // 2. Chu kỳ mô phỏng vận chuyển đơn hàng: bắt đầu sau 20 giây, lặp lại mỗi 30 giây (TASK-68)
+        scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                com.example.webchicken.modules.order.worker.ShippingSimulationWorker worker =
+                        (com.example.webchicken.modules.order.worker.ShippingSimulationWorker) ctx.getAttribute("shippingSimulationWorker");
+                if (worker != null) {
+                    worker.runSimulation();
+                }
+            } catch (Throwable t) {
+                log.error("Unhandled error in scheduled background shipping simulation job: {}", t.getMessage(), t);
+            }
+        }, 20, 30, TimeUnit.SECONDS);
+
+        // 3. Chu kỳ quét và vô hiệu hóa voucher hết hạn: bắt đầu sau 25 giây, lặp lại mỗi 60 giây (TASK-70)
+        scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker worker =
+                        (com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker) ctx.getAttribute("voucherExpiryWorker");
+                if (worker != null) {
+                    worker.runScanAndDeactivate();
+                }
+            } catch (Throwable t) {
+                log.error("Unhandled error in scheduled background voucher expiry job: {}", t.getMessage(), t);
+            }
+        }, 25, 60, TimeUnit.SECONDS);
+
+        log.info("ScheduledJobsListener initialized successfully (Workers: ExpiredReservationWorker, ShippingSimulationWorker & VoucherExpiryWorker).");
     }
 
     @Override

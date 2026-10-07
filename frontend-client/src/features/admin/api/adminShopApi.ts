@@ -1,5 +1,6 @@
 import { httpClient } from '../../../shared/api/httpClient'
 import type { SellerApplication, ReviewApplicationRequest } from '../types'
+import { recordAuditLogMock } from './adminAuditApi'
 
 // Realistic fallback demo data for poultry marketplace backoffice
 const INITIAL_DEMO_APPLICATIONS: SellerApplication[] = [
@@ -206,6 +207,20 @@ export const adminShopApi = {
 
     all[index] = updated
     saveStoredApplications(all)
+
+    try {
+      recordAuditLogMock({
+        action: normalizedStatus === 'APPROVED' ? 'APPROVE_SELLER' : 'REJECT_SELLER',
+        targetType: 'SELLER_APPLICATION',
+        targetId: id,
+        detail: normalizedStatus === 'APPROVED'
+          ? `Duyệt hồ sơ đăng ký người bán cho: ${updated.shopName}`
+          : `Từ chối hồ sơ đăng ký người bán: ${updated.shopName}. Lý do: ${request.rejectionReason || 'Hồ sơ không đáp ứng tiêu chuẩn'}`
+      })
+    } catch (e) {
+      console.warn('Lỗi ghi audit log mock:', e)
+    }
+
     return updated
   },
 

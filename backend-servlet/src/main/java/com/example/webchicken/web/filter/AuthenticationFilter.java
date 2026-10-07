@@ -38,7 +38,8 @@ public class AuthenticationFilter implements Filter {
             "/api/v1/auth/register",
             "/api/v1/auth/refresh-token",
             "/api/v1/payments/ipn",
-            "/api/v1/payments/callback"
+            "/api/v1/payments/callback",
+            "/api/v1/system/health"
     );
 
     @Override

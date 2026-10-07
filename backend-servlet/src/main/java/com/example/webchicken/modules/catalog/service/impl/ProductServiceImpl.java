@@ -111,6 +111,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getName(),
                 product.getDescription(),
                 product.getStatus(),
+                product.getRejectionReason(),
                 savedImages,
                 savedVariants,
                 product.getCreatedAt(),
@@ -179,6 +180,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getName(),
                 product.getDescription(),
                 product.getStatus(),
+                product.getRejectionReason(),
                 imageUrls,
                 variants,
                 product.getCreatedAt(),
@@ -215,6 +217,25 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public ProductDetailResponse reviewProduct(String id, ProductStatus newStatus, String rejectionReason) {
+        ProductEntity product = productDAO.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm với id: " + id));
+
+        product.setStatus(newStatus);
+        if (newStatus == ProductStatus.ACTIVE) {
+            product.setRejectionReason(null);
+        } else if (newStatus == ProductStatus.INACTIVE || newStatus == ProductStatus.PENDING_APPROVAL) {
+            if (rejectionReason != null && !rejectionReason.isBlank()) {
+                product.setRejectionReason(rejectionReason.trim());
+            }
+        }
+        product.setUpdatedAt(LocalDateTime.now());
+        productDAO.update(product);
+
+        return getProductDetail(id);
+    }
+
+    @Override
     public void deleteProduct(String id) {
         if (!productDAO.existsById(id)) {
             throw new NotFoundException("Product not found with id: " + id);
@@ -239,6 +260,7 @@ public class ProductServiceImpl implements ProductService {
                 p.getCategoryId(),
                 p.getName(),
                 p.getStatus(),
+                p.getRejectionReason(),
                 thumb,
                 minPrice,
                 maxPrice,

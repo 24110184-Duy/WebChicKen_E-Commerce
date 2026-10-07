@@ -10,6 +10,7 @@ import {
   Settings,
   ArrowUpRight,
   Store,
+  MessageSquare,
 } from 'lucide-react'
 import { PATHS } from '../app/router/paths'
 
@@ -24,6 +25,7 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
   const isDashboardActive = location.pathname === '/seller' || location.pathname === '/seller/dashboard'
   const isProductsActive = location.pathname.startsWith('/seller/products')
   const isOrdersActive = location.pathname.startsWith('/seller/orders')
+  const isFeedbackActive = location.pathname.startsWith('/seller/feedback')
 
   return (
     <div className="seller-shell">
@@ -106,9 +108,17 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
               </Link>
             </div>
 
-            {/* Customer Care Group */}
+            {/* Customer Care & Support Group (TASK-69) */}
             <div className="seller-nav-group">
-              <div className="seller-nav-group-title">Customer Care</div>
+              <div className="seller-nav-group-title">Customer Care & Support</div>
+              <Link
+                to={PATHS.SELLER.FEEDBACK}
+                className={`seller-nav-item ${isFeedbackActive ? 'active' : ''}`}
+              >
+                <MessageSquare style={{ width: 17, height: 17 }} />
+                <span>Support & Feedback</span>
+              </Link>
+
               <div
                 className="seller-nav-item"
                 style={{ opacity: 0.65, cursor: 'default' }}

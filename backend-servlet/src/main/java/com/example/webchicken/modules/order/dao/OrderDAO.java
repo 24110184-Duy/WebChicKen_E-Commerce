@@ -145,5 +145,19 @@ public class OrderDAO extends BaseDAO {
             return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
         });
     }
+
+    /**
+     * Tra cứu danh sách đơn hàng theo trạng thái (phục vụ Background Workers như ShippingSimulationJob).
+     */
+    public List<OrderEntity> findByStatus(OrderStatus status, int limit) {
+        if (status == null) return List.of();
+        return executeQuery(em -> {
+            String jpql = "SELECT o FROM OrderEntity o WHERE o.status = :status ORDER BY o.orderDate ASC";
+            TypedQuery<OrderEntity> query = em.createQuery(jpql, OrderEntity.class)
+                    .setParameter("status", status);
+            query.setMaxResults(Math.min(100, Math.max(1, limit)));
+            return query.getResultList();
+        });
+    }
 }
 

@@ -9,6 +9,7 @@ public record ProductSummaryResponse(
         String categoryId,
         String name,
         ProductStatus status,
+        String rejectionReason,
         String thumbnailUrl,
         long minPriceMinor,
         long maxPriceMinor,

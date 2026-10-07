@@ -24,6 +24,7 @@
         <!-- shop module -->
         <class>com.example.webchicken.modules.shop.model.entity.StoreEntity</class>
         <class>com.example.webchicken.modules.shop.model.entity.SellerApplicationEntity</class>
+        <class>com.example.webchicken.modules.shop.model.entity.FeedbackEntity</class>
 
         <!-- media module -->
         <class>com.example.webchicken.modules.media.model.entity.MediaAssetEntity</class>
@@ -52,6 +53,9 @@
 
         <!-- review module -->
         <class>com.example.webchicken.modules.review.model.entity.ProductReviewEntity</class>
+
+        <!-- backoffice module (TASK-67) -->
+        <class>com.example.webchicken.modules.backoffice.model.entity.AuditLogEntity</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 

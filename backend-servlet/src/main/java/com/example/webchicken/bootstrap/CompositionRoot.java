@@ -40,6 +40,10 @@ import com.example.webchicken.modules.shop.service.impl.*;
 import com.example.webchicken.modules.media.dao.*;
 import com.example.webchicken.modules.media.service.*;
 import com.example.webchicken.modules.media.service.impl.*;
+
+import com.example.webchicken.modules.backoffice.dao.*;
+import com.example.webchicken.modules.backoffice.service.*;
+import com.example.webchicken.modules.backoffice.service.impl.*;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import jakarta.servlet.ServletContext;
@@ -128,12 +132,14 @@ public class CompositionRoot {
         // Media
         MediaDAO mediaDAO = new MediaDAO(emf);
 
+        // Backoffice (TASK-67)
+        AuditLogDAO auditLogDAO = new AuditLogDAO(emf);
+
         // ── 3. Services ───────────────────────────────────────────────────────
         // Identity
         AuthService      authService      = new AuthServiceImpl(userDAO, userSessionDAO);
         CustomerService  customerService  = new CustomerServiceImpl(customerDAO, userDAO, addressDAO);
         SellerService    sellerService    = new SellerServiceImpl(sellerDAO, userDAO);
-        AdminUserService adminUserService = new AdminUserServiceImpl(adminDAO, userDAO, accountBanDAO);
 
         // Catalog
         CategoryService       categoryService       = new CategoryServiceImpl(categoryDAO);
@@ -171,7 +177,18 @@ public class CompositionRoot {
         // Shop
         StoreService             storeService             = new StoreServiceImpl(storeDAO);
         SellerApplicationService sellerApplicationService = new SellerApplicationServiceImpl(sellerApplicationDAO, storeDAO, sellerDAO, userDAO);
-        FeedbackService          feedbackService          = new FeedbackServiceImpl(feedbackDAO);
+
+        // Backoffice Audit Log (TASK-67)
+        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(auditLogDAO);
+
+        // Feedback to Admin (TASK-69)
+        FeedbackService feedbackService = new FeedbackServiceImpl(feedbackDAO, storeDAO, userDAO, auditLogService);
+
+        // Admin User Moderation (TASK-66, TASK-67)
+        AdminUserService adminUserService = new AdminUserServiceImpl(
+                adminDAO, userDAO, accountBanDAO, userSessionDAO, customerDAO, sellerDAO, storeService, auditLogService
+        );
+        auditLogService.setAdminUserService(adminUserService);
 
         // Media
         MediaService mediaService = new MediaServiceImpl(mediaDAO);
@@ -201,14 +218,23 @@ public class CompositionRoot {
         ctx.setAttribute("sellerApplicationService", sellerApplicationService);
         ctx.setAttribute("feedbackService",          feedbackService);
 
-        // Worker (TASK-55)
+        // Workers (TASK-55, TASK-68, TASK-70)
         com.example.webchicken.modules.inventory.worker.ExpiredReservationWorker expiredReservationWorker =
                 new com.example.webchicken.modules.inventory.worker.ExpiredReservationWorker(inventoryDAO, orderDAO, orderStateMachine);
         ctx.setAttribute("expiredReservationWorker", expiredReservationWorker);
 
-        ctx.setAttribute("mediaService",            mediaService);
+        com.example.webchicken.modules.order.worker.ShippingSimulationWorker shippingSimulationWorker =
+                new com.example.webchicken.modules.order.worker.ShippingSimulationWorker(orderDAO, orderStatusHistoryDAO, orderStateMachine);
+        ctx.setAttribute("shippingSimulationWorker", shippingSimulationWorker);
 
-        log.info("Composition root initialized — toàn bộ 16 Services & Background Workers đã sẵn sàng.");
+        com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker voucherExpiryWorker =
+                new com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker(voucherDAO, auditLogService);
+        ctx.setAttribute("voucherExpiryWorker", voucherExpiryWorker);
+
+        ctx.setAttribute("mediaService",            mediaService);
+        ctx.setAttribute("auditLogService",         auditLogService);
+
+        log.info("Composition root initialized — toàn bộ 18 Services & 3 Background Workers đã sẵn sàng.");
     }
 
     public void shutdown() {

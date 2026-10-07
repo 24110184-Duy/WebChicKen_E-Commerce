@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
   Shield,
   Layers,
+  MessageSquare,
 } from 'lucide-react'
 import { PATHS } from '../app/router/paths'
 
@@ -111,7 +112,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </Link>
             </div>
 
-            {/* Governance & Moderation Group (TASK-64, TASK-65) */}
+            {/* Governance & Moderation Group (TASK-64, TASK-65, TASK-69) */}
             <div className="admin-nav-group">
               <div className="admin-nav-group-title">Governance & Approvals</div>
               <Link
@@ -137,6 +138,23 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 </div>
                 <span className="admin-nav-badge" title="Pending Product Quality Approvals">
                   5
+                </span>
+              </Link>
+
+              <Link
+                to={PATHS.ADMIN.FEEDBACKS}
+                className={`admin-nav-item ${isActive(PATHS.ADMIN.FEEDBACKS) ? 'active' : ''}`}
+              >
+                <div className="admin-nav-item-content">
+                  <MessageSquare style={{ width: 17, height: 17 }} />
+                  <span>Seller Feedback</span>
+                </div>
+                <span
+                  className="admin-nav-badge"
+                  style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}
+                  title="Seller Inquiries & Complaints"
+                >
+                  Hot
                 </span>
               </Link>
             </div>

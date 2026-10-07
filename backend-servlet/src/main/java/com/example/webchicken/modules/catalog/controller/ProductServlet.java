@@ -20,7 +20,7 @@ import java.io.IOException;
  * Controller xử lý tìm kiếm, chi tiết và CRUD sản phẩm (SPU/SKU).
  * URL Pattern: /api/v1/products, /api/v1/products/*
  */
-@WebServlet(name = "ProductServlet", urlPatterns = {"/api/v1/products", "/api/v1/products/*"})
+@WebServlet(name = "ProductServlet", urlPatterns = {"/api/v1/products", "/api/v1/products/*", "/api/v1/admin/products/*"})
 public class ProductServlet extends BaseApiServlet {
 
     public ProductServlet() {
@@ -103,6 +103,61 @@ public class ProductServlet extends BaseApiServlet {
             badRequest(resp, "MISSING_ID", "Product ID is required in URL path");
             return;
         }
+
+        // Xử lý kiểm duyệt sản phẩm cho Admin: PUT /{id}/review hoặc PUT /{id}/moderation
+        if (pathInfo.endsWith("/review") || pathInfo.endsWith("/moderation")) {
+            com.example.webchicken.common.model.AuthenticatedUser user = getAuthenticatedUser(req);
+            if (user == null || !user.isAdmin()) {
+                forbidden(resp, "Chỉ Quản trị viên mới có quyền kiểm duyệt sản phẩm.");
+                return;
+            }
+
+            String[] parts = pathInfo.split("/");
+            if (parts.length >= 2) {
+                String productId = parts[1];
+                try {
+                    com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest body =
+                            readBody(req, com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest.class);
+
+                    if (body == null || body.status() == null || body.status().isBlank()) {
+                        badRequest(resp, "VALIDATION_ERROR", "Trạng thái kiểm duyệt không được để trống.");
+                        return;
+                    }
+
+                    ProductStatus targetStatus;
+                    try {
+                        targetStatus = ProductStatus.valueOf(body.status().trim().toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        badRequest(resp, "VALIDATION_ERROR", "Trạng thái không hợp lệ (hỗ trợ ACTIVE, INACTIVE, PENDING_APPROVAL).");
+                        return;
+                    }
+
+                    ProductDetailResponse reviewed = service().reviewProduct(productId, targetStatus, body.rejectionReason());
+
+                    try {
+                        com.example.webchicken.modules.backoffice.service.AuditLogService auditService = getService("auditLogService");
+                        if (auditService != null) {
+                            String act = (targetStatus == ProductStatus.ACTIVE) ? "APPROVE_PRODUCT" : "REJECT_PRODUCT";
+                            String detail = (targetStatus == ProductStatus.ACTIVE)
+                                    ? "Duyệt mở bán sản phẩm: " + reviewed.name()
+                                    : "Từ chối sản phẩm (" + reviewed.name() + "). Lý do: " + body.rejectionReason();
+                            auditService.log(user.userId(), act, "PRODUCT", productId, detail, req.getRemoteAddr());
+                        }
+                    } catch (Exception ignored) {}
+
+                    ok(resp, reviewed);
+                    return;
+                } catch (AppException e) {
+                    writeJson(resp, e.getHttpStatus(), com.example.webchicken.common.model.ApiResponse.fail(
+                            com.example.webchicken.common.model.ApiError.of(e.getErrorCode(), e.getMessage())));
+                    return;
+                } catch (Exception e) {
+                    badRequest(resp, "BAD_REQUEST", e.getMessage());
+                    return;
+                }
+            }
+        }
+
         String id = pathInfo.substring(1);
         try {
             UpdateProductRequest body = readBody(req, UpdateProductRequest.class);

@@ -49,6 +49,7 @@ export const PATHS = {
     REVIEWS: '/seller/reviews',
     REPORTS: '/seller/reports',
     SETTINGS: '/seller/settings',
+    FEEDBACK: '/seller/feedback',
   },
 
   // Admin Portal
@@ -66,6 +67,7 @@ export const PATHS = {
     REPORTS: '/admin/reports',
     SETTINGS: '/admin/settings',
     AUDIT_LOGS: '/admin/audit-logs',
+    FEEDBACKS: '/admin/feedbacks',
   },
 
   // Errors

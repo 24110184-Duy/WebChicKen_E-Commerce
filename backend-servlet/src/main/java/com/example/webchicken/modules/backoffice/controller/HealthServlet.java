@@ -15,6 +15,10 @@ import java.io.IOException;
 @WebServlet(name = "HealthServlet", urlPatterns = {"/api/v1/system/health/*"})
 public class HealthServlet extends BaseApiServlet {
 
+    public HealthServlet() {
+        super();
+    }
+
     public HealthServlet(ObjectMapper objectMapper) {
         super(objectMapper);
     }

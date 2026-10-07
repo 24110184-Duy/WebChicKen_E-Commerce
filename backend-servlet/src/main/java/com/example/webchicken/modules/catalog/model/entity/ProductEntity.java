@@ -32,6 +32,9 @@ public class ProductEntity {
     @Column(name = "status", nullable = false)
     private ProductStatus status = ProductStatus.PENDING_APPROVAL;
 
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -69,6 +72,9 @@ public class ProductEntity {
 
     public ProductStatus getStatus() { return status; }
     public void setStatus(ProductStatus status) { this.status = status; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

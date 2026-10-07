@@ -12,6 +12,7 @@ public record ProductDetailResponse(
         String name,
         String description,
         ProductStatus status,
+        String rejectionReason,
         List<String> imageUrls,
         List<ProductVariantResponse> variants,
         LocalDateTime createdAt,
