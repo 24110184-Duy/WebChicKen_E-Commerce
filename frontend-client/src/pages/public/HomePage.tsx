@@ -2,15 +2,33 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { ProductCard } from '../../components/molecules/ProductCard'
-import { MOCK_CATEGORIES, MOCK_PRODUCTS } from '../../features/catalog/api/catalogApi'
+import { catalogApi } from '../../features/catalog/api/catalogApi'
+import type { Category, Product } from '../../features/catalog/types/catalogTypes'
 
 export const HomePage: React.FC = () => {
   // Hero Carousel state
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
 
-  // Flash sale countdown state (e.g. 5 hours 42 minutes 19 seconds)
+  // Flash sale countdown state
   const [timeLeft, setTimeLeft] = useState({ hours: 5, minutes: 42, seconds: 19 })
+
+  // Dynamic products & categories from database
+  const [categories, setCategories] = useState<Category[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      catalogApi.getCategories(),
+      catalogApi.getProducts({ size: 20 })
+    ]).then(([cats, prods]) => {
+      setCategories(cats)
+      setProducts(prods.items || [])
+    }).finally(() => {
+      setIsLoading(false)
+    })
+  }, [])
 
   useEffect(() => {
     if (isPaused) return
@@ -36,8 +54,8 @@ export const HomePage: React.FC = () => {
     return () => clearInterval(timer)
   }, [])
 
-  const flashProducts = MOCK_PRODUCTS.filter(p => p.isFlashDeal)
-  const recommendedProducts = MOCK_PRODUCTS
+  const flashProducts = products.filter(p => p.isFlashDeal)
+  const recommendedProducts = products
 
   const format2Digits = (n: number) => String(n).padStart(2, '0')
 
@@ -72,8 +90,8 @@ export const HomePage: React.FC = () => {
               <p className="hero-desc">
                 Pre-marinated BBQ wings, herb-seasoned fillets, and crispy tenders ready to roast in under 15 minutes.
               </p>
-              <Link to="/search?categoryId=cat-5" className="hero-cta">
-                Explore Flash Deals
+              <Link to="/search" className="hero-cta">
+                Explore Deals
               </Link>
             </div>
           </div>
@@ -108,75 +126,79 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 2. Flash Deals Section */}
-      <section className="flash-section">
-        <div className="flash-header">
-          <div className="flash-title-wrap">
-            <span className="flash-badge">FLASH SALE</span>
-            <span className="flash-title">Limited Time Daily Offers</span>
+      {flashProducts.length > 0 && (
+        <section className="flash-section">
+          <div className="flash-header">
+            <div className="flash-title-wrap">
+              <span className="flash-badge">FLASH SALE</span>
+              <span className="flash-title">Limited Time Daily Offers</span>
+            </div>
+
+            <div className="flash-timer">
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginRight: 4 }}>Ending In:</span>
+              <div className="flash-time-box">{format2Digits(timeLeft.hours)}</div>
+              <span className="flash-time-colon">:</span>
+              <div className="flash-time-box">{format2Digits(timeLeft.minutes)}</div>
+              <span className="flash-time-colon">:</span>
+              <div className="flash-time-box">{format2Digits(timeLeft.seconds)}</div>
+            </div>
           </div>
 
-          <div className="flash-timer">
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginRight: 4 }}>Ending In:</span>
-            <div className="flash-time-box">{format2Digits(timeLeft.hours)}</div>
-            <span className="flash-time-colon">:</span>
-            <div className="flash-time-box">{format2Digits(timeLeft.minutes)}</div>
-            <span className="flash-time-colon">:</span>
-            <div className="flash-time-box">{format2Digits(timeLeft.seconds)}</div>
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #fef3c7',
+            borderTop: 'none',
+            borderRadius: '0 0 10px 10px',
+            padding: '24px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              {flashProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid #fef3c7',
-          borderTop: 'none',
-          borderRadius: '0 0 10px 10px',
-          padding: '24px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-            {flashProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 3. Featured Categories Showcase */}
-      <section className="cat-grid-section">
-        <div className="section-head">
-          <h2 className="section-title">Explore by Category</h2>
-          <Link to="/search" className="section-link">View All Categories &rarr;</Link>
-        </div>
+      {categories.length > 0 && (
+        <section className="cat-grid-section">
+          <div className="section-head">
+            <h2 className="section-title">Explore by Category</h2>
+            <Link to="/search" className="section-link">View All Categories &rarr;</Link>
+          </div>
 
-        <div className="cat-cards-grid">
-          {MOCK_CATEGORIES.map(cat => (
-            <Link
-              key={cat.id}
-              to={`/search?categoryId=${cat.id}`}
-              className="cat-card-item"
-            >
-              <div style={{
-                width: 50,
-                height: 50,
-                borderRadius: '50%',
-                background: '#fef3c7',
-                border: '1.5px solid #fde68a',
-                color: '#92400e',
-                margin: '0 auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-                fontWeight: 900,
-              }}>
-                {cat.name[0]}
-              </div>
-              <div className="cat-card-title">{cat.name}</div>
-              <div className="cat-card-count">{cat.productCount || 10}+ Items</div>
-            </Link>
-          ))}
-        </div>
-      </section>
+          <div className="cat-cards-grid">
+            {categories.map(cat => (
+              <Link
+                key={cat.id}
+                to={`/search?categoryId=${cat.id}`}
+                className="cat-card-item"
+              >
+                <div style={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: '50%',
+                  background: '#fef3c7',
+                  border: '1.5px solid #fde68a',
+                  color: '#92400e',
+                  margin: '0 auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  fontWeight: 900,
+                }}>
+                  {cat.name[0]}
+                </div>
+                <div className="cat-card-title">{cat.name}</div>
+                <div className="cat-card-count">{cat.productCount || 0}+ Items</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 4. Daily Discover / Recommended Products */}
       <section style={{ maxWidth: 1240, margin: '40px auto 60px', padding: '0 20px' }}>
@@ -185,11 +207,26 @@ export const HomePage: React.FC = () => {
           <span style={{ fontSize: 13, color: '#78716c' }}>Fresh selections updated daily</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-          {recommendedProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {recommendedProducts.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+            {recommendedProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div style={{
+            textAlign: 'center',
+            padding: '48px 20px',
+            background: '#ffffff',
+            borderRadius: 12,
+            border: '1px dashed #e2e8f0',
+            color: '#64748b'
+          }}>
+            <p style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>
+              {isLoading ? 'Đang tải danh sách nông sản...' : 'Chưa có sản phẩm nào được đăng tải.'}
+            </p>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', marginTop: 40 }}>
           <Link

@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public class PaymentMethodServiceImpl implements PaymentMethodService {
 
+    @SuppressWarnings("unused")
     private final PaymentMethodDAO paymentMethodDAO;
 
     public PaymentMethodServiceImpl(PaymentMethodDAO paymentMethodDAO) {

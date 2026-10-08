@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { ProductCard } from '../../components/molecules/ProductCard'
-import { catalogApi, MOCK_CATEGORIES } from '../../features/catalog/api/catalogApi'
+import { catalogApi } from '../../features/catalog/api/catalogApi'
+import type { Category } from '../../features/catalog/types/catalogTypes'
 import type { Product, ProductFilter } from '../../features/catalog/types/catalogTypes'
 import { PATHS } from '../../app/router/paths'
 
@@ -14,6 +15,11 @@ export const ProductListingPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    catalogApi.getCategories().then(setCategories)
+  }, [])
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory)
@@ -127,7 +133,7 @@ export const ProductListingPage: React.FC = () => {
                   />
                   <span>All Categories</span>
                 </label>
-                {MOCK_CATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <label key={cat.id} className="plp-filter-option">
                     <input
                       type="radio"

@@ -11,9 +11,7 @@ import com.example.webchicken.modules.payment.model.entity.PaymentEntity;
 import com.example.webchicken.modules.payment.service.impl.PaymentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;

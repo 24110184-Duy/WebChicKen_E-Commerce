@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 public class CustomerServiceImpl implements CustomerService {
 
+    @SuppressWarnings("unused")
     private final CustomerDAO customerDAO;
     private final UserDAO userDAO;
     private final AddressDAO addressDAO;

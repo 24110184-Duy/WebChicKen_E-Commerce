@@ -39,9 +39,10 @@ public class AppBootstrapListener implements ServletContextListener {
     }
 
     private void runFlywayMigration() {
-        String url  = env("DB_URL", "jdbc:mysql://localhost:3306/webchicken?useSSL=false&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true");
-        String user = env("DB_USER", "root");
-        String pass = env("DB_PASSWORD", "");
+        EnvConfig.load();
+        String url  = EnvConfig.get("DB_URL", "jdbc:postgresql://localhost:5432/webchicken");
+        String user = EnvConfig.get("DB_USER", "postgres");
+        String pass = EnvConfig.get("DB_PASSWORD", "");
 
         log.info("Executing Flyway database migration on: {}", url);
         try {
@@ -53,17 +54,9 @@ public class AppBootstrapListener implements ServletContextListener {
             int migrationsApplied = flyway.migrate().migrationsExecuted;
             log.info("Flyway migration completed: {} scripts executed.", migrationsApplied);
         } catch (Exception e) {
-            log.error("Lỗi khi thực thi Flyway migration: {}. Vui lòng kiểm tra kết nối MySQL.", e.getMessage());
-            // Không re-throw để tránh crash Tomcat nếu môi trường dev chưa bật MySQL
+            log.error("Lỗi khi thực thi Flyway migration: {}. Vui lòng kiểm tra kết nối Database.", e.getMessage());
+            // Không re-throw để tránh crash Tomcat nếu môi trường dev chưa bật Database
         }
-    }
-
-    private static String env(String key, String defaultValue) {
-        String v = System.getenv(key);
-        if (v != null && !v.isBlank()) return v;
-        v = System.getProperty(key);
-        if (v != null && !v.isBlank()) return v;
-        return defaultValue;
     }
 }
 

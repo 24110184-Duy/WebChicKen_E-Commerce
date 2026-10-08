@@ -149,7 +149,7 @@ public class ReviewDAOTest {
         verify(entityQuery).setFirstResult(0);
         verify(entityQuery).setMaxResults(1);
 
-        clearInvocations(entityQuery);
+        clearInvocations((Object) entityQuery);
         dao.findByProductId(PRODUCT_ID, null, -5, 1000);
         verify(entityQuery).setFirstResult(0);
         verify(entityQuery).setMaxResults(100);
@@ -177,7 +177,7 @@ public class ReviewDAOTest {
         dao.findByProductId(PRODUCT_ID, 3, 1, 10);
         verify(entityQuery).setParameter("rating", 3);
 
-        clearInvocations(entityQuery);
+        clearInvocations((Object) entityQuery);
         dao.findByProductId(PRODUCT_ID, 9, 1, 10);
         verify(entityQuery, never()).setParameter(eq("rating"), any());
     }

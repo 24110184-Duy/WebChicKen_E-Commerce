@@ -8,144 +8,7 @@ import type {
 } from '../types'
 import { recordAuditLogMock } from './adminAuditApi'
 
-// Mock dữ liệu người dùng thực tế cho sàn WebChicKen Marketplace
-const INITIAL_DEMO_USERS: AdminUserItem[] = [
-  {
-    userId: 'usr-mod-001',
-    email: 'hoangnam.hn@gmail.com',
-    fullName: 'Nguyễn Hoàng Nam',
-    phone: '0912345678',
-    logoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
-    status: 'ACTIVE',
-    roles: ['CUSTOMER'],
-    tier: 'SILVER',
-    loyaltyPoint: 450,
-    createdAt: '2026-03-15T09:30:00Z',
-    updatedAt: '2026-10-01T14:20:00Z',
-    activeBan: null
-  },
-  {
-    userId: 'usr-mod-002',
-    email: 'hung.yenthefarm@gmail.com',
-    fullName: 'Trần Văn Hùng',
-    phone: '0988223344',
-    logoUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
-    status: 'ACTIVE',
-    roles: ['CUSTOMER', 'SELLER'],
-    tier: 'GOLD',
-    loyaltyPoint: 1200,
-    storeId: 'store-yenthe-01',
-    storeName: 'Trang Trại Gà Đồi Yên Thế - Bắc Giang',
-    createdAt: '2026-02-10T11:00:00Z',
-    updatedAt: '2026-10-05T08:15:00Z',
-    activeBan: null
-  },
-  {
-    userId: 'usr-mod-003',
-    email: 'maile.culinary@yahoo.com',
-    fullName: 'Lê Thị Mai',
-    phone: '0903889900',
-    logoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-    status: 'ACTIVE',
-    roles: ['CUSTOMER'],
-    tier: 'PLATINUM',
-    loyaltyPoint: 3450,
-    createdAt: '2026-01-20T16:45:00Z',
-    updatedAt: '2026-10-06T10:10:00Z',
-    activeBan: null
-  },
-  {
-    userId: 'usr-mod-004',
-    email: 'kiet.vandinh@gmail.com',
-    fullName: 'Đặng Tuấn Kiệt',
-    phone: '0977665544',
-    logoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-    status: 'ACTIVE',
-    roles: ['CUSTOMER', 'SELLER'],
-    tier: 'SILVER',
-    loyaltyPoint: 680,
-    storeId: 'store-vandinh-02',
-    storeName: 'Nông Trại Vịt Cỏ Vân Đình - Hà Tây',
-    createdAt: '2026-04-05T13:20:00Z',
-    updatedAt: '2026-10-04T17:30:00Z',
-    activeBan: null
-  },
-  {
-    userId: 'usr-mod-005',
-    email: 'tridm.fraud@domain.xyz',
-    fullName: 'Đỗ Minh Trí',
-    phone: '0933112233',
-    logoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-    status: 'BANNED',
-    roles: ['CUSTOMER'],
-    tier: 'STANDARD',
-    loyaltyPoint: 0,
-    createdAt: '2026-08-12T08:00:00Z',
-    updatedAt: '2026-10-02T15:30:00Z',
-    activeBan: {
-      banId: 'ban-rec-001',
-      userId: 'usr-mod-005',
-      description: 'Gian lận đặt đơn ảo số lượng lớn và cố tình bom hàng chuỗi lạnh bảo quản tươi sống.',
-      bannedAt: '2026-10-02T15:30:00Z',
-      bannedUntil: '2026-11-01T15:30:00Z',
-      bannedBy: 'admin-super-01',
-      unbannedAt: null,
-      isActive: true
-    }
-  },
-  {
-    userId: 'usr-mod-006',
-    email: 'dung.fakefarm@poultry.org',
-    fullName: 'Huỳnh Quốc Dũng',
-    phone: '0944556677',
-    logoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
-    status: 'BANNED',
-    roles: ['CUSTOMER', 'SELLER'],
-    tier: 'STANDARD',
-    loyaltyPoint: 50,
-    storeId: 'store-fake-03',
-    storeName: 'Trang Trại Gia Cầm Đông Tảo Nhái',
-    createdAt: '2026-07-01T10:15:00Z',
-    updatedAt: '2026-09-28T09:40:00Z',
-    activeBan: {
-      banId: 'ban-rec-002',
-      userId: 'usr-mod-006',
-      description: 'Kinh doanh gia cầm không rõ nguồn gốc kiểm dịch, làm giả tem chứng nhận an toàn sinh học VietGAP.',
-      bannedAt: '2026-09-28T09:40:00Z',
-      bannedUntil: null,
-      bannedBy: 'admin-super-01',
-      unbannedAt: null,
-      isActive: true
-    }
-  },
-  {
-    userId: 'usr-mod-007',
-    email: 'thutrang.bui@gmail.com',
-    fullName: 'Bùi Thu Trang',
-    phone: '0966887766',
-    logoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-    status: 'LOCKED',
-    roles: ['CUSTOMER'],
-    tier: 'SILVER',
-    loyaltyPoint: 320,
-    createdAt: '2026-05-18T14:10:00Z',
-    updatedAt: '2026-10-03T11:00:00Z',
-    activeBan: null
-  },
-  {
-    userId: 'usr-mod-008',
-    email: 'admin.thinh@webchicken.vn',
-    fullName: 'Phạm Đức Thịnh',
-    phone: '0909000111',
-    logoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80',
-    status: 'ACTIVE',
-    roles: ['SUPER_ADMIN', 'ADMIN'],
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-10-06T08:00:00Z',
-    activeBan: null
-  }
-]
-
+// Quản lý người dùng admin qua localStorage cache và API thực
 const STORAGE_KEY = 'webchicken_admin_users_moderation'
 
 function getStoredUsers(): AdminUserItem[] {
@@ -153,16 +16,14 @@ function getStoredUsers(): AdminUserItem[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed
       }
     }
   } catch (err) {
     console.warn('Lỗi đọc cache user moderation từ localStorage:', err)
   }
-  // Khởi tạo lần đầu
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DEMO_USERS))
-  return INITIAL_DEMO_USERS
+  return []
 }
 
 function saveStoredUsers(users: AdminUserItem[]): void {

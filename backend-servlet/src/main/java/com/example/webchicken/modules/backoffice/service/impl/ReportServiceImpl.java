@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public class ReportServiceImpl implements ReportService {
 
+    @SuppressWarnings("unused")
     private final ReportDAO reportDAO;
 
     public ReportServiceImpl(ReportDAO reportDAO) {

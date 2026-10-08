@@ -2,9 +2,6 @@ package com.example.webchicken.modules.identity.dao;
 
 import com.example.webchicken.common.enums.UserStatus;
 import com.example.webchicken.infrastructure.persistence.BaseDAO;
-import com.example.webchicken.modules.identity.model.entity.AdminEntity;
-import com.example.webchicken.modules.identity.model.entity.CustomerEntity;
-import com.example.webchicken.modules.identity.model.entity.SellerEntity;
 import com.example.webchicken.modules.identity.model.entity.UserEntity;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.TypedQuery;

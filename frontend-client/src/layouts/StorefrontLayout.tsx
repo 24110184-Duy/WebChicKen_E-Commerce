@@ -5,7 +5,8 @@ import { useAuthStore } from '../app/store/authStore'
 import { useCartStore } from '../app/store/cartStore'
 import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
-import { MOCK_CATEGORIES } from '../features/catalog/api/catalogApi'
+import { catalogApi } from '../features/catalog/api/catalogApi'
+import type { Category } from '../features/catalog/types/catalogTypes'
 
 interface StorefrontLayoutProps {
   children: React.ReactNode
@@ -17,6 +18,11 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
   const { user, isAuthenticated, logout } = useAuthStore()
   const { totalQuantity } = useCartStore()
   const [searchQuery, setSearchQuery] = useState('')
+  const [categories, setCategories] = useState<Category[]>([])
+
+  React.useEffect(() => {
+    catalogApi.getCategories().then(setCategories)
+  }, [])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -174,7 +180,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
           >
             All Products
           </Link>
-          {MOCK_CATEGORIES.map(cat => {
+          {categories.map(cat => {
             const isActive = location.search.includes(`categoryId=${cat.id}`)
             return (
               <Link

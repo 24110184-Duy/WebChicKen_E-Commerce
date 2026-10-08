@@ -42,7 +42,6 @@ import com.example.webchicken.modules.media.service.*;
 import com.example.webchicken.modules.media.service.impl.*;
 
 import com.example.webchicken.modules.backoffice.dao.*;
-import com.example.webchicken.modules.backoffice.service.*;
 import com.example.webchicken.modules.backoffice.service.impl.*;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -261,21 +260,20 @@ public class CompositionRoot {
      */
     private Map<String, String> buildJpaProperties() {
         Map<String, String> p = new HashMap<>();
-        String url  = env("DB_URL",      "jdbc:mysql://localhost:3306/webchicken?useSSL=false&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true");
-        String user = env("DB_USER",     "root");
-        String pass = env("DB_PASSWORD", "");
+        String url  = EnvConfig.get("DB_URL",      "jdbc:postgresql://localhost:5432/webchicken");
+        String user = EnvConfig.get("DB_USER",     "postgres");
+        String pass = EnvConfig.get("DB_PASSWORD", "");
         p.put("jakarta.persistence.jdbc.url",      url);
         p.put("jakarta.persistence.jdbc.user",     user);
         p.put("jakarta.persistence.jdbc.password", pass);
-        return p;
-    }
 
-    /** Đọc biến môi trường, fallback sang system property, rồi mới dùng defaultValue. */
-    private static String env(String key, String defaultValue) {
-        String v = System.getenv(key);
-        if (v != null && !v.isBlank()) return v;
-        v = System.getProperty(key);
-        if (v != null && !v.isBlank()) return v;
-        return defaultValue;
+        if (url.startsWith("jdbc:postgresql:")) {
+            p.put("jakarta.persistence.jdbc.driver", "org.postgresql.Driver");
+            p.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        } else if (url.startsWith("jdbc:mysql:")) {
+            p.put("jakarta.persistence.jdbc.driver", "com.mysql.cj.jdbc.Driver");
+            p.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
+        }
+        return p;
     }
 }

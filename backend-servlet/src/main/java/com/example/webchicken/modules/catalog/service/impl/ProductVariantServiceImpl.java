@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public class ProductVariantServiceImpl implements ProductVariantService {
 
+    @SuppressWarnings("unused")
     private final ProductVariantDAO productVariantDAO;
 
     public ProductVariantServiceImpl(ProductVariantDAO productVariantDAO) {

@@ -449,7 +449,7 @@ export const CheckoutPage: React.FC = () => {
               {paymentMethod === 'BANK_TRANSFER' && (
                 <div className="checkout-qr-box">
                   <div className="checkout-qr-placeholder">
-                    <span>VIETQR MOCK</span>
+                    <span>VIETQR / CHUYỂN KHOẢN</span>
                     <span style={{ fontSize: 10, marginTop: 4 }}>CHICKYMART</span>
                   </div>
                   <div className="checkout-qr-info">

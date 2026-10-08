@@ -198,7 +198,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse updateItemQuantity(String customerId, String itemId, int quantity) {
-        CartItemEntity item = cartItemDAO.findById(itemId)
+        cartItemDAO.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("CartItem", itemId));
 
         if (quantity <= 0) {

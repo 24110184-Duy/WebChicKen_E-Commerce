@@ -7,7 +7,9 @@ import java.util.Objects;
 
 public class SellerServiceImpl implements SellerService {
 
+    @SuppressWarnings("unused")
     private final SellerDAO sellerDAO;
+    @SuppressWarnings("unused")
     private final UserDAO userDAO;
 
     public SellerServiceImpl(SellerDAO sellerDAO, UserDAO userDAO) {

@@ -68,13 +68,13 @@
                 Giá trị mặc định chỉ dùng cho môi trường DEV local.
                 KHÔNG commit giá trị thật vào đây cho staging/prod.
             -->
-            <property name="jakarta.persistence.jdbc.driver"   value="${env.DB_DRIVER:com.mysql.cj.jdbc.Driver}"/>
-            <property name="jakarta.persistence.jdbc.url"      value="${env.DB_URL:jdbc:mysql://localhost:3306/webchicken?useSSL=false&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC&amp;allowPublicKeyRetrieval=true}"/>
-            <property name="jakarta.persistence.jdbc.user"     value="${env.DB_USER:root}"/>
+            <property name="jakarta.persistence.jdbc.driver"   value="${env.DB_DRIVER:org.postgresql.Driver}"/>
+            <property name="jakarta.persistence.jdbc.url"      value="${env.DB_URL:jdbc:postgresql://localhost:5432/webchicken}"/>
+            <property name="jakarta.persistence.jdbc.user"     value="${env.DB_USER:postgres}"/>
             <property name="jakarta.persistence.jdbc.password" value="${env.DB_PASSWORD:}"/>
 
             <!-- Hibernate Dialect -->
-            <property name="hibernate.dialect"       value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.dialect"       value="${env.HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}"/>
             <property name="hibernate.show_sql"      value="false"/>
             <property name="hibernate.format_sql"    value="true"/>
             <property name="hibernate.highlight_sql" value="true"/>

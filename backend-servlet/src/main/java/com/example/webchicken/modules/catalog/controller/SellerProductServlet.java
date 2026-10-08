@@ -171,8 +171,8 @@ public class SellerProductServlet extends BaseApiServlet {
 
             // PUT /api/v1/shops/{shopId}/products/{productId}/publication
             if (path.isPublication()) {
-                Map<String, String> body = readBody(req, Map.class);
-                String statusStr = body.get("status");
+                Map<?, ?> body = readBody(req, Map.class);
+                String statusStr = body.get("status") != null ? body.get("status").toString() : null;
                 if (statusStr == null || statusStr.isBlank()) {
                     throw new ValidationException("Status is required for publication update");
                 }

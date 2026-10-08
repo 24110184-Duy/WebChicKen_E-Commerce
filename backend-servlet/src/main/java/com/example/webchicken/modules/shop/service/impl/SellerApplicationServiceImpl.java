@@ -29,6 +29,7 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
     private final SellerApplicationDAO sellerApplicationDAO;
     private final StoreDAO storeDAO;
     private final SellerDAO sellerDAO;
+    @SuppressWarnings("unused")
     private final UserDAO userDAO;
 
     public SellerApplicationServiceImpl(

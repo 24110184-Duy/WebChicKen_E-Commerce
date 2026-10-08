@@ -3,7 +3,6 @@ package com.example.webchicken.modules.identity.service;
 import com.example.webchicken.common.enums.UserStatus;
 import com.example.webchicken.common.exception.AuthorizationException;
 import com.example.webchicken.common.exception.ConflictException;
-import com.example.webchicken.common.exception.ValidationException;
 import com.example.webchicken.modules.identity.dao.AccountBanDAO;
 import com.example.webchicken.modules.identity.dao.AdminDAO;
 import com.example.webchicken.modules.identity.dao.CustomerDAO;

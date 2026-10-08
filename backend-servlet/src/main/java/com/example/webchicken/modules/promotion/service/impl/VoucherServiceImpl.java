@@ -8,8 +8,6 @@ import com.example.webchicken.modules.promotion.model.dto.response.VoucherRespon
 import com.example.webchicken.modules.promotion.model.entity.VoucherEntity;
 import com.example.webchicken.modules.promotion.model.enums.VoucherType;
 import com.example.webchicken.modules.promotion.service.VoucherService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +20,6 @@ import java.util.stream.Collectors;
  */
 public class VoucherServiceImpl implements VoucherService {
 
-    private static final Logger log = LoggerFactory.getLogger(VoucherServiceImpl.class);
     private final VoucherDAO voucherDAO;
 
     public VoucherServiceImpl(VoucherDAO voucherDAO) {

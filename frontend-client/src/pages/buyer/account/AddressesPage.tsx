@@ -22,27 +22,6 @@ interface AddressFormData {
   city: string
 }
 
-const MOCK_ADDRESSES: Address[] = [
-  {
-    id: 'addr-1',
-    recipientName: 'John Doe',
-    phone: '0912 345 678',
-    addressLine1: '123 Nguyen Van Linh St, Tan Phong Ward',
-    district: 'District 7',
-    city: 'Ho Chi Minh City',
-    isDefault: true,
-  },
-  {
-    id: 'addr-2',
-    recipientName: 'John Doe',
-    phone: '0912 345 678',
-    addressLine1: '45 Le Van Viet St, Hiep Phu Ward',
-    district: 'Thu Duc City',
-    city: 'Ho Chi Minh City',
-    isDefault: false,
-  },
-]
-
 const VN_CITIES = [
   'Ho Chi Minh City', 'Hanoi', 'Da Nang', 'Can Tho', 'Hai Phong',
   'Bien Hoa', 'Nha Trang', 'Hue', 'Vung Tau', 'Quy Nhon',
@@ -59,7 +38,23 @@ const EMPTY_FORM: AddressFormData = {
 interface Toast { message: string; type: 'success' | 'error' }
 
 export const AddressesPage: React.FC = () => {
-  const [addresses, setAddresses] = useState<Address[]>(MOCK_ADDRESSES)
+  const [addresses, setAddresses] = useState<Address[]>([])
+
+  React.useEffect(() => {
+    customerApi.getAddresses().then((res) => {
+      if (res && res.length > 0) {
+        setAddresses(res.map((a) => ({
+          id: a.addressId,
+          recipientName: a.recipientName,
+          phone: a.phone,
+          addressLine1: a.addressLine1,
+          district: a.district || '',
+          city: a.city || '',
+          isDefault: a.isDefault,
+        })))
+      }
+    })
+  }, [])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<AddressFormData>(EMPTY_FORM)

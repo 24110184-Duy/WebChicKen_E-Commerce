@@ -1,9 +1,7 @@
 package com.example.webchicken.modules.order.service;
 
 import com.example.webchicken.common.enums.OrderStatus;
-import com.example.webchicken.common.enums.PaymentStatus;
 import com.example.webchicken.common.exception.NotFoundException;
-import com.example.webchicken.common.exception.ValidationException;
 import com.example.webchicken.modules.cart.dao.CartDAO;
 import com.example.webchicken.modules.cart.dao.CartItemDAO;
 import com.example.webchicken.modules.catalog.dao.ProductDAO;
