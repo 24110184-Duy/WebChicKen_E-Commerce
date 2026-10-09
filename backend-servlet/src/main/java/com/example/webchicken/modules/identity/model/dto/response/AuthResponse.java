@@ -13,6 +13,11 @@ public record AuthResponse(
             String fullName,
             String phone,
             String logoUrl,
-            List<String> roles
-    ) {}
+            List<String> roles,
+            String username
+    ) {
+        public UserInfo(String userId, String email, String fullName, String phone, String logoUrl, List<String> roles) {
+            this(userId, email, fullName, phone, logoUrl, roles, null);
+        }
+    }
 }

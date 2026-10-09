@@ -2,6 +2,7 @@ package com.example.webchicken.modules.identity.controller;
 
 import com.example.webchicken.modules.identity.model.dto.request.LoginRequest;
 import com.example.webchicken.modules.identity.model.dto.request.RegisterRequest;
+import com.example.webchicken.modules.identity.model.dto.request.SocialLoginRequest;
 import com.example.webchicken.modules.identity.model.dto.request.TokenRefreshRequest;
 import com.example.webchicken.modules.identity.model.dto.response.AuthResponse;
 import com.example.webchicken.modules.identity.service.AuthService;
@@ -20,6 +21,9 @@ import java.util.Map;
  * <ul>
  *   <li>POST /register: Đăng ký khách hàng mới</li>
  *   <li>POST /login: Đăng nhập</li>
+ *   <li>POST /social: Đăng nhập / đăng ký qua mạng xã hội (Google / Facebook)</li>
+ *   <li>POST /social/google: Đăng nhập Google ID Token</li>
+ *   <li>POST /social/facebook: Đăng nhập Facebook Token</li>
  *   <li>POST /refresh-token: Làm mới Access Token qua Cookie HttpOnly</li>
  *   <li>POST /logout: Đăng xuất và hủy phiên làm việc</li>
  * </ul>
@@ -49,11 +53,15 @@ public class AuthServlet extends BaseApiServlet {
         switch (pathInfo) {
             case "/register" -> handleRegister(req, resp);
             case "/login" -> handleLogin(req, resp);
+            case "/social" -> handleSocial(req, resp, null);
+            case "/social/google" -> handleSocial(req, resp, "GOOGLE");
+            case "/social/facebook" -> handleSocial(req, resp, "FACEBOOK");
             case "/refresh-token" -> handleRefreshToken(req, resp);
             case "/logout" -> handleLogout(req, resp);
             default -> notFound(resp, "Endpoint xác thực không tồn tại: " + pathInfo);
         }
     }
+
 
     private void handleRegister(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         RegisterRequest reqBody = readBody(req, RegisterRequest.class);
@@ -69,6 +77,20 @@ public class AuthServlet extends BaseApiServlet {
     private void handleLogin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         LoginRequest reqBody = readBody(req, LoginRequest.class);
         AuthResponse authResponse = authService().login(reqBody);
+
+        String refreshToken = authService().createRefreshToken(authResponse.user().userId());
+        setRefreshTokenCookie(resp, refreshToken, 7 * 24 * 60 * 60);
+
+        ok(resp, authResponse);
+    }
+
+    private void handleSocial(HttpServletRequest req, HttpServletResponse resp, String overrideProvider) throws IOException {
+        SocialLoginRequest reqBody = readBody(req, SocialLoginRequest.class);
+        if (overrideProvider != null && !overrideProvider.isBlank()) {
+            reqBody = new SocialLoginRequest(overrideProvider, reqBody.idToken(), reqBody.accessToken());
+        }
+
+        AuthResponse authResponse = authService().loginWithSocial(reqBody);
 
         String refreshToken = authService().createRefreshToken(authResponse.user().userId());
         setRefreshTokenCookie(resp, refreshToken, 7 * 24 * 60 * 60);

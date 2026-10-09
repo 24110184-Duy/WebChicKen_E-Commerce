@@ -1,8 +1,9 @@
 export interface UserInfo {
   userId: string
-  email: string
+  email?: string
+  username?: string
   fullName: string
-  phone: string
+  phone?: string
   logoUrl?: string
   roles: string[]
 }
@@ -13,13 +14,16 @@ export interface AuthResponseData {
 }
 
 export interface LoginPayload {
-  email: string
+  identifier?: string
+  email?: string
   password: string
 }
 
 export interface RegisterPayload {
-  fullName: string
-  email: string
-  phone: string
+  identifier?: string
+  username?: string
+  email?: string
+  phone?: string
+  fullName?: string
   password: string
 }

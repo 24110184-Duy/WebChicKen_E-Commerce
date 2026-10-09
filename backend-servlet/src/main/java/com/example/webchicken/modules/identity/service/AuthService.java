@@ -23,4 +23,11 @@ public interface AuthService {
 
     /** Đăng xuất phiên làm việc hiện tại */
     void logout(String rawRefreshToken);
+
+    /** Đăng nhập hoặc đăng ký tự động bằng Google ID Token */
+    AuthResponse loginWithGoogle(String idToken);
+
+    /** Đăng nhập hoặc đăng ký tự động bằng tài khoản mạng xã hội (Google, Facebook) */
+    AuthResponse loginWithSocial(com.example.webchicken.modules.identity.model.dto.request.SocialLoginRequest request);
 }
+

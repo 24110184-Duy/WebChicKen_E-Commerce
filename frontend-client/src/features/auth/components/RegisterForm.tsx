@@ -1,17 +1,19 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { User, Mail, Phone, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { authApi } from '../api/authApi'
 import { useAuthStore } from '../../../app/store/authStore'
 import { PATHS } from '../../../app/router/paths'
+import { analyzePhoneNumber } from '../../../shared/utils/phoneValidator'
+import { useGoogleAuth } from '../hooks/useGoogleAuth'
 
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate()
   const { login } = useAuthStore()
+  const { isGoogleLoading, googleError, triggerGoogleLogin } = useGoogleAuth()
 
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [agreeTerms, setAgreeTerms] = useState(true)
@@ -21,8 +23,6 @@ export const RegisterForm: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<{
-    fullName?: string
-    email?: string
     phone?: string
     password?: string
     confirmPassword?: string
@@ -30,46 +30,58 @@ export const RegisterForm: React.FC = () => {
   }>({})
   const [serverError, setServerError] = useState<string | null>(null)
 
+  // Phân tích số điện thoại theo thời gian thực
+  const phoneAnalysis = analyzePhoneNumber(phone)
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }))
+
+    // Phân tích xem chuỗi người dùng vừa nhập có đạt chuẩn hợp lệ không
+    const analysis = analyzePhoneNumber(val)
+    if (analysis.isValid) {
+      // Khi đã nhận diện đủ số và đúng quốc gia, tự động format: (+84) 332 790 798
+      setPhone(analysis.formatted)
+    } else {
+      setPhone(val)
+    }
+  }
+
+  const handlePhoneBlur = () => {
+    const analysis = analyzePhoneNumber(phone)
+    if (analysis.isValid) {
+      setPhone(analysis.formatted)
+    }
+  }
+
   const validate = (): boolean => {
     const errors: {
-      fullName?: string
-      email?: string
       phone?: string
       password?: string
       confirmPassword?: string
       agreeTerms?: string
     } = {}
 
-    if (!fullName.trim()) {
-      errors.fullName = 'Please enter your full name'
-    }
-
-    if (!email.trim()) {
-      errors.email = 'Please enter your email address'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errors.email = 'Invalid email address format'
-    }
-
     if (!phone.trim()) {
       errors.phone = 'Please enter your phone number'
-    } else if (!/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone.trim().replace(/\s+/g, ''))) {
-      errors.phone = 'Invalid phone number (10 digits, starts with 0 or +84)'
+    } else if (!phoneAnalysis.isValid) {
+      errors.phone = 'Số điện thoại không hợp lệ hoặc không xác định được mã quốc gia (+84...)'
     }
 
     if (!password) {
-      errors.password = 'Please enter your password'
-    } else if (password.length < 8) {
-      errors.password = 'Password must be at least 8 characters'
+      errors.password = 'Vui lòng nhập mật khẩu'
+    } else if (password.length < 6) {
+      errors.password = 'Mật khẩu phải có độ dài tối thiểu 6 ký tự'
     }
 
     if (!confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password'
+      errors.confirmPassword = 'Vui lòng xác nhận mật khẩu'
     } else if (password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match'
+      errors.confirmPassword = 'Mật khẩu xác nhận không khớp'
     }
 
     if (!agreeTerms) {
-      errors.agreeTerms = 'You must agree to the Terms of Service'
+      errors.agreeTerms = 'Bạn cần đồng ý với Điều khoản dịch vụ'
     }
 
     setFieldErrors(errors)
@@ -84,17 +96,18 @@ export const RegisterForm: React.FC = () => {
 
     setIsLoading(true)
     try {
+      // Gửi số đã được chuẩn hóa về server
+      const normalizedPhone = phoneAnalysis.normalized
       const response = await authApi.register({
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
+        phone: normalizedPhone,
+        identifier: normalizedPhone,
         password,
       })
 
       login(
         {
           id: response.user.userId,
-          email: response.user.email,
+          email: response.user.email || response.user.username || response.user.phone || '',
           fullName: response.user.fullName,
           avatarUrl: response.user.logoUrl,
           roles: response.user.roles,
@@ -105,14 +118,14 @@ export const RegisterForm: React.FC = () => {
       navigate(PATHS.HOME, { replace: true })
     } catch (err: unknown) {
       const errorObj = err as { message?: string }
-      setServerError(errorObj.message || 'Registration failed. This email may already be in use.')
+      setServerError(errorObj.message || 'Đăng ký thất bại. Số điện thoại này có thể đã được sử dụng.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="auth-card" style={{ maxWidth: '460px' }}>
+    <div className="auth-card" style={{ maxWidth: '440px' }}>
       {/* Tab Switcher */}
       <div className="auth-tabs">
         <Link to={PATHS.LOGIN} className="auth-tab-btn">
@@ -123,77 +136,88 @@ export const RegisterForm: React.FC = () => {
         </button>
       </div>
 
-      {serverError && (
+      {(serverError || googleError) && (
         <div className="auth-alert-box" role="alert">
           <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-          <div>{serverError}</div>
+          <div>{serverError || googleError}</div>
         </div>
       )}
 
+
       <form onSubmit={handleSubmit} noValidate>
-        {/* Full Name */}
+        {/* Phone Number Field */}
         <div className="form-group-modern">
-          <label htmlFor="reg-name" className="form-label-modern">Full Name</label>
-          <div className="input-icon-wrapper">
-            <span className="input-left-icon"><User size={18} /></span>
+          <label htmlFor="reg-phone" className="form-label-modern">
+            <span>Phone Number</span>
+            {phoneAnalysis.carrier && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  color: '#16a34a',
+                  fontWeight: 600,
+                  background: '#f0fdf4',
+                  padding: '1px 8px',
+                  borderRadius: '12px',
+                  border: '1px solid #bbf7d0',
+                }}
+              >
+                {phoneAnalysis.carrier}
+              </span>
+            )}
+          </label>
+          <div style={{ position: 'relative', width: '100%' }}>
             <input
-              id="reg-name"
-              type="text"
-              value={fullName}
-              onChange={(e) => {
-                setFullName(e.target.value)
-                if (fieldErrors.fullName) setFieldErrors((prev) => ({ ...prev, fullName: undefined }))
+              id="reg-phone"
+              type="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={handlePhoneChange}
+              onBlur={handlePhoneBlur}
+              placeholder="Phone Number"
+              className={`input-modern ${fieldErrors.phone ? 'input-error' : ''}`}
+              style={{
+                paddingRight: phoneAnalysis.isValid ? '44px' : '14px',
+                paddingLeft: '14px',
+                fontSize: '15px',
+                fontWeight: 500,
+                letterSpacing: phoneAnalysis.isValid ? '0.3px' : 'normal',
               }}
-              placeholder="e.g. John Doe"
-              className={`input-modern ${fieldErrors.fullName ? 'input-error' : ''}`}
               disabled={isLoading}
               autoFocus
             />
-          </div>
-          {fieldErrors.fullName && <div className="form-field-error">! {fieldErrors.fullName}</div>}
-        </div>
 
-        {/* Email & Phone side by side */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div className="form-group-modern">
-            <label htmlFor="reg-email" className="form-label-modern">Email</label>
-            <div className="input-icon-wrapper">
-              <span className="input-left-icon"><Mail size={18} /></span>
-              <input
-                id="reg-email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
+            {/* Dấu tích xanh tròn hiển thị ở góc phải khi số hợp lệ (như ảnh) */}
+            {phoneAnalysis.isValid && (
+              <span
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
                 }}
-                placeholder="name@domain.com"
-                className={`input-modern ${fieldErrors.email ? 'input-error' : ''}`}
-                disabled={isLoading}
-              />
-            </div>
-            {fieldErrors.email && <div className="form-field-error">! {fieldErrors.email}</div>}
+                title={`Đã xác thực: ${phoneAnalysis.countryName} (${phoneAnalysis.countryCode})`}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </span>
+            )}
           </div>
-
-          <div className="form-group-modern">
-            <label htmlFor="reg-phone" className="form-label-modern">Phone Number</label>
-            <div className="input-icon-wrapper">
-              <span className="input-left-icon"><Phone size={18} /></span>
-              <input
-                id="reg-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value)
-                  if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }))
-                }}
-                placeholder="0912345678"
-                className={`input-modern ${fieldErrors.phone ? 'input-error' : ''}`}
-                disabled={isLoading}
-              />
-            </div>
-            {fieldErrors.phone && <div className="form-field-error">! {fieldErrors.phone}</div>}
-          </div>
+          {fieldErrors.phone && <div className="form-field-error">! {fieldErrors.phone}</div>}
         </div>
 
         {/* Password */}
@@ -209,7 +233,7 @@ export const RegisterForm: React.FC = () => {
                 setPassword(e.target.value)
                 if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }))
               }}
-              placeholder="At least 8 characters"
+              placeholder="Tối thiểu 6 ký tự"
               className={`input-modern ${fieldErrors.password ? 'input-error' : ''}`}
               disabled={isLoading}
             />
@@ -239,7 +263,7 @@ export const RegisterForm: React.FC = () => {
                 setConfirmPassword(e.target.value)
                 if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }))
               }}
-              placeholder="Re-enter your password"
+              placeholder="Nhập lại mật khẩu"
               className={`input-modern ${fieldErrors.confirmPassword ? 'input-error' : ''}`}
               disabled={isLoading}
             />
@@ -266,47 +290,76 @@ export const RegisterForm: React.FC = () => {
             style={{ width: '16px', height: '16px', marginTop: '2px', accentColor: '#eab308', cursor: 'pointer' }}
           />
           <label htmlFor="agree-terms" style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', lineHeight: 1.5 }}>
-            I agree to ChickyMart's <a href="#terms" className="auth-switch-link">Terms of Service</a> and{' '}
-            <a href="#privacy" className="auth-switch-link">Privacy Policy</a>
+            Tôi đồng ý với <a href="#terms" className="auth-switch-link">Điều khoản dịch vụ</a> và{' '}
+            <a href="#privacy" className="auth-switch-link">Chính sách bảo mật</a> của ChickyMart
           </label>
         </div>
         {fieldErrors.agreeTerms && <div className="form-field-error">! {fieldErrors.agreeTerms}</div>}
 
         {/* Submit Button */}
         <button type="submit" className="btn-primary-gradient" disabled={isLoading}>
-          {isLoading ? 'Creating account...' : 'CREATE ACCOUNT'}
+          {isLoading ? 'Đang tạo tài khoản...' : 'SIGN UP'}
         </button>
       </form>
 
       {/* Social Divider */}
       <div className="social-divider">
-        <span>Or sign up with</span>
+        <span>Or continue with</span>
       </div>
 
+      {/* Social Buttons */}
       <div className="social-grid">
-        <button type="button" className="btn-social" onClick={() => alert('Sign up with Google')}>
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        <button
+          type="button"
+          className="btn-social"
+          onClick={triggerGoogleLogin}
+          disabled={isLoading || isGoogleLoading}
+          style={{ opacity: isGoogleLoading ? 0.7 : 1 }}
+        >
+          {isGoogleLoading ? (
+            <span
+              style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid rgba(66, 133, 244, 0.3)',
+                borderTopColor: '#4285F4',
+                borderRadius: '50%',
+                animation: 'spin 0.6s linear infinite',
+              }}
             />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-            />
-          </svg>
-          Google
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+          )}
+          {isGoogleLoading ? 'Connecting...' : 'Google'}
         </button>
 
-        <button type="button" className="btn-social" onClick={() => alert('Sign up with Facebook')}>
+        <button
+          type="button"
+          className="btn-social"
+          onClick={() =>
+            alert(
+              'Tính năng đăng ký qua Facebook đang được tích hợp! Quý khách vui lòng chọn tài khoản Google hoặc đăng ký bằng Số điện thoại.'
+            )
+          }
+          disabled={isLoading || isGoogleLoading}
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
           </svg>
@@ -314,9 +367,9 @@ export const RegisterForm: React.FC = () => {
         </button>
       </div>
 
-      {/* Switch to Login */}
-      <div className="auth-switch-text">
-        Already have a ChickyMart account?
+      {/* Switch to Sign In */}
+      <div className="auth-card-footer">
+        Đã có tài khoản?{' '}
         <Link to={PATHS.LOGIN} className="auth-switch-link">
           Sign In
         </Link>
@@ -325,3 +378,4 @@ export const RegisterForm: React.FC = () => {
   )
 }
 export default RegisterForm
+

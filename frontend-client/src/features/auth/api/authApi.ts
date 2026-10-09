@@ -6,23 +6,9 @@ export const authApi = {
     try {
       const res = await httpClient.post<AuthResponseData>('/auth/login', payload)
       if (res.data) return res.data
+      throw new Error('Đăng nhập không thành công.')
     } catch (err) {
-      console.warn('Backend server offline hoặc chưa kết nối, chuyển sang chế độ Mock Auth để test UI:', err)
-    }
-
-    // Mock fallback khi Backend chưa chạy
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    const userName = payload.email.includes('@') ? payload.email.split('@')[0] : payload.email
-    return {
-      accessToken: 'mock-jwt-token-' + Date.now(),
-      user: {
-        userId: 'usr-mock-12345',
-        email: payload.email,
-        fullName: userName.charAt(0).toUpperCase() + userName.slice(1),
-        phone: '0912345678',
-        roles: ['CUSTOMER'],
-        logoUrl: undefined,
-      },
+      throw err
     }
   },
 
@@ -30,22 +16,9 @@ export const authApi = {
     try {
       const res = await httpClient.post<AuthResponseData>('/auth/register', payload)
       if (res.data) return res.data
+      throw new Error('Đăng ký không thành công.')
     } catch (err) {
-      console.warn('Backend server offline hoặc chưa kết nối, chuyển sang chế độ Mock Auth để test UI:', err)
-    }
-
-    // Mock fallback khi Backend chưa chạy
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    return {
-      accessToken: 'mock-jwt-token-' + Date.now(),
-      user: {
-        userId: 'usr-mock-' + Date.now(),
-        email: payload.email,
-        fullName: payload.fullName,
-        phone: payload.phone,
-        roles: ['CUSTOMER'],
-        logoUrl: undefined,
-      },
+      throw err
     }
   },
 
@@ -53,7 +26,7 @@ export const authApi = {
     try {
       await httpClient.post<void>('/auth/logout', {})
     } catch {
-      // Mock logout hoàn tất
+      // Logout hoàn tất
     }
   },
 
@@ -62,9 +35,29 @@ export const authApi = {
       const res = await httpClient.post<{ accessToken: string }>('/auth/refresh-token', {})
       if (res.data?.accessToken) return res.data.accessToken
     } catch {
-      // Bỏ qua khi mock mode
+      // Ignored
     }
-    throw new Error('Chế độ Mock không cần refresh token')
+    throw new Error('Phiên đăng nhập hết hạn')
+  },
+
+  loginWithGoogle: async (idToken: string): Promise<AuthResponseData> => {
+    try {
+      const res = await httpClient.post<AuthResponseData>('/auth/social/google', { idToken })
+      if (res.data) return res.data
+      throw new Error('Đăng nhập với Google thất bại.')
+    } catch (err) {
+      throw err
+    }
+  },
+
+  loginWithSocial: async (payload: { provider: string; idToken?: string; accessToken?: string }): Promise<AuthResponseData> => {
+    try {
+      const res = await httpClient.post<AuthResponseData>('/auth/social', payload)
+      if (res.data) return res.data
+      throw new Error('Đăng nhập qua mạng xã hội thất bại.')
+    } catch (err) {
+      throw err
+    }
   },
 }
 

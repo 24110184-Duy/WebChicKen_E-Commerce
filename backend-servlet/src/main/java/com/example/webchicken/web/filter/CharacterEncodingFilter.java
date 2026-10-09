@@ -21,9 +21,13 @@ public class CharacterEncodingFilter implements Filter {
         req.setCharacterEncoding(ENCODING_UTF8);
         res.setCharacterEncoding(ENCODING_UTF8);
 
-        if (res instanceof HttpServletResponse httpRes) {
-            // Đặt content-type mặc định cho API responses nếu chưa đặt
-            httpRes.setContentType("application/json; charset=UTF-8");
+        if (res instanceof HttpServletResponse httpRes && req instanceof jakarta.servlet.http.HttpServletRequest httpReq) {
+            String uri = httpReq.getRequestURI();
+            // CHỈ đặt application/json cho các request API (/api/...)
+            // Đối với các file tĩnh (HTML, CSS, JS, ảnh), để DefaultServlet của container tự động gán MIME type chuẩn
+            if (uri != null && uri.contains("/api/")) {
+                httpRes.setContentType("application/json; charset=UTF-8");
+            }
         }
 
         chain.doFilter(req, res);

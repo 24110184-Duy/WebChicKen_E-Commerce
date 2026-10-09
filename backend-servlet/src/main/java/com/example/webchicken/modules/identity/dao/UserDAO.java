@@ -28,10 +28,11 @@ public class UserDAO extends BaseDAO {
 
     /** Tìm user theo email (dùng JPQL). */
     public Optional<UserEntity> findByEmail(String email) {
+        if (email == null || email.isBlank()) return Optional.empty();
         return executeQuery(em -> {
             TypedQuery<UserEntity> q = em.createQuery(
-                    "SELECT u FROM UserEntity u WHERE u.email = :email", UserEntity.class);
-            q.setParameter("email", email);
+                    "SELECT u FROM UserEntity u WHERE LOWER(u.email) = :email", UserEntity.class);
+            q.setParameter("email", email.trim().toLowerCase());
             q.setMaxResults(1);
             return q.getResultList().stream().findFirst();
         });
@@ -39,11 +40,82 @@ public class UserDAO extends BaseDAO {
 
     /** Kiểm tra email đã tồn tại. */
     public boolean existsByEmail(String email) {
+        if (email == null || email.isBlank()) return false;
         return executeQuery(em -> {
             TypedQuery<Long> q = em.createQuery(
-                    "SELECT COUNT(u) FROM UserEntity u WHERE u.email = :email", Long.class);
-            q.setParameter("email", email);
+                    "SELECT COUNT(u) FROM UserEntity u WHERE LOWER(u.email) = :email", Long.class);
+            q.setParameter("email", email.trim().toLowerCase());
             return q.getSingleResult() > 0;
+        });
+    }
+
+    /** Tìm user theo username. */
+    public Optional<UserEntity> findByUsername(String username) {
+        if (username == null || username.isBlank()) return Optional.empty();
+        return executeQuery(em -> {
+            TypedQuery<UserEntity> q = em.createQuery(
+                    "SELECT u FROM UserEntity u WHERE LOWER(u.username) = :username", UserEntity.class);
+            q.setParameter("username", username.trim().toLowerCase());
+            q.setMaxResults(1);
+            return q.getResultList().stream().findFirst();
+        });
+    }
+
+    /** Kiểm tra username đã tồn tại. */
+    public boolean existsByUsername(String username) {
+        if (username == null || username.isBlank()) return false;
+        return executeQuery(em -> {
+            TypedQuery<Long> q = em.createQuery(
+                    "SELECT COUNT(u) FROM UserEntity u WHERE LOWER(u.username) = :username", Long.class);
+            q.setParameter("username", username.trim().toLowerCase());
+            return q.getSingleResult() > 0;
+        });
+    }
+
+    /** Tìm user theo phone. */
+    public Optional<UserEntity> findByPhone(String phone) {
+        if (phone == null || phone.isBlank()) return Optional.empty();
+        return executeQuery(em -> {
+            TypedQuery<UserEntity> q = em.createQuery(
+                    "SELECT u FROM UserEntity u WHERE u.phone = :phone", UserEntity.class);
+            q.setParameter("phone", phone.trim());
+            q.setMaxResults(1);
+            return q.getResultList().stream().findFirst();
+        });
+    }
+
+    /** Kiểm tra phone đã tồn tại. */
+    public boolean existsByPhone(String phone) {
+        if (phone == null || phone.isBlank()) return false;
+        String raw = phone.trim();
+        String norm = com.example.webchicken.common.validation.VietnamesePhoneValidator.normalize(raw);
+        return executeQuery(em -> {
+            TypedQuery<Long> q = em.createQuery(
+                    "SELECT COUNT(u) FROM UserEntity u WHERE u.phone = :phone OR u.phone = :normPhone", Long.class);
+            q.setParameter("phone", raw);
+            q.setParameter("normPhone", norm != null ? norm : raw);
+            return q.getSingleResult() > 0;
+        });
+    }
+
+    /**
+     * Tìm user theo 1 trong 3 thông tin định danh: Username, Email hoặc Phone.
+     */
+    public Optional<UserEntity> findByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) return Optional.empty();
+        String trimmed = identifier.trim();
+        String lower = trimmed.toLowerCase();
+        String normPhone = com.example.webchicken.common.validation.VietnamesePhoneValidator.normalize(trimmed);
+
+        return executeQuery(em -> {
+            TypedQuery<UserEntity> q = em.createQuery(
+                    "SELECT u FROM UserEntity u WHERE LOWER(u.email) = :lower OR LOWER(u.username) = :lower OR u.phone = :raw OR u.phone = :normPhone",
+                    UserEntity.class);
+            q.setParameter("lower", lower);
+            q.setParameter("raw", trimmed);
+            q.setParameter("normPhone", normPhone != null ? normPhone : trimmed);
+            q.setMaxResults(1);
+            return q.getResultList().stream().findFirst();
         });
     }
 
@@ -74,7 +146,7 @@ public class UserDAO extends BaseDAO {
 
             boolean hasSearch = (search != null && !search.trim().isBlank());
             if (hasSearch) {
-                jpql.append(" AND (LOWER(u.email) LIKE :search OR LOWER(u.fullName) LIKE :search OR u.phone LIKE :searchPhone)");
+                jpql.append(" AND (LOWER(u.email) LIKE :search OR LOWER(u.username) LIKE :search OR LOWER(u.fullName) LIKE :search OR u.phone LIKE :searchPhone)");
             }
 
             appendRoleFilter(jpql, role);
@@ -113,7 +185,7 @@ public class UserDAO extends BaseDAO {
 
             boolean hasSearch = (search != null && !search.trim().isBlank());
             if (hasSearch) {
-                jpql.append(" AND (LOWER(u.email) LIKE :search OR LOWER(u.fullName) LIKE :search OR u.phone LIKE :searchPhone)");
+                jpql.append(" AND (LOWER(u.email) LIKE :search OR LOWER(u.username) LIKE :search OR LOWER(u.fullName) LIKE :search OR u.phone LIKE :searchPhone)");
             }
 
             appendRoleFilter(jpql, role);

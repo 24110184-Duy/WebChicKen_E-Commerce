@@ -128,4 +128,15 @@
         <tracking-mode>COOKIE</tracking-mode>
     </session-config>
 
+    <!-- Welcome File: Trang chủ Frontend React SPA -->
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!-- SPA Routing Fallback: Chuyển hướng các route React Router về index.html -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/index.html</location>
+    </error-page>
+
 </web-app>

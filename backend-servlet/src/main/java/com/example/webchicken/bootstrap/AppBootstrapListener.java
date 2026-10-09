@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Khởi động ứng dụng: nạp config → chạy Flyway migration → dựng CompositionRoot DI.
+ * Khởi động ứng dụng: nạp config → chạy Flyway migration → dựng CompositionRoot
+ * DI.
  * Thứ tự ngược lại khi tắt (contextDestroyed).
  */
 @WebListener
@@ -24,10 +25,15 @@ public class AppBootstrapListener implements ServletContextListener {
         runFlywayMigration();
 
         // 2. Khởi tạo Composition Root (JPA EMF, DAOs, Services)
-        root = new CompositionRoot();
-        root.initialize(sce.getServletContext());
-
-        log.info("=== WebChicKen ready ===");
+        try {
+            root = new CompositionRoot();
+            root.initialize(sce.getServletContext());
+            log.info("=== WebChicKen ready ===");
+        } catch (Exception e) {
+            log.error(
+                    "LỖI NGHIÊM TRỌNG KHI KHỞI TẠO COMPOSITION ROOT: {}. Vui lòng kiểm tra biến môi trường DB_URL / kết nối Database.",
+                    e.getMessage(), e);
+        }
     }
 
     @Override
@@ -40,7 +46,7 @@ public class AppBootstrapListener implements ServletContextListener {
 
     private void runFlywayMigration() {
         EnvConfig.load();
-        String url  = EnvConfig.get("DB_URL", "jdbc:postgresql://localhost:5432/webchicken");
+        String url = EnvConfig.get("DB_URL", "jdbc:postgresql://localhost:5432/webchicken");
         String user = EnvConfig.get("DB_USER", "postgres");
         String pass = EnvConfig.get("DB_PASSWORD", "");
 
@@ -59,4 +65,3 @@ public class AppBootstrapListener implements ServletContextListener {
         }
     }
 }
-

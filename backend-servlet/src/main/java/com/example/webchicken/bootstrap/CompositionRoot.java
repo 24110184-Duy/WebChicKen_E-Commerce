@@ -86,13 +86,15 @@ public class CompositionRoot {
 
         // ── 2. DAOs (Data Access Objects) ────────────────────────────────────
         // Identity
-        UserDAO         userDAO         = new UserDAO(emf);
-        UserSessionDAO  userSessionDAO  = new UserSessionDAO(emf);
-        CustomerDAO     customerDAO     = new CustomerDAO(emf);
-        SellerDAO       sellerDAO       = new SellerDAO(emf);
-        AdminDAO        adminDAO        = new AdminDAO(emf);
-        AddressDAO      addressDAO      = new AddressDAO(emf);
-        AccountBanDAO   accountBanDAO   = new AccountBanDAO(emf);
+        UserDAO               userDAO               = new UserDAO(emf);
+        UserSessionDAO        userSessionDAO        = new UserSessionDAO(emf);
+        CustomerDAO           customerDAO           = new CustomerDAO(emf);
+        SellerDAO             sellerDAO             = new SellerDAO(emf);
+        AdminDAO              adminDAO              = new AdminDAO(emf);
+        AddressDAO            addressDAO            = new AddressDAO(emf);
+        AccountBanDAO         accountBanDAO         = new AccountBanDAO(emf);
+        UserSocialAccountDAO  userSocialAccountDAO  = new UserSocialAccountDAO(emf);
+
 
         // Catalog
         CategoryDAO       categoryDAO       = new CategoryDAO(emf);
@@ -136,7 +138,7 @@ public class CompositionRoot {
 
         // ── 3. Services ───────────────────────────────────────────────────────
         // Identity
-        AuthService      authService      = new AuthServiceImpl(userDAO, userSessionDAO);
+        AuthService      authService      = new AuthServiceImpl(userDAO, userSessionDAO, customerDAO, userSocialAccountDAO, new com.example.webchicken.infrastructure.security.SocialAuthVerifier());
         CustomerService  customerService  = new CustomerServiceImpl(customerDAO, userDAO, addressDAO);
         SellerService    sellerService    = new SellerServiceImpl(sellerDAO, userDAO);
 

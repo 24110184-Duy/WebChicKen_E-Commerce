@@ -22,47 +22,47 @@ public final class EnvConfig {
         if (loaded) return;
         loaded = true;
 
+        // 1. Thử nạp từ Classpath (đóng gói trong WAR / WEB-INF/classes/.env)
+        try (java.io.InputStream is = EnvConfig.class.getResourceAsStream("/.env")) {
+            if (is != null) {
+                log.info("Đã tìm thấy file .env từ Classpath (WEB-INF/classes/.env)");
+                parseEnvStream(is);
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi đọc .env từ Classpath: {}", e.getMessage());
+        }
+
+        // 2. Thử nạp từ file hệ thống
+        String catalinaBase = System.getProperty("catalina.base");
+        String catalinaHome = System.getProperty("catalina.home");
+        String userDir = System.getProperty("user.dir");
+
         String[] potentialPaths = {
             ".env",
             "backend-servlet/.env",
             "../backend-servlet/.env",
             "../.env",
-            System.getProperty("user.dir") + "/.env",
-            System.getProperty("user.dir") + "/backend-servlet/.env"
+            userDir + "/.env",
+            userDir + "/backend-servlet/.env",
+            userDir + "/webapps/ROOT/WEB-INF/classes/.env",
+            userDir + "/webapps/web1_war_exploded/WEB-INF/classes/.env",
+            catalinaBase != null ? catalinaBase + "/.env" : null,
+            catalinaBase != null ? catalinaBase + "/conf/.env" : null,
+            catalinaHome != null ? catalinaHome + "/.env" : null,
+            "D:/HOCDITHANGNGU/clonerepo/web1/backend-servlet/.env"
         };
 
-        File envFile = null;
         for (String p : potentialPaths) {
+            if (p == null) continue;
             File f = new File(p);
             if (f.exists() && f.isFile()) {
-                envFile = f;
-                break;
-            }
-        }
-
-        if (envFile != null) {
-            log.info("Đã tìm thấy file .env tại: {}", envFile.getAbsolutePath());
-            try (BufferedReader reader = new BufferedReader(new FileReader(envFile, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    line = line.trim();
-                    if (line.isEmpty() || line.startsWith("#")) continue;
-                    int eq = line.indexOf('=');
-                    if (eq > 0) {
-                        String key = line.substring(0, eq).trim();
-                        String val = line.substring(eq + 1).trim();
-                        if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2) {
-                            val = val.substring(1, val.length() - 1);
-                        } else if (val.startsWith("'") && val.endsWith("'") && val.length() >= 2) {
-                            val = val.substring(1, val.length() - 1);
-                        }
-                        if (System.getProperty(key) == null) {
-                            System.setProperty(key, val);
-                        }
-                    }
+                log.info("Đã tìm thấy file .env tại: {}", f.getAbsolutePath());
+                try (java.io.InputStream fis = new java.io.FileInputStream(f)) {
+                    parseEnvStream(fis);
+                } catch (Exception e) {
+                    log.warn("Không thể đọc file .env tại {}: {}", f.getAbsolutePath(), e.getMessage());
                 }
-            } catch (Exception e) {
-                log.warn("Không thể đọc file .env: {}", e.getMessage());
+                break;
             }
         }
 
@@ -80,6 +80,31 @@ public final class EnvConfig {
             if (databaseUrl != null && !databaseUrl.isBlank()) {
                 parseAndSetDatabaseUrl(databaseUrl);
             }
+        }
+    }
+
+    private static void parseEnvStream(java.io.InputStream is) {
+        try (BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(is, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+                int eq = line.indexOf('=');
+                if (eq > 0) {
+                    String key = line.substring(0, eq).trim();
+                    String val = line.substring(eq + 1).trim();
+                    if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2) {
+                        val = val.substring(1, val.length() - 1);
+                    } else if (val.startsWith("'") && val.endsWith("'") && val.length() >= 2) {
+                        val = val.substring(1, val.length() - 1);
+                    }
+                    if (System.getProperty(key) == null) {
+                        System.setProperty(key, val);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi phân tích nội dung .env: {}", e.getMessage());
         }
     }
 

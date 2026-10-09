@@ -17,8 +17,11 @@ public abstract class UserEntity {
     @Column(name = "id", length = 36, nullable = false, updatable = false)
     private String userId;
 
-    @Column(name = "email", length = 255, nullable = false, unique = true)
+    @Column(name = "email", length = 255, unique = true)
     private String email;
+
+    @Column(name = "username", length = 100, unique = true)
+    private String username;
 
     @Column(name = "password_hash", length = 255, nullable = false)
     private String passwordHash;
@@ -50,6 +53,8 @@ public abstract class UserEntity {
     public void setUserId(String v)         { this.userId = v; }
     public String getEmail()                { return email; }
     public void setEmail(String v)          { this.email = v; }
+    public String getUsername()             { return username; }
+    public void setUsername(String v)       { this.username = v; }
     public String getPasswordHash()         { return passwordHash; }
     public void setPasswordHash(String v)   { this.passwordHash = v; }
     public String getFullName()             { return fullName; }

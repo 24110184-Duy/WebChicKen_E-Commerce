@@ -20,6 +20,7 @@
         <class>com.example.webchicken.modules.identity.model.entity.UserSessionEntity</class>
         <class>com.example.webchicken.modules.identity.model.entity.AccountBanEntity</class>
         <class>com.example.webchicken.modules.identity.model.entity.PolicyViolationTypeEntity</class>
+        <class>com.example.webchicken.modules.identity.model.entity.UserSocialAccountEntity</class>
 
         <!-- shop module -->
         <class>com.example.webchicken.modules.shop.model.entity.StoreEntity</class>

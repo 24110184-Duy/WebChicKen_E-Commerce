@@ -22,6 +22,10 @@ frontend-client/.env.*.local
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/artifacts/
+.idea/vcs.xml
+out/
+web/
 *.iws
 *.iml
 *.ipr

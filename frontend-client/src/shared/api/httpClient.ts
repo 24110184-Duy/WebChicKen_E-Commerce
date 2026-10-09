@@ -1,6 +1,18 @@
 import type { ApiResponse, ApiError } from '../types/api'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+function getApiBaseUrl(): string {
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL
+  if (typeof window !== 'undefined') {
+    const pathParts = window.location.pathname.split('/').filter(Boolean)
+    if (pathParts.length > 0 && pathParts[0] === 'web1_war_exploded') {
+      return `${window.location.origin}/web1_war_exploded/api/v1`
+    }
+    return `${window.location.origin}/api/v1`
+  }
+  return 'http://localhost:8080/api/v1'
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 // Token getter & setter callback được đăng ký bởi authStore
 let getAccessTokenFn: () => string | null = () => null
@@ -60,8 +72,17 @@ async function handleRefreshToken(): Promise<string> {
 export async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
   const { params, skipAuth = false, headers: customHeaders, ...fetchOptions } = options
 
-  // 1. Xây dựng URL kèm Query Params
-  let url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`
+  // 1. Chuẩn hóa endpoint và xây dựng URL kèm Query Params
+  let cleanEndpoint = endpoint
+  if (cleanEndpoint.startsWith('/api/v1/')) {
+    cleanEndpoint = cleanEndpoint.substring('/api/v1'.length)
+  } else if (cleanEndpoint === '/api/v1') {
+    cleanEndpoint = '/'
+  }
+
+  let url = cleanEndpoint.startsWith('http')
+    ? cleanEndpoint
+    : `${API_BASE_URL}${cleanEndpoint.startsWith('/') ? '' : '/'}${cleanEndpoint}`
   if (params) {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, val]) => {
