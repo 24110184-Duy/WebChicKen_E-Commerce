@@ -4,7 +4,7 @@ import type { AuthResponseData, LoginPayload, RegisterPayload } from '../types/a
 export const authApi = {
   login: async (payload: LoginPayload): Promise<AuthResponseData> => {
     try {
-      const res = await httpClient.post<AuthResponseData>('/auth/login', payload)
+      const res = await httpClient.post<AuthResponseData>('/auth/login', payload, { skipAuth: true })
       if (res.data) return res.data
       throw new Error('Đăng nhập không thành công.')
     } catch (err) {
@@ -14,7 +14,7 @@ export const authApi = {
 
   register: async (payload: RegisterPayload): Promise<AuthResponseData> => {
     try {
-      const res = await httpClient.post<AuthResponseData>('/auth/register', payload)
+      const res = await httpClient.post<AuthResponseData>('/auth/register', payload, { skipAuth: true })
       if (res.data) return res.data
       throw new Error('Đăng ký không thành công.')
     } catch (err) {
@@ -32,7 +32,7 @@ export const authApi = {
 
   refreshToken: async (): Promise<string> => {
     try {
-      const res = await httpClient.post<{ accessToken: string }>('/auth/refresh-token', {})
+      const res = await httpClient.post<{ accessToken: string }>('/auth/refresh-token', {}, { skipAuth: true })
       if (res.data?.accessToken) return res.data.accessToken
     } catch {
       // Ignored
@@ -42,7 +42,7 @@ export const authApi = {
 
   loginWithGoogle: async (idToken: string): Promise<AuthResponseData> => {
     try {
-      const res = await httpClient.post<AuthResponseData>('/auth/social/google', { idToken })
+      const res = await httpClient.post<AuthResponseData>('/auth/social/google', { idToken }, { skipAuth: true })
       if (res.data) return res.data
       throw new Error('Đăng nhập với Google thất bại.')
     } catch (err) {
@@ -52,7 +52,7 @@ export const authApi = {
 
   loginWithSocial: async (payload: { provider: string; idToken?: string; accessToken?: string }): Promise<AuthResponseData> => {
     try {
-      const res = await httpClient.post<AuthResponseData>('/auth/social', payload)
+      const res = await httpClient.post<AuthResponseData>('/auth/social', payload, { skipAuth: true })
       if (res.data) return res.data
       throw new Error('Đăng nhập qua mạng xã hội thất bại.')
     } catch (err) {

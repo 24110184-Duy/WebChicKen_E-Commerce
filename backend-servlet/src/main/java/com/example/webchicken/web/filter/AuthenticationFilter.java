@@ -37,6 +37,10 @@ public class AuthenticationFilter implements Filter {
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/refresh-token",
+            "/api/v1/auth/social",
+            "/api/v1/auth/social/google",
+            "/api/v1/auth/social/facebook",
+            "/api/v1/auth/logout",
             "/api/v1/payments/ipn",
             "/api/v1/payments/callback",
             "/api/v1/system/health"
@@ -50,7 +54,12 @@ public class AuthenticationFilter implements Filter {
             return;
         }
 
-        String path = httpReq.getRequestURI();
+        // Chuẩn hóa path: loại bỏ contextPath (nếu có, ví dụ /web1_war_exploded)
+        String uri = httpReq.getRequestURI();
+        String contextPath = httpReq.getContextPath();
+        String path = (contextPath != null && !contextPath.isEmpty() && uri.startsWith(contextPath))
+                ? uri.substring(contextPath.length())
+                : uri;
         String method = httpReq.getMethod();
 
         // 1. Kiểm tra nếu là endpoint public
@@ -81,6 +90,16 @@ public class AuthenticationFilter implements Filter {
     private boolean isPublicEndpoint(String method, String path) {
         if ("OPTIONS".equalsIgnoreCase(method)) return true;
         if (PUBLIC_EXACT_PATHS.contains(path)) return true;
+
+        // Cho phép toàn bộ endpoint xác thực (/api/v1/auth/*) là public
+        if (path.startsWith("/api/v1/auth/")) {
+            return true;
+        }
+
+        // Cho phép kiểm tra trạng thái sức khỏe hệ thống
+        if (path.startsWith("/api/v1/system/health")) {
+            return true;
+        }
 
         // Cho phép duyệt danh mục và sản phẩm công khai với method GET
         if ("GET".equalsIgnoreCase(method)) {

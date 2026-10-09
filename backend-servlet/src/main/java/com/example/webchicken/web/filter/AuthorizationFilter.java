@@ -33,7 +33,11 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
-        String path = httpReq.getRequestURI();
+        String uri = httpReq.getRequestURI();
+        String contextPath = httpReq.getContextPath();
+        String path = (contextPath != null && !contextPath.isEmpty() && uri.startsWith(contextPath))
+                ? uri.substring(contextPath.length())
+                : uri;
         AuthenticatedUser user = (AuthenticatedUser) httpReq.getAttribute(AuthenticationFilter.CURRENT_USER_ATTR);
 
         // 1. Kiểm tra quyền Admin
