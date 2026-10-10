@@ -176,15 +176,36 @@ public class CartServiceImpl implements CartService {
             throw new ValidationException("Sản phẩm chưa được Quản trị viên (Admin) phê duyệt hoặc đang tạm ngưng mở bán");
         }
 
+        // Kiểm tra tồn kho khả dụng trước khi thêm vào giỏ
+        String targetVariantId = req.variantId();
+        if (targetVariantId == null || targetVariantId.isBlank()) {
+            List<ProductVariantEntity> variants = productVariantDAO.findByProductId(product.getId());
+            if (!variants.isEmpty()) {
+                targetVariantId = variants.get(0).getId();
+            }
+        }
+        int availableStock = (targetVariantId != null && !targetVariantId.isBlank())
+                ? inventoryService.getAvailableStock(targetVariantId) : 0;
+        if (availableStock <= 0) {
+            throw new ValidationException("Sản phẩm đã hết hàng trong kho");
+        }
+
         CartEntity cart = cartDAO.getOrCreateCart(customerId);
 
         // Kiểm tra xem sản phẩm / biến thể đã có trong giỏ chưa
         Optional<CartItemEntity> existing = cartItemDAO.findByCartIdAndVariant(cart.getId(), req.productId(), req.variantId());
         if (existing.isPresent()) {
             CartItemEntity item = existing.get();
-            item.setQuantity(item.getQuantity() + req.quantity());
+            int newQuantity = item.getQuantity() + req.quantity();
+            if (newQuantity > availableStock) {
+                throw new ValidationException("Số lượng trong giỏ hàng (" + newQuantity + ") vượt quá tồn kho khả dụng (" + availableStock + ")");
+            }
+            item.setQuantity(newQuantity);
             cartItemDAO.updateQuantity(item.getId(), item.getQuantity());
         } else {
+            if (req.quantity() > availableStock) {
+                throw new ValidationException("Số lượng yêu cầu (" + req.quantity() + ") vượt quá tồn kho khả dụng (" + availableStock + ")");
+            }
             CartItemEntity newItem = new CartItemEntity(
                     UUID.randomUUID().toString(),
                     cart,
@@ -205,12 +226,25 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse updateItemQuantity(String customerId, String itemId, int quantity) {
-        cartItemDAO.findById(itemId)
+        CartItemEntity item = cartItemDAO.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("CartItem", itemId));
 
         if (quantity <= 0) {
             cartItemDAO.delete(itemId);
         } else {
+            String variantId = item.getVariantId();
+            if (variantId == null || variantId.isBlank()) {
+                List<ProductVariantEntity> variants = productVariantDAO.findByProductId(item.getProductId());
+                if (!variants.isEmpty()) {
+                    variantId = variants.get(0).getId();
+                }
+            }
+            if (variantId != null && !variantId.isBlank()) {
+                int availableStock = inventoryService.getAvailableStock(variantId);
+                if (quantity > availableStock) {
+                    throw new ValidationException("Số lượng yêu cầu (" + quantity + ") vượt quá số lượng tồn kho khả dụng (" + availableStock + ")");
+                }
+            }
             cartItemDAO.updateQuantity(itemId, quantity);
         }
 

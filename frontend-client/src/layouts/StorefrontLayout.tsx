@@ -39,7 +39,8 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
       navigate(PATHS.LOGIN, { state: { from: PATHS.SELLER.DASHBOARD } })
       return
     }
-    if (isSeller) {
+    const isRegisteredSeller = isSeller || (user?.id ? localStorage.getItem(`seller_registered_${user.id}`) === 'true' : false)
+    if (isRegisteredSeller) {
       navigate(PATHS.SELLER.DASHBOARD)
     } else {
       navigate(PATHS.SELLER.REGISTER)

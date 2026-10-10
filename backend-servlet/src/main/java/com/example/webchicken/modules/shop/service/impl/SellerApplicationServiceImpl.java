@@ -64,21 +64,51 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
             throw new ConflictException("Tài khoản của bạn đã sở hữu một gian hàng đang hoạt động.");
         }
 
-        // Kiểm tra xem đã có đơn đăng ký nào đang chờ duyệt không
-        if (sellerApplicationDAO.findPendingByUserId(userId).isPresent()) {
-            throw new ConflictException("Bạn đã có một hồ sơ đăng ký đang chờ xét duyệt. Vui lòng kiên nhẫn chờ Ban quản trị.");
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. Tạo bản ghi trong sellers nếu chưa có
+        if (sellerDAO.findById(userId).isEmpty()) {
+            SellerEntity seller = new SellerEntity();
+            seller.setUserId(userId);
+            seller.setApprovedAt(now);
+            sellerDAO.save(seller);
         }
 
-        SellerApplicationEntity entity = new SellerApplicationEntity();
-        entity.setId(UUID.randomUUID().toString());
-        entity.setUserId(userId);
-        entity.setShopName(request.shopName().trim());
-        entity.setDocumentUrl(request.documentUrl() != null ? request.documentUrl().trim() : null);
-        entity.setStatus("PENDING");
-        entity.setSubmittedAt(LocalDateTime.now());
+        // 2. Tạo gian hàng Store riêng biệt ngay lập tức cho người bán
+        StoreEntity store = new StoreEntity(
+                UUID.randomUUID().toString(),
+                request.shopName().trim(),
+                "SELLER",
+                userId,
+                now
+        );
+        storeDAO.save(store);
+        log.info("Đã tạo gian hàng riêng [{}] ({}) cho người bán {}", store.getStoreName(), store.getId(), userId);
 
-        sellerApplicationDAO.save(entity);
-        log.info("Người dùng {} đã nộp đơn đăng ký Seller: {} ({})", userId, entity.getShopName(), entity.getId());
+        // 3. Cập nhật hoặc lưu hồ sơ đăng ký với trạng thái APPROVED
+        Optional<SellerApplicationEntity> pendingOpt = sellerApplicationDAO.findPendingByUserId(userId);
+        SellerApplicationEntity entity;
+        if (pendingOpt.isPresent()) {
+            entity = pendingOpt.get();
+            entity.setShopName(request.shopName().trim());
+            entity.setStatus("APPROVED");
+            entity.setAdminResponseId("SYSTEM_AUTO");
+            entity.setReviewedAt(now);
+            sellerApplicationDAO.update(entity);
+        } else {
+            entity = new SellerApplicationEntity();
+            entity.setId(UUID.randomUUID().toString());
+            entity.setUserId(userId);
+            entity.setShopName(request.shopName().trim());
+            entity.setDocumentUrl(request.documentUrl() != null ? request.documentUrl().trim() : null);
+            entity.setStatus("APPROVED");
+            entity.setAdminResponseId("SYSTEM_AUTO");
+            entity.setSubmittedAt(now);
+            entity.setReviewedAt(now);
+            sellerApplicationDAO.save(entity);
+        }
+
+        log.info("Người dùng {} đã được kích hoạt gian hàng Seller Centre: {} ({})", userId, entity.getShopName(), entity.getId());
 
         return toResponse(entity);
     }

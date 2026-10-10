@@ -6,6 +6,7 @@ import { formatMoney } from '../../../shared/lib/formatMoney'
 import { Star, CheckCircle2, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { ReviewModal } from '../../../features/reviews/components/ReviewModal'
 import type { ReviewResponse } from '../../../features/reviews/types'
+import { toast } from '../../../components/feedback/Toast'
 
 const CANCEL_REASONS = [
   'Changed my mind / No longer needed',
@@ -214,8 +215,10 @@ export const OrdersPage: React.FC = () => {
       setCancellingCode(null)
       setCancelReasonDetail('')
       setIsSubmittingCancel(false)
-      setToastMessage(`Order #${targetCode} has been cancelled successfully.`)
-      setTimeout(() => setToastMessage(null), 4000)
+      const msg = `Đơn hàng #${targetCode} đã được hủy thành công.`
+      setToastMessage(msg)
+      toast.success(msg)
+      setTimeout(() => setToastMessage(null), 5000)
     }
   }
 
@@ -268,6 +271,50 @@ export const OrdersPage: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* Order Action Notification Board */}
+        {toastMessage && (
+          <div
+            style={{
+              margin: '16px 20px 0',
+              padding: '12px 18px',
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              color: '#166534',
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+              animation: 'fadeIn 0.2s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <CheckCircle2 style={{ width: 18, height: 18, color: '#16a34a', flexShrink: 0 }} />
+              <span>{toastMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#166534',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                opacity: 0.7,
+              }}
+              aria-label="Close"
+            >
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (
@@ -543,14 +590,6 @@ export const OrdersPage: React.FC = () => {
             productImage={reviewingTarget.productImage}
             variantName={reviewingTarget.variantName}
           />
-        )}
-
-        {/* Toast Notification */}
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-amber-300 px-5 py-3 rounded-xl shadow-2xl text-sm font-bold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>{toastMessage}</span>
-          </div>
         )}
       </div>
     </AccountLayout>

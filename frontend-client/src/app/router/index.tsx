@@ -19,6 +19,7 @@ import { OrdersPage } from '../../pages/buyer/account/OrdersPage'
 import { NotificationsPage } from '../../pages/buyer/account/NotificationsPage'
 import { SellerProductListPage } from '../../pages/seller/SellerProductListPage'
 import { SellerOrdersPage } from '../../pages/seller/SellerOrdersPage'
+import { SellerShipmentPage } from '../../pages/seller/SellerShipmentPage'
 import { SellerDashboardPage } from '../../pages/seller/SellerDashboardPage'
 import { SellerFeedbackPage } from '../../pages/seller/SellerFeedbackPage'
 import { SellerRegisterPage } from '../../pages/seller/SellerRegisterPage'
@@ -109,6 +110,8 @@ export const AppRouter = () => {
       <Route element={<RequireRole allowedRoles={['SELLER']} fallbackPath={PATHS.SELLER.REGISTER} />}>
         <Route path={PATHS.SELLER.DASHBOARD} element={<SellerDashboardPage />} />
         <Route path="/seller/dashboard" element={<SellerDashboardPage />} />
+        <Route path={PATHS.SELLER.SHIPMENT} element={<SellerShipmentPage />} />
+        <Route path="/seller/shipment" element={<SellerShipmentPage />} />
         <Route path={PATHS.SELLER.PRODUCTS} element={<SellerProductListPage />} />
         <Route path="/seller/products/new" element={<SellerProductListPage />} />
         <Route path={PATHS.SELLER.ORDERS} element={<SellerOrdersPage />} />

@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { useCartStore } from '../../app/store/cartStore'
+import type { CartItem } from '../../app/store/cartStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { Ticket } from 'lucide-react'
 import { PATHS } from '../../app/router/paths'
 import type { Voucher } from '../../features/cart/types/cartTypes'
 import { VoucherModal } from '../../features/cart/components/VoucherModal'
+import { toast } from '../../components/feedback/Toast'
+import { ConfirmModal } from '../../components/feedback/ConfirmModal'
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate()
@@ -31,6 +34,12 @@ export const CartPage: React.FC = () => {
 
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title?: string
+    message: string
+    onConfirm: () => void
+  } | null>(null)
 
   const isAllSelected = items.length > 0 && items.every((i) => i.selected)
 
@@ -53,13 +62,46 @@ export const CartPage: React.FC = () => {
 
   // Bulk remove selected
   const handleRemoveSelected = () => {
-    if (window.confirm(`Are you sure you want to remove ${selectedQuantity} selected item(s)?`)) {
-      selectedItems.forEach((item) => removeItem(item.skuId))
-    }
+    if (selectedQuantity === 0) return
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa sản phẩm đã chọn',
+      message: `Bạn có chắc chắn muốn xóa ${selectedQuantity} sản phẩm đã chọn khỏi giỏ hàng?`,
+      onConfirm: () => {
+        selectedItems.forEach((item) => removeItem(item.skuId))
+        toast.success(`Đã xóa ${selectedQuantity} sản phẩm khỏi giỏ hàng.`)
+      },
+    })
+  }
+
+  const handleDeleteItem = (item: CartItem) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa sản phẩm',
+      message: `Bạn có chắc chắn muốn xóa sản phẩm "${item.name}" khỏi giỏ hàng?`,
+      onConfirm: () => {
+        removeItem(item.skuId)
+        toast.success('Đã xóa sản phẩm khỏi giỏ hàng.')
+      },
+    })
   }
 
   const handleProceedCheckout = () => {
-    if (selectedQuantity === 0) return
+    if (selectedQuantity === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 sản phẩm để tiến hành thanh toán.')
+      return
+    }
+
+    const exceedingItem = selectedItems.find(
+      (item) => typeof item.availableStock === 'number' && item.quantity > item.availableStock
+    )
+    if (exceedingItem) {
+      toast.warning(
+        `Sản phẩm "${exceedingItem.name}" vượt quá số lượng tồn kho khả dụng (${exceedingItem.availableStock}). Vui lòng điều chỉnh lại số lượng trước khi tiếp tục.`
+      )
+      return
+    }
+
     // Persist applied voucher code in sessionStorage for checkout
     if (appliedVoucher) {
       sessionStorage.setItem('webchicken_checkout_voucher', JSON.stringify(appliedVoucher))
@@ -183,7 +225,7 @@ export const CartPage: React.FC = () => {
                         </div>
 
                         {/* Quantity Stepper */}
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                           <div className="cart-stepper">
                             <button
                               type="button"
@@ -198,12 +240,37 @@ export const CartPage: React.FC = () => {
                             <button
                               type="button"
                               className="cart-stepper-btn"
-                              onClick={() => updateQuantity(item.skuId, item.quantity + 1)}
+                              onClick={() => {
+                                if (typeof item.availableStock === 'number' && item.quantity >= item.availableStock) {
+                                  toast.warning(`Sản phẩm "${item.name}" chỉ còn tối đa ${item.availableStock} trong kho!`)
+                                  return
+                                }
+                                updateQuantity(item.skuId, item.quantity + 1)
+                              }}
+                              disabled={typeof item.availableStock === 'number' && item.quantity >= item.availableStock}
                               aria-label="Increase quantity"
+                              title={
+                                typeof item.availableStock === 'number' && item.quantity >= item.availableStock
+                                  ? `Số lượng đã đạt giới hạn tồn kho (${item.availableStock})`
+                                  : 'Tăng số lượng'
+                              }
                             >
                               +
                             </button>
                           </div>
+                          {typeof item.availableStock === 'number' && (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                color: item.quantity >= item.availableStock ? '#dc2626' : '#64748b',
+                                fontWeight: item.quantity >= item.availableStock ? 700 : 500,
+                              }}
+                            >
+                              {item.quantity >= item.availableStock
+                                ? `Tối đa: ${item.availableStock}`
+                                : `Còn ${item.availableStock} sản phẩm`}
+                            </span>
+                          )}
                         </div>
 
                         {/* Line Total */}
@@ -216,7 +283,7 @@ export const CartPage: React.FC = () => {
                           <button
                             type="button"
                             className="cart-delete-btn"
-                            onClick={() => removeItem(item.skuId)}
+                            onClick={() => handleDeleteItem(item)}
                           >
                             Delete
                           </button>
@@ -371,6 +438,16 @@ export const CartPage: React.FC = () => {
             endDate: '',
           })
         }}
+      />
+      <ConfirmModal
+        isOpen={Boolean(confirmModal?.isOpen)}
+        title={confirmModal?.title}
+        message={confirmModal?.message || ''}
+        isDanger={true}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        onConfirm={() => confirmModal?.onConfirm()}
+        onCancel={() => setConfirmModal(null)}
       />
     </StorefrontLayout>
   )

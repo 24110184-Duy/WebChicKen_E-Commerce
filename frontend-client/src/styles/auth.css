@@ -283,6 +283,14 @@
   box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.25);
 }
 
+/* Hide native browser password reveal/clear buttons (Edge / IE) to prevent duplicate eye icons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .input-modern.input-error {
   background: #fff5f5;
   border-color: #ef4444;
@@ -377,8 +385,8 @@
 }
 
 .social-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 

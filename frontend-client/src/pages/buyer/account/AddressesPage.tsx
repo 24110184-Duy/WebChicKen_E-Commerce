@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
 import { customerApi } from '../../../features/auth/api/customerApi'
+import { ConfirmModal } from '../../../components/feedback/ConfirmModal'
 
 // Khớp với BE AddressResponse (dùng addressId)
 interface Address {
@@ -61,6 +62,7 @@ export const AddressesPage: React.FC = () => {
   const [formErrors, setFormErrors] = useState<Partial<AddressFormData>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
+  const [deleteAddressId, setDeleteAddressId] = useState<string | null>(null)
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
@@ -145,8 +147,14 @@ export const AddressesPage: React.FC = () => {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this address?')) return
+  const handleDelete = (id: string) => {
+    setDeleteAddressId(id)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteAddressId) return
+    const id = deleteAddressId
+    setDeleteAddressId(null)
     try {
       // DELETE /api/v1/customers/addresses/{addressId}
       await customerApi.deleteAddress(id)
@@ -341,6 +349,17 @@ export const AddressesPage: React.FC = () => {
           {toast.message}
         </div>
       )}
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteAddressId)}
+        title="Xóa địa chỉ nhận hàng"
+        message="Bạn có chắc chắn muốn xóa địa chỉ nhận hàng này không?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteAddressId(null)}
+      />
     </AccountLayout>
   )
 }

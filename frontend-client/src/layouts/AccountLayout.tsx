@@ -6,6 +6,7 @@ import { cartStore } from '../app/store/cartStore'
 import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
 import chickenMascotImg from '../assets/chicken-mascot.png'
+import { toast } from '../components/feedback/Toast'
 
 interface AccountLayoutProps {
   children: React.ReactNode
@@ -241,7 +242,7 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
                   className={`shopee-nav-subitem ${isPasswordActive ? 'active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault()
-                    alert('Change Password is under maintenance')
+                    toast.info('Chức năng Đổi mật khẩu đang được bảo trì nâng cấp.')
                   }}
                 >
                   Change Password

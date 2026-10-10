@@ -39,6 +39,7 @@ export const PATHS = {
   SELLER: {
     REGISTER: '/seller/register',
     DASHBOARD: '/seller',
+    SHIPMENT: '/seller/shipment',
     PRODUCTS: '/seller/products',
     PRODUCT_NEW: '/seller/products/new',
     PRODUCT_EDIT: (id: string) => `/seller/products/${id}/edit`,

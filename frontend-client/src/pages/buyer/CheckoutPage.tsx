@@ -15,6 +15,7 @@ import { VoucherModal } from '../../features/cart/components/VoucherModal'
 import { AddressSelectModal } from '../../features/orders/components/AddressSelectModal'
 import { customerApi, type AddressResponse } from '../../features/auth/api/customerApi'
 import { Ticket } from 'lucide-react'
+import { toast } from '../../components/feedback/Toast'
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
@@ -150,7 +151,7 @@ export const CheckoutPage: React.FC = () => {
     if (isSubmitting) return
 
     if (!address.recipientName.trim() || !address.phoneNumber.trim() || !address.streetAddress.trim()) {
-      alert('Vui lòng chọn hoặc thiết lập địa chỉ nhận hàng trước khi tiến hành đặt hàng!')
+      toast.warning('Vui lòng chọn hoặc thiết lập địa chỉ nhận hàng trước khi tiến hành đặt hàng!')
       setIsAddressModalOpen(true)
       return
     }
@@ -175,7 +176,7 @@ export const CheckoutPage: React.FC = () => {
       const res = await orderApi.checkout(checkoutReq)
       if (!res || !res.orders || res.orders.length === 0) {
         setIsSubmitting(false)
-        alert('Đặt hàng không thành công. Vui lòng thử lại sau!')
+        toast.error('Đặt hàng không thành công. Vui lòng thử lại sau!')
         return
       }
 
@@ -215,7 +216,7 @@ export const CheckoutPage: React.FC = () => {
       navigate(PATHS.PAYMENT_RESULT, { replace: true })
     } catch {
       setIsSubmitting(false)
-      alert('Unable to complete order placement. Please try again.')
+      toast.error('Không thể hoàn tất đặt hàng. Vui lòng thử lại sau.')
     }
   }
 

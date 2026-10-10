@@ -9,6 +9,7 @@ import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import { ProductReviews } from '../../features/reviews/components/ProductReviews'
 import { ProductShopCard } from '../../features/shop'
+import { toast } from '../../components/feedback/Toast'
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -20,7 +21,6 @@ export const ProductDetailPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string>('')
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [quantity, setQuantity] = useState(1)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -38,16 +38,11 @@ export const ProductDetailPage: React.FC = () => {
     })
   }, [id])
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg)
-    setTimeout(() => setToastMessage(null), 3000)
-  }
-
   const handleAddToCart = async () => {
     if (!product) return false
 
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
+      toast.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
       navigate(PATHS.LOGIN, { state: { from: `/products/${product.id}` } })
       return false
     }
@@ -56,6 +51,12 @@ export const ProductDetailPage: React.FC = () => {
     const skuId = variant?.id || product.id
     const skuName = variant?.attribute || 'Bản Tiêu Chuẩn'
     const priceMinor = variant?.basePriceMinor || product.minPriceMinor || 0
+    const stock = variant?.stockQuantity ?? product.totalStock
+
+    if (stock <= 0) {
+      toast.warning('Sản phẩm này hiện đã hết hàng trong kho!')
+      return false
+    }
 
     await addItem({
       skuId,
@@ -65,17 +66,18 @@ export const ProductDetailPage: React.FC = () => {
       priceMinor,
       imageUrl: selectedImage || product.thumbnailUrl || (product.imageUrls && product.imageUrls[0]) || '',
       quantity,
+      availableStock: stock,
       storeId: product.storeId || 'store-1',
       storeName: product.storeName || 'Official Store',
     })
 
-    showToast(`Đã thêm ${quantity} x "${product.name}" vào giỏ hàng!`)
+    toast.success(`Đã thêm ${quantity} x "${product.name}" vào giỏ hàng!`)
     return true
   }
 
   const handleBuyNow = async () => {
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để tiếp tục mua hàng!')
+      toast.info('Vui lòng đăng nhập để tiếp tục mua hàng!')
       navigate(PATHS.LOGIN, { state: { from: `/products/${product?.id || id}` } })
       return
     }
@@ -287,26 +289,6 @@ export const ProductDetailPage: React.FC = () => {
         {/* Customer Reviews & Feedback Section */}
         <ProductReviews productId={product.id} productTitle={product.name} />
       </div>
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div style={{
-          position: 'fixed',
-          bottom: 30,
-          right: 30,
-          background: '#0f172a',
-          color: '#facc15',
-          padding: '12px 24px',
-          borderRadius: 8,
-          boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
-          fontSize: 14,
-          fontWeight: 700,
-          zIndex: 9999,
-          animation: 'fadeIn 0.2s ease',
-        }}>
-          {toastMessage}
-        </div>
-      )}
     </StorefrontLayout>
   )
 }

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { cartApi } from '../../features/cart/api/cartApi'
 import { authStore } from './authStore'
+import { toast } from '../../components/feedback/Toast'
 
 export interface CartItem {
   id?: string // Cart item ID in backend
@@ -11,6 +12,7 @@ export interface CartItem {
   priceMinor: number
   imageUrl: string
   quantity: number
+  availableStock?: number
   storeId: string
   storeName: string
   selected: boolean
@@ -87,6 +89,8 @@ export const cartStore = {
         const syncedItems: CartItem[] = []
         backendCart.storeGroups.forEach((group) => {
           group.items.forEach((item) => {
+            const stock = typeof item.availableStock === 'number' ? item.availableStock : 9999
+            const adjustedQty = stock > 0 ? Math.min(item.quantity, stock) : item.quantity
             syncedItems.push({
               id: item.itemId,
               skuId: item.variantId || item.itemId,
@@ -95,7 +99,8 @@ export const cartStore = {
               skuName: item.variantAttribute,
               priceMinor: item.currentPriceMinor,
               imageUrl: item.thumbnailUrl,
-              quantity: item.quantity,
+              quantity: adjustedQty,
+              availableStock: item.availableStock,
               storeId: group.storeId,
               storeName: group.storeName,
               selected: true,
@@ -148,11 +153,25 @@ export const cartStore = {
     let newItems: CartItem[]
 
     if (existingIndex > -1) {
+      const existing = state.items[existingIndex]
+      const maxStock = typeof existing.availableStock === 'number'
+        ? existing.availableStock
+        : (typeof item.availableStock === 'number' ? item.availableStock : 9999)
+      const targetQty = existing.quantity + item.quantity
+      if (targetQty > maxStock) {
+        toast.warning(`Sản phẩm này chỉ còn tối đa ${maxStock} trong kho!`)
+      }
+      const newQuantity = Math.min(targetQty, maxStock)
       newItems = state.items.map((i, idx) =>
-        idx === existingIndex ? { ...i, quantity: i.quantity + item.quantity, selected: true } : i
+        idx === existingIndex ? { ...i, quantity: newQuantity, selected: true } : i
       )
     } else {
-      newItems = [...state.items, { ...item, selected: true }]
+      const maxStock = typeof item.availableStock === 'number' ? item.availableStock : 9999
+      if (item.quantity > maxStock) {
+        toast.warning(`Sản phẩm này chỉ còn tối đa ${maxStock} trong kho!`)
+      }
+      const newQuantity = Math.min(item.quantity, maxStock)
+      newItems = [...state.items, { ...item, quantity: newQuantity, selected: true }]
     }
 
     state = { ...state, items: newItems }
@@ -176,6 +195,7 @@ export const cartStore = {
                 priceMinor: backendItem.currentPriceMinor,
                 imageUrl: backendItem.thumbnailUrl,
                 quantity: backendItem.quantity,
+                availableStock: backendItem.availableStock,
                 storeId: group.storeId,
                 storeName: group.storeName,
                 selected: true,
@@ -202,14 +222,25 @@ export const cartStore = {
     }
 
     const item = state.items.find((i) => i.skuId === skuId)
+    if (!item) return
+
+    const maxStock = typeof item.availableStock === 'number' ? item.availableStock : 9999
+    if (quantity > maxStock) {
+      toast.warning(`Sản phẩm "${item.name}" chỉ còn tối đa ${maxStock} trong kho!`)
+    }
+    const finalQuantity = Math.min(quantity, maxStock)
+
     state = {
       ...state,
-      items: state.items.map((i) => (i.skuId === skuId ? { ...i, quantity } : i)),
+      items: state.items.map((i) => (i.skuId === skuId ? { ...i, quantity: finalQuantity } : i)),
     }
     emitChange()
 
     if (authStore.getState().isAuthenticated && item?.id) {
-      cartApi.updateQuantity(item.id, quantity).catch(() => {})
+      cartApi.updateQuantity(item.id, finalQuantity).catch((err) => {
+        console.warn('Backend updateQuantity error:', err)
+        cartStore.syncWithBackend()
+      })
     }
   },
 

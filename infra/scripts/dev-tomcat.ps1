@@ -14,8 +14,8 @@ param (
     [ValidateSet("run", "debug", "stop", "build")]
     [string]$Action = "run",
 
-    [string]$TomcatHome = "D:\LTweb\apache-tomcat-10.1.60",
-    [string]$JdkHome = "C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot"
+    [string]$TomcatHome = "D:\HOCDITHANGNGU\WEB\apache-tomcat-10.1.60-windows-x64\apache-tomcat-10.1.60",
+    [string]$JdkHome = "C:\Users\Lenovo\.jdks\ms-21.0.12.1"
 )
 
 $ErrorActionPreference = "Stop"

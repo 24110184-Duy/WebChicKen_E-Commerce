@@ -1,0 +1,1137 @@
+/* ==========================================================================
+   WebChicKen Seller Onboarding CSS (Dark Theme - ChickyMart Yellow Style)
+   ========================================================================== */
+
+.seller-onboarding-root {
+  min-height: 100vh;
+  background-color: #121212;
+  color: #e4e6eb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Topbar ── */
+.onboarding-topbar {
+  height: 60px;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.onboarding-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.onboarding-logo-icon {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  font-size: 18px;
+  box-shadow: 0 2px 10px rgba(234, 179, 8, 0.4);
+}
+
+.onboarding-brand-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #facc15;
+  letter-spacing: -0.02em;
+}
+
+.onboarding-brand-divider {
+  width: 1px;
+  height: 18px;
+  background-color: #3e3e3e;
+}
+
+.onboarding-brand-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e4e6eb;
+}
+
+.onboarding-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.onboarding-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background-color: #262626;
+  border: 1px solid #3a3a3a;
+  color: #e4e6eb;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.onboarding-user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* ── Màn hình 1: Welcome Screen ── */
+.onboarding-welcome-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.onboarding-welcome-card {
+  max-width: 600px;
+  width: 100%;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 48px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.onboarding-welcome-illustration {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fef9c3 0%, #fef08a 50%, #fde047 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  position: relative;
+  box-shadow: 0 6px 24px rgba(234, 179, 8, 0.25);
+}
+
+.onboarding-welcome-illustration-inner {
+  width: 84px;
+  height: 60px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 2px solid #eab308;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.onboarding-welcome-badge {
+  width: 32px;
+  height: 16px;
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  border-radius: 4px;
+}
+
+.onboarding-welcome-line {
+  width: 48px;
+  height: 4px;
+  background-color: #fef08a;
+  border-radius: 2px;
+}
+
+.onboarding-welcome-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px;
+}
+
+.onboarding-welcome-desc {
+  font-size: 14px;
+  color: #a0a0a0;
+  margin: 0 0 32px;
+  max-width: 420px;
+  line-height: 1.6;
+}
+
+.onboarding-start-btn {
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  color: #0f172a;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(234, 179, 8, 0.35);
+}
+
+.onboarding-start-btn:hover {
+  background: linear-gradient(135deg, #fde047 0%, #ca8a04 100%);
+  transform: translateY(-1px);
+}
+
+/* ── Stepper 4 Bước (Shop -> Vận chuyển -> Định danh & Thuế -> Hoàn tất) ── */
+.onboarding-main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 60px;
+}
+
+.onboarding-stepper-box {
+  max-width: 860px;
+  width: 100%;
+  margin-bottom: 28px;
+}
+
+.onboarding-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 16px;
+}
+
+.onboarding-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  cursor: default;
+}
+
+.onboarding-step-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #3f3f46;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.onboarding-step-item.active .onboarding-step-circle {
+  background-color: #facc15;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.3);
+}
+
+.onboarding-step-item.completed .onboarding-step-circle {
+  background-color: #eab308;
+}
+
+.onboarding-step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #71717a;
+  white-space: nowrap;
+}
+
+.onboarding-step-item.active .onboarding-step-label {
+  color: #facc15;
+  font-weight: 700;
+}
+
+.onboarding-step-item.completed .onboarding-step-label {
+  color: #d4d4d8;
+}
+
+.onboarding-stepper-line {
+  position: absolute;
+  top: 5px;
+  left: 60px;
+  right: 60px;
+  height: 1px;
+  background-color: #2e2e2e;
+  z-index: 1;
+}
+
+/* ── Form Card ── */
+.onboarding-form-card {
+  max-width: 860px;
+  width: 100%;
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 40px 48px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+.onboarding-form-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.onboarding-field-label {
+  font-size: 14px;
+  color: #d1d5db;
+  font-weight: 500;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.onboarding-field-label .required-star {
+  color: #facc15;
+}
+
+.onboarding-field-content {
+  position: relative;
+  max-width: 520px;
+}
+
+.onboarding-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.onboarding-text-input {
+  width: 100%;
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.onboarding-text-input:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 0 1px #facc15;
+}
+
+.onboarding-char-count {
+  position: absolute;
+  right: 12px;
+  color: #71717a;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* Add Address Button */
+.onboarding-add-addr-btn {
+  background-color: #262626;
+  border: 1px solid #3f3f46;
+  color: #e4e6eb;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.onboarding-add-addr-btn:hover {
+  background-color: #323232;
+  border-color: #facc15;
+  color: #facc15;
+}
+
+/* Selected Address Box */
+.onboarding-selected-addr-box {
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onboarding-selected-addr-info {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.onboarding-selected-addr-name {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.onboarding-selected-addr-phone {
+  color: #9ca3af;
+  margin-left: 8px;
+}
+
+.onboarding-selected-addr-text {
+  color: #d1d5db;
+  margin-top: 4px;
+}
+
+.onboarding-edit-addr-btn {
+  background: transparent;
+  border: none;
+  color: #facc15;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.onboarding-edit-addr-btn:hover {
+  text-decoration: underline;
+}
+
+/* ── BƯỚC 3: KHAI BÁO ĐỊNH DANH CCCD VÀ MÃ THUẾ ── */
+.onboarding-sub-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #facc15;
+  margin: 28px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.onboarding-sub-header:first-of-type {
+  margin-top: 0;
+}
+
+.onboarding-upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.onboarding-upload-card {
+  border: 1.5px dashed #444444;
+  border-radius: 8px;
+  padding: 20px 14px;
+  background-color: #222222;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.onboarding-upload-card:hover {
+  border-color: #facc15;
+  background-color: #262626;
+}
+
+.onboarding-upload-card.has-file {
+  border-style: solid;
+  border-color: #ca8a04;
+  background-color: rgba(234, 179, 8, 0.08);
+}
+
+.onboarding-upload-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #2d2d2d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #facc15;
+}
+
+.onboarding-upload-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.onboarding-upload-subtitle {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Radio Group */
+.onboarding-radio-group {
+  display: flex;
+  gap: 20px;
+  padding-top: 8px;
+}
+
+.onboarding-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #e4e6eb;
+  cursor: pointer;
+}
+
+.onboarding-radio-item input[type="radio"] {
+  accent-color: #facc15;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ── BƯỚC 2: CÀI ĐẶT VẬN CHUYỂN ── */
+.shipping-method-card {
+  background-color: #222222;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.shipping-method-card.active-border {
+  border-color: #3f3f46;
+}
+
+.shipping-method-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.shipping-method-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shipping-method-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.shipping-method-cod-status {
+  font-size: 12px;
+  color: #eab308;
+  font-weight: 500;
+}
+
+.shipping-method-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.shipping-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.shipping-method-body {
+  padding: 14px 18px 18px;
+  border-top: 1px solid #2a2a2a;
+  background-color: #1c1c1c;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.shipping-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shipping-option-label {
+  font-size: 13px;
+  color: #d1d5db;
+}
+
+.shipping-option-note {
+  font-size: 11px;
+  color: #71717a;
+  margin-top: 2px;
+}
+
+/* Custom iOS/Shopee Toggle Switch */
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #3f3f46;
+  transition: 0.25s;
+  border-radius: 24px;
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #ffffff;
+  transition: 0.25s;
+  border-radius: 50%;
+}
+
+input:checked + .switch-slider {
+  background-color: #22c55e;
+}
+
+input:focus + .switch-slider {
+  box-shadow: 0 0 1px #22c55e;
+}
+
+input:checked + .switch-slider:before {
+  transform: translateX(20px);
+}
+
+.switch-toggle.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.switch-toggle.disabled .switch-slider {
+  cursor: not-allowed;
+}
+
+/* ── BƯỚC 4: HOÀN TẤT & XÁC NHẬN ── */
+.confirm-section {
+  background-color: #222222;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.confirm-section-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #facc15;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.confirm-edit-link {
+  font-size: 12px;
+  color: #9ca3af;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.confirm-edit-link:hover {
+  color: #facc15;
+}
+
+.confirm-info-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px 16px;
+  font-size: 13px;
+}
+
+.confirm-info-label {
+  color: #9ca3af;
+}
+
+.confirm-info-value {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.confirm-shipping-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #2b2b2b;
+  border: 1px solid #3a3a3a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #e4e6eb;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.confirm-shipping-tag.cod-enabled {
+  border-color: #ca8a04;
+  color: #fef08a;
+}
+
+/* Form Action Buttons */
+.onboarding-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.onboarding-btn-cancel {
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  color: #d1d5db;
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.onboarding-btn-cancel:hover {
+  background-color: #323232;
+  color: #ffffff;
+}
+
+.onboarding-btn-primary {
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  border: none;
+  color: #0f172a;
+  padding: 10px 28px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 10px rgba(234, 179, 8, 0.3);
+}
+
+.onboarding-btn-primary:hover {
+  background: linear-gradient(135deg, #fde047 0%, #ca8a04 100%);
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.45);
+}
+
+/* ── Modal Thêm Địa Chỉ Mới ── */
+.onboarding-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  animation: fadeInModal 0.2s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.onboarding-modal-card {
+  width: 100%;
+  max-width: 580px;
+  background-color: #1a1a1a;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 90vh;
+}
+
+.onboarding-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.onboarding-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.onboarding-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.onboarding-modal-close-btn:hover {
+  color: #ffffff;
+  background-color: #2a2a2a;
+}
+
+.onboarding-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.onboarding-modal-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.onboarding-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.onboarding-modal-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.onboarding-modal-input {
+  width: 100%;
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.onboarding-modal-input:focus {
+  border-color: #facc15;
+}
+
+.onboarding-modal-select-box {
+  width: 100%;
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.onboarding-modal-select-box.placeholder {
+  color: #71717a;
+}
+
+.onboarding-modal-textarea {
+  width: 100%;
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #ffffff;
+  outline: none;
+  resize: vertical;
+  min-height: 72px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.onboarding-modal-textarea:focus {
+  border-color: #facc15;
+}
+
+/* Location Selector Dropdown */
+.onboarding-location-dropdown {
+  background-color: #222222;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  margin-top: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.onboarding-location-tabs {
+  display: flex;
+  border-bottom: 1px solid #333333;
+  background-color: #1a1a1a;
+}
+
+.onboarding-location-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.onboarding-location-tab-btn.active {
+  color: #facc15;
+  font-weight: 700;
+}
+
+.onboarding-location-tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background-color: #facc15;
+  border-radius: 2px;
+}
+
+.onboarding-location-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.onboarding-location-item {
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.onboarding-location-item:hover {
+  background-color: #333333;
+  color: #ffffff;
+}
+
+.onboarding-location-item.selected {
+  color: #facc15;
+  font-weight: 700;
+  background-color: rgba(250, 204, 21, 0.1);
+}
+
+/* Map Ping */
+.onboarding-map-wrapper {
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+  overflow: hidden;
+  position: relative;
+  height: 220px;
+  background-color: #1a1a1a;
+}
+
+.onboarding-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  filter: saturate(1.1);
+}
+
+.onboarding-map-pin-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.onboarding-map-badge {
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  color: #0f172a;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  max-width: 280px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  position: relative;
+  font-weight: 700;
+}
+
+.onboarding-map-badge-country {
+  font-weight: 800;
+  font-size: 11px;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+
+.onboarding-map-badge-address {
+  font-weight: 600;
+  font-size: 11px;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.onboarding-map-badge::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: #eab308 transparent transparent;
+  display: block;
+  width: 0;
+}
+
+.onboarding-map-pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #eab308;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  margin-top: 4px;
+}
+
+/* Modal Footer */
+.onboarding-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #2a2a2a;
+  background-color: #1a1a1a;
+}
+
+.onboarding-modal-btn-cancel {
+  background-color: #242424;
+  border: 1px solid #3f3f46;
+  color: #d1d5db;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.onboarding-modal-btn-cancel:hover {
+  background-color: #323232;
+  color: #ffffff;
+}
+
+.onboarding-modal-btn-submit {
+  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  border: none;
+  color: #0f172a;
+  padding: 8px 24px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.35);
+}
+
+.onboarding-modal-btn-submit:hover {
+  background: linear-gradient(135deg, #fde047 0%, #ca8a04 100%);
+}
+
+@media (max-width: 640px) {
+  .onboarding-topbar {
+    padding: 0 16px;
+  }
+  .onboarding-form-card {
+    padding: 24px 18px;
+  }
+  .onboarding-form-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .onboarding-field-label {
+    padding-top: 0;
+  }
+  .onboarding-upload-grid {
+    grid-template-columns: 1fr;
+  }
+  .onboarding-modal-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .confirm-info-grid {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
