@@ -78,7 +78,7 @@ export const ProductDetailPage: React.FC = () => {
       <StorefrontLayout>
         <div style={{ maxWidth: 1240, margin: '60px auto', textAlign: 'center' }}>
           <h2>Product Not Found</h2>
-          <p style={{ color: '#64748b', margin: '12px 0 24px' }}>The requested poultry product does not exist or has been retired.</p>
+          <p style={{ color: '#64748b', margin: '12px 0 24px' }}>The requested product does not exist or has been retired.</p>
           <Link to="/search" style={{ color: '#b45309', fontWeight: 700 }}>&larr; Back to Product Catalog</Link>
         </div>
       </StorefrontLayout>
@@ -218,16 +218,16 @@ export const ProductDetailPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Farm Guarantees */}
+            {/* Marketplace Guarantees */}
             <div style={{ marginTop: 28, padding: '16px', background: '#f8fafc', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8, border: '1px solid #f1f5f9' }}>
               <div style={{ fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                • 100% Farm Fresh Guarantee: Inspected under HACCP safety protocols.
+                • 100% Genuine Guarantee: Cam kết hàng chính hãng, nguồn gốc xuất xứ rõ ràng.
               </div>
               <div style={{ fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                • Free Return within 24 Hours if packaging integrity is compromised.
+                • Free Return: Đổi trả miễn phí trong vòng 7 ngày nếu phát sinh lỗi từ nhà sản xuất.
               </div>
               <div style={{ fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                • Shipped in insulated cold packaging with dry cooling ice packs.
+                • Fast & Secure Shipping: Đóng gói tiêu chuẩn sàn TMĐT, giao nhanh toàn quốc.
               </div>
             </div>
           </div>
@@ -235,15 +235,15 @@ export const ProductDetailPage: React.FC = () => {
 
         {/* Product Details & Specifications Tabs */}
         <div className="pdp-tabs-card">
-          <div className="pdp-tab-header">Product Description & Farm Story</div>
+          <div className="pdp-tab-header">Mô Tả Sản Phẩm & Thông Tin Chi Tiết</div>
           <div className="pdp-desc-text">
             <p style={{ marginBottom: 14 }}>{product.description}</p>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: '20px 0 10px' }}>Storage & Preparation Instructions:</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', margin: '20px 0 10px' }}>Chính sách bán hàng & Hỗ trợ:</h3>
             <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, color: '#475569', fontSize: 14 }}>
-              <li>Keep chilled at 0°C to 4°C for up to 3 days from delivery date.</li>
-              <li>For longer storage, freeze immediately at -18°C for up to 6 months.</li>
-              <li>Thaw completely in the refrigerator before roasting, grilling, or boiling.</li>
-              <li>Ensure meat reaches an internal temperature of 75°C before serving.</li>
+              <li>Sản phẩm được bảo hành chính hãng theo chính sách của thương hiệu và người bán.</li>
+              <li>Hỗ trợ đồng kiểm khi nhận hàng, hoàn tiền 100% nếu phát hiện hàng giả, hàng nhái.</li>
+              <li>Giao hàng nhanh 2H tại nội thành và giao tiết kiệm toàn quốc từ 2 - 4 ngày.</li>
+              <li>Mọi thắc mắc vui lòng liên hệ trung tâm hỗ trợ khách hàng để được phục vụ 24/7.</li>
             </ul>
           </div>
         </div>

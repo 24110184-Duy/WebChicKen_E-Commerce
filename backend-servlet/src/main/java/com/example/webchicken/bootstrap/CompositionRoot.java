@@ -138,7 +138,7 @@ public class CompositionRoot {
 
         // ── 3. Services ───────────────────────────────────────────────────────
         // Identity
-        AuthService      authService      = new AuthServiceImpl(userDAO, userSessionDAO, customerDAO, userSocialAccountDAO, new com.example.webchicken.infrastructure.security.SocialAuthVerifier());
+        AuthService      authService      = new AuthServiceImpl(userDAO, userSessionDAO, customerDAO, sellerDAO, adminDAO, userSocialAccountDAO, new com.example.webchicken.infrastructure.security.SocialAuthVerifier());
         CustomerService  customerService  = new CustomerServiceImpl(customerDAO, userDAO, addressDAO);
         SellerService    sellerService    = new SellerServiceImpl(sellerDAO, userDAO);
 

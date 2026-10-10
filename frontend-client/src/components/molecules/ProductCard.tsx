@@ -55,7 +55,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {formatMoney(product.minPriceMinor)}
           </div>
           <span style={{ fontSize: 11, color: '#059669', fontWeight: 700 }}>
-            Fresh Farm
+            Chính Hãng
           </span>
         </div>
       </div>

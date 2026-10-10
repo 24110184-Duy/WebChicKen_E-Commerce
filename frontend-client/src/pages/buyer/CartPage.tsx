@@ -120,10 +120,10 @@ export const CartPage: React.FC = () => {
             <div className="cart-empty-icon-box">0</div>
             <h2 className="cart-empty-title">Your shopping cart is empty</h2>
             <p className="cart-empty-desc">
-              Explore our selection of pasture-raised, organic fresh poultry, duck, and specialized cuts delivered directly from certified farms.
+              Khám phá hàng ngàn sản phẩm công nghệ, thời trang, đời sống và gia dụng chính hãng với ưu đãi tốt nhất.
             </p>
             <Link to={PATHS.SEARCH} className="cart-empty-btn">
-              Explore Fresh Products
+              Khám Phá Sản Phẩm Ngay
             </Link>
           </div>
         ) : (
@@ -164,7 +164,7 @@ export const CartPage: React.FC = () => {
                         onChange={(e) => toggleSelectStore(storeGroup.storeId, e.target.checked)}
                         title={`Select all from ${storeGroup.storeName}`}
                       />
-                      <span className="cart-store-tag">Farm Store</span>
+                      <span className="cart-store-tag">Shop Official</span>
                       <span className="cart-store-name">{storeGroup.storeName}</span>
                     </div>
 
@@ -383,7 +383,7 @@ export const CartPage: React.FC = () => {
                 </button>
 
                 <span className="cart-guarantee-note">
-                  Fresh Farm Guarantee & 100% Cold-Chain Safety
+                  Chính Hãng 100% & Thanh Toán An Toàn Bảo Đảm
                 </span>
               </div>
             </div>

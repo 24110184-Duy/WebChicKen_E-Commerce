@@ -214,15 +214,14 @@ export const AdminProductsPage: React.FC = () => {
               </h1>
             </div>
             <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: 14 }}>
-              Thẩm định quy chuẩn an toàn sinh học VietGAP, chất lượng gia cầm và phân loại SKU trước khi công khai trên sàn WebChicKen.
+              Thẩm định nguồn gốc xuất xứ, thông tin pháp lý, chất lượng sản phẩm và phân loại SKU trước khi công khai trên sàn WebChicKen.
             </p>
           </div>
 
           <button
             onClick={() => {
-              adminProductApi.resetDemoData()
               loadProducts()
-              showToast('Đã tải lại bộ dữ liệu kiểm duyệt mẫu.', 'success')
+              showToast('Đã làm mới danh sách sản phẩm từ hệ thống.', 'success')
             }}
             style={{
               padding: '8px 16px',
@@ -239,7 +238,7 @@ export const AdminProductsPage: React.FC = () => {
             }}
           >
             <RotateCcw size={14} />
-            <span>Nạp lại Dữ liệu Mẫu</span>
+            <span>Làm mới Danh sách</span>
           </button>
         </div>
 

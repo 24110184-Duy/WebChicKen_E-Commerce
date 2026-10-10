@@ -502,7 +502,7 @@ export const SellerFeedbackPage: React.FC = () => {
               >
                 <Sparkles size={20} color="#2563eb" />
                 <span style={{ fontSize: 13.5, color: '#1e40af' }}>
-                  Ban Quản trị WebChicKen cam kết tiếp nhận và phản hồi mọi khiếu nại của nông trại/nhà bán trong vòng <strong>24 - 48 giờ làm việc</strong>.
+                  Ban Quản trị WebChicKen cam kết tiếp nhận và phản hồi mọi yêu cầu của nhà bán hàng trong vòng <strong>24 - 48 giờ làm việc</strong>.
                 </span>
               </div>
 

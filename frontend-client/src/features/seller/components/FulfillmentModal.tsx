@@ -202,7 +202,7 @@ export const FulfillmentModal: React.FC<FulfillmentModalProps> = ({
                 }}
               >
                 <ShieldCheck style={{ width: 16, height: 16, color: '#10b981' }} />
-                <span>Cold-Chain Safety & Quality Checklist</span>
+                <span>Quy Chuẩn Kiểm Hàng & Đóng Gói (Checklist)</span>
               </div>
               <div className="fulfillment-checklist">
                 <label className="fulfillment-check-item">
@@ -211,7 +211,7 @@ export const FulfillmentModal: React.FC<FulfillmentModalProps> = ({
                     checked={checkSeal}
                     onChange={(e) => setCheckSeal(e.target.checked)}
                   />
-                  <span>Poultry products are vacuum-sealed and inspected for zero puncture/leak.</span>
+                  <span>Sản phẩm nguyên seal/nguyên vẹn, đúng phân loại SKU và đủ số lượng.</span>
                 </label>
                 <label className="fulfillment-check-item">
                   <input
@@ -219,7 +219,7 @@ export const FulfillmentModal: React.FC<FulfillmentModalProps> = ({
                     checked={checkGelPacks}
                     onChange={(e) => setCheckGelPacks(e.target.checked)}
                   />
-                  <span>Chilled ice-gel packs inserted inside thermal insulated pouch.</span>
+                  <span>Đóng gói bọc xốp chống va đập/hộp carton đạt chuẩn sàn TMĐT.</span>
                 </label>
                 <label className="fulfillment-check-item">
                   <input
@@ -227,7 +227,7 @@ export const FulfillmentModal: React.FC<FulfillmentModalProps> = ({
                     checked={checkLabel}
                     onChange={(e) => setCheckLabel(e.target.checked)}
                   />
-                  <span>Shipping label clearly displays recipient address and perishable warning.</span>
+                  <span>Phiếu giao hàng và tem vận đơn dán rõ ràng thông tin người nhận.</span>
                 </label>
               </div>
             </div>

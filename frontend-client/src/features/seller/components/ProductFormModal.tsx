@@ -18,7 +18,7 @@ import {
   type CreateProductPayload,
   type UpdateProductPayload,
   type CreateVariantPayload,
-  STANDARD_CATEGORIES,
+  type ProductCategoryOption,
 } from '../api/sellerApi'
 import { formatMoney } from '../../../shared/lib/formatMoney'
 
@@ -27,15 +27,16 @@ export interface ProductFormModalProps {
   onClose: () => void
   onSuccess: (product: SellerProductItem) => void
   initialProduct?: SellerProductItem | null
+  shopId?: string
 }
 
-const SAMPLE_POULTRY_IMAGES = [
-  'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80',
+const SAMPLE_PRODUCT_IMAGES = [
+  'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80',
 ]
 
 export const ProductFormModal: React.FC<ProductFormModalProps> = ({
@@ -43,21 +44,32 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onClose,
   onSuccess,
   initialProduct,
+  shopId,
 }) => {
   const isEditing = !!initialProduct
 
+  const [categories, setCategories] = useState<ProductCategoryOption[]>([])
   const [name, setName] = useState<string>('')
-  const [categoryId, setCategoryId] = useState<string>('cat-whole')
+  const [categoryId, setCategoryId] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE')
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [variants, setVariants] = useState<CreateVariantPayload[]>([
-    { attribute: 'Standard Size (~1.3kg)', basePriceMinor: 145000, stockQuantity: 50 },
+    { attribute: 'Bản Tiêu Chuẩn', basePriceMinor: 499000, stockQuantity: 100 },
   ])
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isUploading, setIsUploading] = useState<boolean>(false)
   const [isDragging, setIsDragging] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    sellerApi.getCategories().then((cats) => {
+      if (cats && cats.length > 0) {
+        setCategories(cats)
+        if (!categoryId) setCategoryId(cats[0].id)
+      }
+    })
+  }, [])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -80,11 +92,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
     } else {
       setName('')
-      setCategoryId('cat-whole')
+      setCategoryId('cat-electronics')
       setDescription('')
       setStatus('ACTIVE')
-      setImageUrls([SAMPLE_POULTRY_IMAGES[0]])
-      setVariants([{ attribute: '1.2kg - 1.4kg (Cleaned)', basePriceMinor: 145000, stockQuantity: 40 }])
+      setImageUrls([SAMPLE_PRODUCT_IMAGES[0]])
+      setVariants([{ attribute: 'Bản Tiêu Chuẩn', basePriceMinor: 499000, stockQuantity: 100 }])
     }
     setErrorMessage(null)
   }, [initialProduct, isOpen])
@@ -246,29 +258,38 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
     setIsSubmitting(true)
     try {
+      let currentShopId = shopId || initialProduct?.storeId
+      if (!currentShopId) {
+        const myStore = await sellerApi.getMyStore()
+        currentShopId = myStore?.id
+      }
+      if (!currentShopId) {
+        throw new Error('Không thể xác định gian hàng người bán. Vui lòng thử lại.')
+      }
+
       if (isEditing && initialProduct) {
         const payload: UpdateProductPayload = {
           name: name.trim(),
           categoryId,
           description: description.trim(),
           status,
-          imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_POULTRY_IMAGES[0]],
+          imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_PRODUCT_IMAGES[0]],
           variants,
         }
-        const updated = await sellerApi.updateStoreProduct('store-1', initialProduct.id, payload)
+        const updated = await sellerApi.updateStoreProduct(currentShopId, initialProduct.id, payload)
         onSuccess(updated)
         onClose()
       } else {
         const payload: CreateProductPayload = {
-          storeId: 'store-1',
+          storeId: currentShopId,
           name: name.trim(),
           categoryId,
           description: description.trim(),
           status,
-          imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_POULTRY_IMAGES[0]],
+          imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_PRODUCT_IMAGES[0]],
           variants,
         }
-        const created = await sellerApi.createStoreProduct('store-1', payload)
+        const created = await sellerApi.createStoreProduct(currentShopId, payload)
         onSuccess(created)
         onClose()
       }
@@ -286,10 +307,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         <div className="seller-modal-header">
           <div>
             <h3 className="seller-modal-title">
-              {isEditing ? 'Edit Product SPU & Variants' : 'Add New Poultry Product'}
+              {isEditing ? 'Chỉnh Sửa Sản Phẩm (SKU & Biến Thể)' : 'Thêm Sản Phẩm Mới'}
             </h3>
             <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>
-              Configure product details, cold-chain specifications, pricing, and stock
+              Cấu hình thông tin chi tiết, quy cách SKU, giá bán và quản lý tồn kho
             </p>
           </div>
           <button
@@ -336,7 +357,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Premium Free-Range Whole Chicken (Golden Badge)"
+                placeholder="e.g. Tai Nghe Bluetooth Chống Ồn Sony WH-1000XM5 Chính Hãng"
                 className="seller-form-input"
               />
             </div>
@@ -349,7 +370,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="seller-form-select"
                 >
-                  {STANDARD_CATEGORIES.map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -371,11 +392,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div className="seller-form-group">
-              <label className="seller-form-label">Description & Cold-Chain Specs</label>
+              <label className="seller-form-label">Mô Tả & Thông Tin Chi Tiết</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe freshness grade, farm origin, certifications, storage instructions (e.g. 0°C to 4°C), and cooking suggestions..."
+                placeholder="Mô tả thông tin chi tiết sản phẩm, xuất xứ, tính năng nổi bật, bảo hành chính hãng và hướng dẫn sử dụng..."
                 className="seller-form-textarea"
                 rows={3}
               />
@@ -589,7 +610,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               {/* Quick Preset Samples */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 11, color: '#94a3b8' }}>Quick demo photos:</span>
-                {SAMPLE_POULTRY_IMAGES.slice(0, 3).map((url, idx) => (
+                {SAMPLE_PRODUCT_IMAGES.slice(0, 3).map((url, idx) => (
                   <button
                     key={idx}
                     type="button"

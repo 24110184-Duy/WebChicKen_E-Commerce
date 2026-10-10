@@ -12,20 +12,27 @@ interface AccountLayoutProps {
 export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, isAuthenticated, logout } = useAuthStore()
   const { isAccountOpen, openAccountMenu, closeAccountMenu, toggleAccountMenu } = useAccountNav()
+
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      navigate(PATHS.HOME, { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleLogout = async () => {
     closeAccountMenu()
     try { await authApi.logout() } catch { /* ignore */ }
     logout()
+    navigate(PATHS.HOME, { replace: true })
   }
 
   const initials = user?.fullName
     ? user.fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-    : user?.email?.[0]?.toUpperCase() ?? 'U'
+    : user?.email?.[0]?.toUpperCase() ?? user?.phone?.[0] ?? 'U'
 
-  const displayName = user?.fullName || user?.email?.split('@')[0] || 'volyquocduy'
+  const displayName = user?.fullName || user?.username || user?.email?.split('@')[0] || user?.phone || 'User'
 
   // Check active routes
   const isProfileActive = location.pathname === PATHS.ACCOUNT.PROFILE

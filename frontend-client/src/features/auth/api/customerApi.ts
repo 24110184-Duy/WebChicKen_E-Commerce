@@ -19,10 +19,11 @@ export interface UserProfileResponse {
 
 export interface UpdateProfileRequest {
   fullName: string
-  phone: string
+  phone?: string
   logoUrl?: string
   gender?: string       // MALE | FEMALE | OTHER
   dateOfBirth?: string  // yyyy-MM-dd
+  email?: string
 }
 
 export interface AddressResponse {
@@ -55,14 +56,14 @@ export const customerApi = {
       const res = await httpClient.get<UserProfileResponse>('/customers/profile')
       if (res.data) return res.data
     } catch (err) {
-      console.warn('[Mock] customerApi.getProfile — Backend offline:', err)
+      console.warn('[customerApi.getProfile] Error fetching profile:', err)
     }
-    // Mock fallback
+    // Fallback nếu chưa kết nối backend
     return {
-      userId: 'usr-mock-12345',
-      email: 'demo@chickymart.vn',
-      fullName: 'Demo User',
-      phone: '0912345678',
+      userId: 'usr-current',
+      email: '',
+      fullName: '',
+      phone: '',
       status: 'ACTIVE',
       tier: 'STANDARD',
       loyaltyPoint: 0,
@@ -76,10 +77,22 @@ export const customerApi = {
       const res = await httpClient.put<UserProfileResponse>('/customers/profile', payload)
       if (res.data) return res.data
     } catch (err) {
-      console.warn('[Mock] customerApi.updateProfile — Backend offline:', err)
+      console.warn('[customerApi.updateProfile] Error updating profile:', err)
     }
-    // Mock fallback — trả lại payload như đã gửi
-    return { userId: 'usr-mock', email: 'demo@chickymart.vn', status: 'ACTIVE', tier: 'STANDARD', loyaltyPoint: 0, roles: ['CUSTOMER'], ...payload }
+    // Fallback — trả lại payload như đã gửi
+    return {
+      userId: 'usr-current',
+      email: payload.email || '',
+      fullName: payload.fullName,
+      phone: payload.phone || '',
+      status: 'ACTIVE',
+      tier: 'STANDARD',
+      loyaltyPoint: 0,
+      roles: ['CUSTOMER'],
+      logoUrl: payload.logoUrl,
+      gender: payload.gender,
+      dateOfBirth: payload.dateOfBirth,
+    }
   },
 
   /** GET /api/v1/customers/addresses */

@@ -10,7 +10,9 @@ import com.example.webchicken.infrastructure.security.JwtProvider;
 import com.example.webchicken.infrastructure.security.OAuthVerifier;
 import com.example.webchicken.infrastructure.security.SocialAuthVerifier;
 import com.example.webchicken.infrastructure.security.SocialUserProfile;
+import com.example.webchicken.modules.identity.dao.AdminDAO;
 import com.example.webchicken.modules.identity.dao.CustomerDAO;
+import com.example.webchicken.modules.identity.dao.SellerDAO;
 import com.example.webchicken.modules.identity.dao.UserDAO;
 import com.example.webchicken.modules.identity.dao.UserSessionDAO;
 import com.example.webchicken.modules.identity.dao.UserSocialAccountDAO;
@@ -18,7 +20,9 @@ import com.example.webchicken.modules.identity.model.dto.request.LoginRequest;
 import com.example.webchicken.modules.identity.model.dto.request.RegisterRequest;
 import com.example.webchicken.modules.identity.model.dto.request.SocialLoginRequest;
 import com.example.webchicken.modules.identity.model.dto.response.AuthResponse;
+import com.example.webchicken.modules.identity.model.entity.AdminEntity;
 import com.example.webchicken.modules.identity.model.entity.CustomerEntity;
+import com.example.webchicken.modules.identity.model.entity.SellerEntity;
 import com.example.webchicken.modules.identity.model.entity.UserEntity;
 import com.example.webchicken.modules.identity.model.entity.UserSessionEntity;
 import com.example.webchicken.modules.identity.model.entity.UserSocialAccountEntity;
@@ -40,6 +44,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserDAO userDAO;
     private final UserSessionDAO userSessionDAO;
     private final CustomerDAO customerDAO;
+    private final SellerDAO sellerDAO;
+    private final AdminDAO adminDAO;
     private final UserSocialAccountDAO userSocialAccountDAO;
     private final OAuthVerifier oauthVerifier;
     private final JwtProvider jwtProvider;
@@ -48,16 +54,30 @@ public class AuthServiceImpl implements AuthService {
             UserDAO userDAO,
             UserSessionDAO userSessionDAO,
             CustomerDAO customerDAO,
+            SellerDAO sellerDAO,
+            AdminDAO adminDAO,
             UserSocialAccountDAO userSocialAccountDAO,
             OAuthVerifier oauthVerifier
     ) {
         this.userDAO = Objects.requireNonNull(userDAO, "userDAO must not be null");
         this.userSessionDAO = Objects.requireNonNull(userSessionDAO, "userSessionDAO must not be null");
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO must not be null");
+        this.sellerDAO = sellerDAO;
+        this.adminDAO = adminDAO;
         this.userSocialAccountDAO = userSocialAccountDAO != null ? userSocialAccountDAO
                 : (userDAO.getEntityManagerFactory() != null ? new UserSocialAccountDAO(userDAO.getEntityManagerFactory()) : null);
         this.oauthVerifier = oauthVerifier != null ? oauthVerifier : new SocialAuthVerifier();
         this.jwtProvider = new JwtProvider();
+    }
+
+    public AuthServiceImpl(
+            UserDAO userDAO,
+            UserSessionDAO userSessionDAO,
+            CustomerDAO customerDAO,
+            UserSocialAccountDAO userSocialAccountDAO,
+            OAuthVerifier oauthVerifier
+    ) {
+        this(userDAO, userSessionDAO, customerDAO, null, null, userSocialAccountDAO, oauthVerifier);
     }
 
     public AuthServiceImpl(UserDAO userDAO, UserSessionDAO userSessionDAO, CustomerDAO customerDAO) {
@@ -300,14 +320,29 @@ public class AuthServiceImpl implements AuthService {
         List<String> roles = new ArrayList<>();
         if (user instanceof CustomerEntity) {
             roles.add("CUSTOMER");
-        }
-        // Kiểm tra loại thực thể kế thừa
-        String className = user.getClass().getSimpleName();
-        if (className.contains("Seller")) {
+        } else if (user instanceof SellerEntity) {
             roles.add("SELLER");
-        } else if (className.contains("Admin")) {
-            roles.add("SUPER_ADMIN");
+        } else if (user instanceof AdminEntity a) {
+            roles.add(a.getRole() != null ? a.getRole().name() : "SUPER_ADMIN");
+            roles.add("ADMIN");
         }
+
+        // Kiểm tra đa vai trò qua bảng sellers và admins
+        if (customerDAO != null && !roles.contains("CUSTOMER") && customerDAO.findById(user.getUserId()).isPresent()) {
+            roles.add("CUSTOMER");
+        }
+        if (sellerDAO != null && !roles.contains("SELLER") && sellerDAO.findById(user.getUserId()).isPresent()) {
+            roles.add("SELLER");
+        }
+        if (adminDAO != null && !roles.contains("ADMIN") && !roles.contains("SUPER_ADMIN") && !roles.contains("MODERATOR")) {
+            var admOpt = adminDAO.findById(user.getUserId());
+            if (admOpt.isPresent()) {
+                String roleName = admOpt.get().getRole() != null ? admOpt.get().getRole().name() : "SUPER_ADMIN";
+                roles.add(roleName);
+                roles.add("ADMIN");
+            }
+        }
+
         if (roles.isEmpty()) {
             roles.add("CUSTOMER");
         }

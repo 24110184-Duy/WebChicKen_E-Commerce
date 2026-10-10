@@ -26,6 +26,7 @@ import { PATHS } from '../../app/router/paths'
 
 export const SellerDashboardPage: React.FC = () => {
   const [period, setPeriod] = useState<string>('7d')
+  const [shopId, setShopId] = useState<string | null>(null)
   const [stats, setStats] = useState<SellerDashboardStats | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [refreshing, setRefreshing] = useState<boolean>(false)
@@ -34,16 +35,16 @@ export const SellerDashboardPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const loadStats = useCallback(
-    async (targetPeriod: string, isManualRefresh: boolean = false) => {
+    async (targetShopId: string, targetPeriod: string, isManualRefresh: boolean = false) => {
       if (isManualRefresh) setRefreshing(true)
       else setLoading(true)
       setErrorMsg(null)
 
       try {
-        const data = await sellerApi.fetchDashboardStats('store-1', targetPeriod)
+        const data = await sellerApi.fetchDashboardStats(targetShopId, targetPeriod)
         setStats(data)
       } catch (err: any) {
-        setErrorMsg(err.message || 'Failed to load seller performance metrics')
+        setErrorMsg(err.message || 'Không thể tải thống kê hiệu suất người bán')
       } finally {
         setLoading(false)
         setRefreshing(false)
@@ -53,8 +54,23 @@ export const SellerDashboardPage: React.FC = () => {
   )
 
   useEffect(() => {
-    loadStats(period)
-  }, [loadStats, period])
+    sellerApi.getMyStore().then((store) => {
+      if (store) {
+        setShopId(store.id)
+        loadStats(store.id, period)
+      } else {
+        setLoading(false)
+      }
+    }).catch(() => {
+      setLoading(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (shopId) {
+      loadStats(shopId, period)
+    }
+  }, [shopId, period, loadStats])
 
   // Chart scaling calculations
   const maxChartValue = useMemo(() => {
@@ -99,7 +115,7 @@ export const SellerDashboardPage: React.FC = () => {
               </span>
             </h1>
             <p className="seller-dashboard-subtitle">
-              Comprehensive poultry sales analytics, fulfillment funnels, revenue breakdown, and cold-chain stock intelligence.
+              Comprehensive product sales analytics, fulfillment funnels, revenue breakdown, and inventory intelligence.
             </p>
           </div>
 
@@ -133,7 +149,7 @@ export const SellerDashboardPage: React.FC = () => {
             <button
               type="button"
               className="seller-refresh-btn"
-              onClick={() => loadStats(period, true)}
+              onClick={() => shopId && loadStats(shopId, period, true)}
               disabled={refreshing || loading}
               title="Refresh sales data"
             >
@@ -175,7 +191,7 @@ export const SellerDashboardPage: React.FC = () => {
             <button
               type="button"
               className="seller-primary-btn"
-              onClick={() => loadStats(period)}
+              onClick={() => shopId && loadStats(shopId, period)}
               style={{ margin: '0 auto' }}
             >
               Retry Loading
@@ -601,7 +617,7 @@ export const SellerDashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                    Poultry Inventory Health ({stats.inventory.totalUnitsInStock} total units across {stats.inventory.totalProducts} items)
+                    Inventory Health ({stats.inventory.totalUnitsInStock} total units across {stats.inventory.totalProducts} items)
                   </h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, fontSize: 12.5, flexWrap: 'wrap' }}>
                     <Link
@@ -687,12 +703,12 @@ export const SellerDashboardPage: React.FC = () => {
 
             {/* 7. Bottom Two-Column Grid: Top Selling Products & Recent Orders */}
             <div className="seller-dashboard-two-col">
-              {/* Left Column: Top Selling Poultry */}
+              {/* Left Column: Top Selling Products */}
               <div className="seller-dash-card">
                 <div className="seller-dash-card-header">
                   <div className="seller-dash-card-title">
                     <Flame style={{ width: 18, height: 18, color: '#f59e0b' }} />
-                    <span>Top-Selling Poultry Products</span>
+                    <span>Top-Selling Products</span>
                   </div>
                   <Link
                     to={PATHS.SELLER.PRODUCTS}

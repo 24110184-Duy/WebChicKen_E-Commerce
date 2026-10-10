@@ -141,10 +141,9 @@ export const SellersPage: React.FC = () => {
     }
   }
 
-  const handleResetData = () => {
-    const fresh = adminShopApi.resetDemoData()
-    setApplications(fresh)
-    showToast('Đã khôi phục dữ liệu thẩm định mẫu về mặc định.')
+  const handleRefreshData = () => {
+    loadApplications()
+    showToast('Đã làm mới danh sách hồ sơ từ hệ thống.')
   }
 
   return (
@@ -201,14 +200,14 @@ export const SellersPage: React.FC = () => {
               </span>
             </h1>
             <p className="admin-page-subtitle">
-              Kiểm tra chứng nhận VietGAP, an toàn thực phẩm, mã số thuế và phê duyệt gian hàng gia cầm mới gia nhập sàn WebChicKen.
+              Kiểm tra giấy phép ĐKKD, mã số thuế, hồ sơ định danh và phê duyệt gian hàng thương mại mới gia nhập sàn WebChicKen.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={handleResetData}
-            title="Khôi phục dữ liệu mẫu để thử nghiệm quy trình duyệt"
+            onClick={handleRefreshData}
+            title="Làm mới danh sách hồ sơ xét duyệt từ cơ sở dữ liệu"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -225,7 +224,7 @@ export const SellersPage: React.FC = () => {
             }}
           >
             <RotateCcw style={{ width: 14, height: 14 }} />
-            <span>Reset Dữ Liệu Demo</span>
+            <span>Làm Mới Danh Sách</span>
           </button>
         </div>
 
@@ -637,10 +636,10 @@ export const SellersPage: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Farm type & location */}
+                        {/* Business type & location */}
                         <td style={{ padding: '16px 18px', verticalAlign: 'top', minWidth: 200 }}>
                           <div style={{ fontWeight: 600, color: '#334155' }}>
-                            {app.farmType || 'Gia cầm thương phẩm'}
+                            {app.farmType || 'Thương mại điện tử & Bán lẻ'}
                           </div>
                           <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
                             {app.farmLocation || 'Đang cập nhật'}

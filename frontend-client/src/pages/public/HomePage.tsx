@@ -71,13 +71,13 @@ export const HomePage: React.FC = () => {
           {/* Slide 1 */}
           <div className={`hero-slide hero-slide-1 ${currentSlide === 0 ? 'active' : ''}`}>
             <div className="hero-slide-content">
-              <span className="hero-tag">Certified Organic</span>
-              <h1 className="hero-title">100% Free-Range & Pasture-Raised Poultry</h1>
+              <span className="hero-tag">Super Brand Day</span>
+              <h1 className="hero-title">Siêu Sale Công Nghệ & Điện Tử Chính Hãng</h1>
               <p className="hero-desc">
-                Naturally grain-fed chickens from trusted high-altitude farms. Free from antibiotics, hormones, and artificial preservatives.
+                Khám phá flagship smartphone, laptop hiệu năng cao, phụ kiện âm thanh đỉnh cao với ưu đãi giảm đến 50% cùng voucher hoàn xu hấp dẫn.
               </p>
               <Link to="/search" className="hero-cta">
-                Shop Fresh Chickens
+                Mua Ngay
               </Link>
             </div>
           </div>
@@ -85,13 +85,13 @@ export const HomePage: React.FC = () => {
           {/* Slide 2 */}
           <div className={`hero-slide hero-slide-2 ${currentSlide === 1 ? 'active' : ''}`}>
             <div className="hero-slide-content">
-              <span className="hero-tag" style={{ background: '#f59e0b', color: '#0f172a' }}>Weekend Specials</span>
-              <h1 className="hero-title">Chef-Crafted Marinades & Fresh Cuts Up to 20% Off</h1>
+              <span className="hero-tag" style={{ background: '#f59e0b', color: '#0f172a' }}>Xu Hướng Mới</span>
+              <h1 className="hero-title">Thời Trang & Phong Cách Sống Thời Thượng</h1>
               <p className="hero-desc">
-                Pre-marinated BBQ wings, herb-seasoned fillets, and crispy tenders ready to roast in under 15 minutes.
+                Bộ sưu tập trang phục xuân hè năng động, giày sneaker cá tính và phụ kiện sành điệu từ các thương hiệu thời trang dẫn đầu.
               </p>
               <Link to="/search" className="hero-cta">
-                Explore Deals
+                Khám Phá Ưu Đãi
               </Link>
             </div>
           </div>
@@ -99,13 +99,13 @@ export const HomePage: React.FC = () => {
           {/* Slide 3 */}
           <div className={`hero-slide hero-slide-3 ${currentSlide === 2 ? 'active' : ''}`}>
             <div className="hero-slide-content">
-              <span className="hero-tag" style={{ background: '#22c55e', color: '#0f172a' }}>Express Cold Delivery</span>
-              <h1 className="hero-title">Farm-To-Door In Under 2 Hours</h1>
+              <span className="hero-tag" style={{ background: '#22c55e', color: '#0f172a' }}>Giao Hỏa Tốc 2H</span>
+              <h1 className="hero-title">Nhà Cửa & Đời Sống Tiện Nghi Thông Minh</h1>
               <p className="hero-desc">
-                Vacuum-packed fresh daily and shipped via temperature-controlled cold chain logistics for absolute freshness.
+                Nâng tầm không gian sống với đồ gia dụng thông minh, thiết bị nhà bếp cao cấp và nội thất tinh tế giao tận tay nhanh chóng.
               </p>
               <Link to="/search" className="hero-cta">
-                Order With Free Shipping
+                Săn Voucher Freeship
               </Link>
             </div>
           </div>
@@ -203,8 +203,8 @@ export const HomePage: React.FC = () => {
       {/* 4. Daily Discover / Recommended Products */}
       <section style={{ maxWidth: 1240, margin: '40px auto 60px', padding: '0 20px' }}>
         <div className="section-head">
-          <h2 className="section-title">Daily Discover & Farm Favorites</h2>
-          <span style={{ fontSize: 13, color: '#78716c' }}>Fresh selections updated daily</span>
+          <h2 className="section-title">Gợi Ý Hôm Nay (Daily Discover)</h2>
+          <span style={{ fontSize: 13, color: '#78716c' }}>Sản phẩm thịnh hành, ưu đãi tốt nhất mỗi ngày</span>
         </div>
 
         {recommendedProducts.length > 0 ? (
@@ -223,7 +223,7 @@ export const HomePage: React.FC = () => {
             color: '#64748b'
           }}>
             <p style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>
-              {isLoading ? 'Đang tải danh sách nông sản...' : 'Chưa có sản phẩm nào được đăng tải.'}
+              {isLoading ? 'Đang tải danh sách sản phẩm...' : 'Chưa có sản phẩm nào được đăng tải.'}
             </p>
           </div>
         )}

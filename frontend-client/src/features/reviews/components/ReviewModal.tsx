@@ -36,12 +36,12 @@ const RATING_EMOTIONS: Record<number, string> = {
 }
 
 const QUICK_TAGS = [
-  '🍗 Extremely fresh and tender poultry',
-  '📦 Great cold-chain vacuum packaging',
-  '⚡ Super fast delivery',
-  '💰 Great value for money',
-  '⭐ Exceptional farm quality',
-  '👍 Naturally juicy & delicious flavor',
+  '✨ Sản phẩm chính hãng 100%',
+  '📦 Đóng gói cẩn thận, chắc chắn',
+  '⚡ Giao hàng siêu nhanh',
+  '💰 Đáng tiền, giá cả cạnh tranh',
+  '⭐ Chất lượng vượt mong đợi',
+  '👍 Shop phục vụ nhiệt tình, chu đáo',
 ]
 
 const countWords = (text: string): number => {
@@ -364,7 +364,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={6}
-              placeholder="Share details of your experience with this poultry product (freshness, cold-chain packaging quality, delivery speed, taste, aroma, tenderness, value for money...)"
+              placeholder="Chia sẻ chi tiết trải nghiệm của bạn về sản phẩm (chất lượng thực tế, độ hoàn thiện, tính năng, tốc độ giao hàng, đóng gói kiện hàng, dịch vụ hỗ trợ của shop...)"
               className="review-textarea"
             />
             <div className="review-textarea-footer">

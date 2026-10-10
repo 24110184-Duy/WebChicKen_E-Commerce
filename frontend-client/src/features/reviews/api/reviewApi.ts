@@ -20,13 +20,12 @@ const INITIAL_MOCK_REVIEWS: ReviewResponse[] = [
     productId: 'prod-1',
     rating: 5,
     comment:
-      'Free-range chicken is remarkably firm, juicy and fragrant. Roasted with a golden crispy skin that looked and tasted gourmet. Packaged in an insulated thermal box with cold gel ice packs with extraordinary care. Delivered ice cold and fresh. Will definitely order regularly!',
+      'Tai nghe đeo rất êm tai, chống ồn chủ động ANC cực đỉnh trong tầm giá. Âm bass chắc khỏe, pin trâu dùng cả ngày không hết. Đóng gói hộp nguyên seal cẩn thận, giao hàng siêu nhanh!',
     mediaUrls: [
-      'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
     ],
     sellerReply:
-      'Chicky Farm Direct sincerely thanks Sarah for trusting our cold-chain certified fresh poultry! Wishing you and your family delightful meals ahead.',
+      'TechZone Official chân thành cảm ơn bạn đã tin tưởng ủng hộ sản phẩm chính hãng! Chúc bạn có những phút giây trải nghiệm âm nhạc thật tuyệt vời.',
     sellerReplyAt: '2026-10-02T16:45:00Z',
     status: 'APPROVED',
     helpfulCount: 8,
@@ -43,9 +42,9 @@ const INITIAL_MOCK_REVIEWS: ReviewResponse[] = [
     productId: 'prod-1',
     rating: 5,
     comment:
-      'Ordered in the morning, delivered right before lunch! Vacuum sealed cleanly with zero odor. Prepared chili-salt roasted chicken and the meat was succulent and naturally sweet. Excellent value for money!',
+      'Đặt sáng chiều nhận được luôn. Sản phẩm hoàn thiện cao cấp, kết nối Bluetooth tức thì với cả điện thoại và laptop. Rất đáng đồng tiền bát gạo!',
     mediaUrls: [
-      'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80',
     ],
     sellerReply: null,
     sellerReplyAt: null,
@@ -64,10 +63,10 @@ const INITIAL_MOCK_REVIEWS: ReviewResponse[] = [
     productId: 'prod-1',
     rating: 4,
     comment:
-      'Fresh chicken quality is superb, firm texture without getting mushy when boiled. Minus 1 star because delivery courier was 15 minutes late due to heavy storms, but thermal insulation box preserved the meat perfectly cold and fresh.',
+      'Chất lượng âm thanh xuất sắc trong phân khúc. Trừ 1 sao do bên vận chuyển giao trễ 1 chút vì mưa to, nhưng shop bọc chống sốc 2 lớp rất kỹ càng nên hộp còn nguyên vẹn không móp méo.',
     mediaUrls: [],
     sellerReply:
-      'Chicky Farm warmly apologizes to Michael for the brief courier delay caused by harsh weather conditions. We will coordinate closely with logistics partners to ensure an even smoother experience next time!',
+      'TechZone chân thành xin lỗi quý khách vì đơn vị vận chuyển giao trễ do thời tiết xấu. Shop sẽ phối hợp chặt chẽ hơn với bưu cục để đơn hàng sau đến tay bạn nhanh nhất!',
     sellerReplyAt: '2026-10-01T19:30:00Z',
     status: 'APPROVED',
     helpfulCount: 2,

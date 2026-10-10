@@ -121,8 +121,8 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     credentials: 'include',
   })
 
-  // 4. Xử lý 401 Unauthorized (Refresh Token xoay vòng)
-  if (response.status === 401 && !skipAuth && !url.includes('/auth/refresh-token')) {
+  // 4. Xử lý 401 Unauthorized (Refresh Token xoay vòng - không áp dụng cho endpoint xác thực /auth/*)
+  if (response.status === 401 && !skipAuth && !url.includes('/auth/')) {
     if (!isRefreshing) {
       isRefreshing = true
       try {

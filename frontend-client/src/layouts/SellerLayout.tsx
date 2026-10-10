@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -13,6 +13,8 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { PATHS } from '../app/router/paths'
+import { sellerApi } from '../features/seller/api/sellerApi'
+import { useAuthStore } from '../app/store/authStore'
 
 export interface SellerLayoutProps {
   children: React.ReactNode
@@ -20,7 +22,18 @@ export interface SellerLayoutProps {
 
 export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
   const location = useLocation()
-  const [storeName] = useState<string>('Chicky Farm Direct')
+  const { user } = useAuthStore()
+  const [storeName, setStoreName] = useState<string>('Gian Hàng Của Tôi')
+
+  useEffect(() => {
+    sellerApi.getMyStore().then((store) => {
+      if (store?.storeName) {
+        setStoreName(store.storeName)
+      } else if (user?.fullName) {
+        setStoreName(`Gian Hàng ${user.fullName}`)
+      }
+    }).catch(() => {})
+  }, [user])
 
   const isDashboardActive = location.pathname === '/seller' || location.pathname === '/seller/dashboard'
   const isProductsActive = location.pathname.startsWith('/seller/products')

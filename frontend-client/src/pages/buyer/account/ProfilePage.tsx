@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
 import { useAuthStore } from '../../../app/store/authStore'
 import { customerApi, type UpdateProfileRequest } from '../../../features/auth/api/customerApi'
@@ -26,16 +26,16 @@ const MONTH_NAMES = [
 ]
 
 export const ProfilePage: React.FC = () => {
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
 
   const [form, setForm] = useState<ProfileForm>({
-    username: user?.email?.split('@')[0] || 'volyquocduy',
-    fullName: user?.fullName || 'Vo Ly Quoc',
-    email: user?.email || '24******@student.hcmute.edu.vn',
-    phone: '0912345678',
-    gender: 'MALE',
-    dateOfBirth: '2000-01-01',
-    logoUrl: undefined,
+    username: user?.username || user?.email?.split('@')[0] || '',
+    fullName: user?.fullName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    gender: (user?.gender as 'MALE' | 'FEMALE' | 'OTHER') || 'MALE',
+    dateOfBirth: user?.dateOfBirth || '2000-01-01',
+    logoUrl: user?.avatarUrl || undefined,
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileForm, string>>>({})
@@ -45,12 +45,57 @@ export const ProfilePage: React.FC = () => {
   const [toast, setToast] = useState<Toast | null>(null)
   const [isSellerModalOpen, setIsSellerModalOpen] = useState(false)
 
+  // Phone modal state
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [phoneModalError, setPhoneModalError] = useState('')
+  const [isSavingPhone, setIsSavingPhone] = useState(false)
+
+  // Email modal state
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+  const [emailInput, setEmailInput] = useState('')
+  const [emailModalError, setEmailModalError] = useState('')
+  const [isSavingEmail, setIsSavingEmail] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
   }
+
+  // Tải dữ liệu hồ sơ thực tế từ backend khi mount
+  useEffect(() => {
+    let isMounted = true
+    customerApi.getProfile()
+      .then((profile) => {
+        if (!isMounted) return
+        setForm((prev) => ({
+          ...prev,
+          username: profile.email ? profile.email.split('@')[0] : (prev.username || ''),
+          fullName: profile.fullName || prev.fullName || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          gender: (profile.gender as 'MALE' | 'FEMALE' | 'OTHER') || prev.gender,
+          dateOfBirth: profile.dateOfBirth || prev.dateOfBirth,
+          logoUrl: profile.logoUrl || prev.logoUrl,
+        }))
+        // Đồng bộ dữ liệu mới nhất vào authStore
+        updateUser({
+          fullName: profile.fullName,
+          avatarUrl: profile.logoUrl,
+          email: profile.email,
+          phone: profile.phone,
+        })
+      })
+      .catch((err) => {
+        console.warn('Could not load profile from server:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [updateUser])
 
   // Parse DOB
   const dobParts = (form.dateOfBirth || '2000-01-01').split('-')
@@ -80,13 +125,21 @@ export const ProfilePage: React.FC = () => {
     const payload: UpdateProfileRequest = {
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),
+      email: form.email.trim() || undefined,
       logoUrl: form.logoUrl,
       gender: form.gender,
       dateOfBirth: form.dateOfBirth,
     }
 
     try {
-      await customerApi.updateProfile(payload)
+      const updated = await customerApi.updateProfile(payload)
+      // Cập nhật authStore ngay lập tức để header và các trang khác lập tức đổi tên
+      updateUser({
+        fullName: updated.fullName || payload.fullName,
+        avatarUrl: updated.logoUrl || payload.logoUrl,
+        phone: updated.phone || payload.phone,
+        email: updated.email || payload.email,
+      })
       showToast('Profile updated successfully!', 'success')
     } catch {
       showToast('Failed to update profile. Please try again.', 'error')
@@ -121,6 +174,7 @@ export const ProfilePage: React.FC = () => {
       const res = await httpClient.post<{ fileUrl: string }>('/media/upload', formData)
       const remoteUrl = res.data?.fileUrl || previewUrl
       setForm(prev => ({ ...prev, logoUrl: remoteUrl }))
+      updateUser({ avatarUrl: remoteUrl })
       showToast('Profile photo updated successfully!', 'success')
     } catch {
       showToast('Profile photo saved locally', 'success')
@@ -129,14 +183,91 @@ export const ProfilePage: React.FC = () => {
     }
   }
 
-  // Masked display
-  const maskedEmail = form.email
-    ? form.email.replace(/^(..)(.*)(@.*)$/, (_, a, b, c) => `${a}${'*'.repeat(Math.min(b.length, 6))}${c}`)
-    : '24******@student.hcmute.edu.vn'
+  // Xử lý lưu số điện thoại từ modal
+  const handleSavePhoneModal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = phoneInput.trim().replace(/\s+/g, '')
+    if (!trimmed) {
+      setPhoneModalError('Vui lòng nhập số điện thoại.')
+      return
+    }
 
-  const maskedPhone = form.phone
-    ? form.phone.replace(/^(\d{2})(\d+)(\d{2})$/, (_, a, b, c) => `${a}${'*'.repeat(Math.min(b.length, 4))}${c}`)
-    : '0912 345 678'
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/
+    if (!phoneRegex.test(trimmed)) {
+      setPhoneModalError('Số điện thoại không hợp lệ (cần 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).')
+      return
+    }
+
+    setIsSavingPhone(true)
+    setPhoneModalError('')
+
+    try {
+      await customerApi.updateProfile({
+        fullName: form.fullName,
+        phone: trimmed,
+        logoUrl: form.logoUrl,
+        gender: form.gender,
+        dateOfBirth: form.dateOfBirth,
+      })
+      setForm(prev => ({ ...prev, phone: trimmed }))
+      updateUser({ phone: trimmed })
+      showToast('Đã cập nhật số điện thoại thành công!', 'success')
+      setIsPhoneModalOpen(false)
+    } catch (err: unknown) {
+      const errObj = err as { message?: string }
+      setPhoneModalError(errObj?.message || 'Không thể lưu số điện thoại. Vui lòng thử lại.')
+    } finally {
+      setIsSavingPhone(false)
+    }
+  }
+
+  // Xử lý lưu email từ modal
+  const handleSaveEmailModal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = emailInput.trim().toLowerCase()
+    if (!trimmed) {
+      setEmailModalError('Vui lòng nhập địa chỉ email.')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(trimmed)) {
+      setEmailModalError('Địa chỉ email không đúng định dạng.')
+      return
+    }
+
+    setIsSavingEmail(true)
+    setEmailModalError('')
+
+    try {
+      await customerApi.updateProfile({
+        fullName: form.fullName,
+        phone: form.phone,
+        email: trimmed,
+        logoUrl: form.logoUrl,
+        gender: form.gender,
+        dateOfBirth: form.dateOfBirth,
+      })
+      setForm(prev => ({ ...prev, email: trimmed }))
+      updateUser({ email: trimmed })
+      showToast('Đã cập nhật email thành công!', 'success')
+      setIsEmailModalOpen(false)
+    } catch (err: unknown) {
+      const errObj = err as { message?: string }
+      setEmailModalError(errObj?.message || 'Không thể lưu email. Vui lòng thử lại.')
+    } finally {
+      setIsSavingEmail(false)
+    }
+  }
+
+  // Masked display — chỉ mask khi có dữ liệu, không gán mặc định chuỗi giả
+  const maskedEmail = form.email && form.email.trim()
+    ? form.email.replace(/^(..)(.*)(@.*)$/, (_, a, b, c) => `${a}${'*'.repeat(Math.max(1, Math.min(b.length, 6)))}${c}`)
+    : ''
+
+  const maskedPhone = form.phone && form.phone.trim()
+    ? form.phone.replace(/^(\d{2})(\d+)(\d{2})$/, (_, a, b, c) => `${a}${'*'.repeat(Math.max(1, Math.min(b.length, 4)))}${c}`)
+    : ''
 
   return (
     <AccountLayout>
@@ -206,30 +337,88 @@ export const ProfilePage: React.FC = () => {
             {/* Email */}
             <div className="shopee-form-row">
               <label className="shopee-form-label">Email</label>
-              <div className="shopee-form-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
-                <span className="shopee-static-text">{maskedEmail}</span>
-                <button
-                  type="button"
-                  onClick={() => showToast('Email change verification sent to your inbox')}
-                  className="shopee-link-action"
-                >
-                  Change
-                </button>
+              <div className="shopee-form-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
+                {maskedEmail ? (
+                  <>
+                    <span className="shopee-static-text">{maskedEmail}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailInput(form.email)
+                        setEmailModalError('')
+                        setIsEmailModalOpen(true)
+                      }}
+                      className="shopee-link-action"
+                    >
+                      Change
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="shopee-static-text" style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                      Chưa cập nhật
+                    </span>
+                    <span style={{ fontSize: 11, color: '#b45309', background: '#fef3c7', border: '1px solid #fde68a', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                      Chưa có email
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailInput('')
+                        setEmailModalError('')
+                        setIsEmailModalOpen(true)
+                      }}
+                      className="shopee-link-action"
+                      style={{ fontWeight: 700, color: '#0284c7' }}
+                    >
+                      Add
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Phone Number */}
             <div className="shopee-form-row">
               <label className="shopee-form-label">Phone Number</label>
-              <div className="shopee-form-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
-                <span className="shopee-static-text">{maskedPhone}</span>
-                <button
-                  type="button"
-                  onClick={() => showToast('SMS verification code sent')}
-                  className="shopee-link-action"
-                >
-                  Change
-                </button>
+              <div className="shopee-form-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }}>
+                {maskedPhone ? (
+                  <>
+                    <span className="shopee-static-text">{maskedPhone}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhoneInput(form.phone)
+                        setPhoneModalError('')
+                        setIsPhoneModalOpen(true)
+                      }}
+                      className="shopee-link-action"
+                    >
+                      Change
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="shopee-static-text" style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                      Chưa cập nhật
+                    </span>
+                    <span style={{ fontSize: 11, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                      Yêu cầu cung cấp số điện thoại
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhoneInput('')
+                        setPhoneModalError('')
+                        setIsPhoneModalOpen(true)
+                      }}
+                      className="shopee-link-action"
+                      style={{ fontWeight: 700, color: '#eab308' }}
+                    >
+                      Add
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -365,6 +554,170 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Cập nhật Số điện thoại */}
+      {isPhoneModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsPhoneModalOpen(false)} style={{ zIndex: 1000 }}>
+          <div
+            className="modal-box"
+            style={{ maxWidth: 440, width: '100%', padding: '24px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header" style={{ marginBottom: 16 }}>
+              <h3 className="modal-title" style={{ fontSize: 16, fontWeight: 700 }}>
+                {form.phone ? 'Thay đổi số điện thoại' : 'Cung cấp số điện thoại'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsPhoneModalOpen(false)}
+                className="modal-close-text"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+              Vui lòng nhập số điện thoại để bảo vệ tài khoản và nhận cập nhật đơn hàng.
+            </p>
+            <form onSubmit={handleSavePhoneModal}>
+              <div style={{ marginBottom: 14 }}>
+                <input
+                  type="tel"
+                  className="shopee-input"
+                  style={{ width: '100%', fontSize: 14 }}
+                  placeholder="Ví dụ: 0912345678"
+                  value={phoneInput}
+                  onChange={(e) => {
+                    setPhoneInput(e.target.value)
+                    if (phoneModalError) setPhoneModalError('')
+                  }}
+                  autoFocus
+                />
+                {phoneModalError && (
+                  <div style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>
+                    {phoneModalError}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsPhoneModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 4,
+                    border: '1px solid #cbd5e1',
+                    background: '#fff',
+                    color: '#475569',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingPhone}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: 4,
+                    border: 'none',
+                    background: '#ee4d2d',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isSavingPhone ? 'Đang lưu...' : 'Xác nhận'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cập nhật Email */}
+      {isEmailModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsEmailModalOpen(false)} style={{ zIndex: 1000 }}>
+          <div
+            className="modal-box"
+            style={{ maxWidth: 440, width: '100%', padding: '24px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header" style={{ marginBottom: 16 }}>
+              <h3 className="modal-title" style={{ fontSize: 16, fontWeight: 700 }}>
+                {form.email ? 'Thay đổi email' : 'Cung cấp email'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEmailModalOpen(false)}
+                className="modal-close-text"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+              Vui lòng nhập địa chỉ email chính xác để nhận biên lai thanh toán và thông báo bảo mật.
+            </p>
+            <form onSubmit={handleSaveEmailModal}>
+              <div style={{ marginBottom: 14 }}>
+                <input
+                  type="email"
+                  className="shopee-input"
+                  style={{ width: '100%', fontSize: 14 }}
+                  placeholder="Ví dụ: yourname@gmail.com"
+                  value={emailInput}
+                  onChange={(e) => {
+                    setEmailInput(e.target.value)
+                    if (emailModalError) setEmailModalError('')
+                  }}
+                  autoFocus
+                />
+                {emailModalError && (
+                  <div style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>
+                    {emailModalError}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEmailModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 4,
+                    border: '1px solid #cbd5e1',
+                    background: '#fff',
+                    color: '#475569',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEmail}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: 4,
+                    border: 'none',
+                    background: '#ee4d2d',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isSavingEmail ? 'Đang lưu...' : 'Xác nhận'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox / Full size viewer */}
       {isLightboxOpen && form.logoUrl && (

@@ -63,13 +63,43 @@ public class SocialAuthVerifier implements OAuthVerifier {
 
     private SocialUserProfile verifyGoogleIdToken(String token) {
         String cleanToken = token.trim();
-        // Kiểm tra xem token có phải là JWT (ID Token) hay OAuth Access Token
-        boolean isJwt = cleanToken.contains(".") && cleanToken.split("\\.").length >= 3;
 
-        if (isJwt) {
-            return verifyGoogleJwt(cleanToken);
+        // 1. Google OAuth2 Access Token (từ Google Identity Services initTokenClient) luôn bắt đầu bằng "ya29."
+        if (cleanToken.startsWith("ya29.")) {
+            try {
+                return verifyGoogleAccessToken(cleanToken);
+            } catch (Exception e) {
+                log.warn("verifyGoogleAccessToken failed for ya29 token: {}", e.getMessage());
+                return verifyGoogleJwt(cleanToken);
+            }
+        }
+
+        // 2. Google ID Token (JWT từ One-Tap hoặc OpenID Connect) luôn bắt đầu bằng "eyJ"
+        if (cleanToken.startsWith("eyJ")) {
+            try {
+                return verifyGoogleJwt(cleanToken);
+            } catch (Exception e) {
+                log.warn("verifyGoogleJwt failed for eyJ token: {}", e.getMessage());
+                return verifyGoogleAccessToken(cleanToken);
+            }
+        }
+
+        // 3. Fallback: Nếu có đúng 3 phần ngăn cách bởi dấu chấm thì ưu tiên JWT, ngược lại ưu tiên Access Token
+        boolean looksLikeJwt = cleanToken.split("\\.").length == 3;
+        if (looksLikeJwt) {
+            try {
+                return verifyGoogleJwt(cleanToken);
+            } catch (Exception e) {
+                log.info("JWT verification failed, trying access token endpoint: {}", e.getMessage());
+                return verifyGoogleAccessToken(cleanToken);
+            }
         } else {
-            return verifyGoogleAccessToken(cleanToken);
+            try {
+                return verifyGoogleAccessToken(cleanToken);
+            } catch (Exception e) {
+                log.info("Access token verification failed, trying JWT endpoint: {}", e.getMessage());
+                return verifyGoogleJwt(cleanToken);
+            }
         }
     }
 

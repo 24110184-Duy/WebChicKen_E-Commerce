@@ -243,12 +243,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   }}
                 >
                   <ShieldCheck size={18} />
-                  <span>TIÊU CHUẨN AN TOÀN SINH HỌC</span>
+                  <span>TIÊU CHUẨN KIỂM ĐỊNH & XUẤT XỨ</span>
                 </div>
                 <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.6 }}>
-                  <div>• Tiêu chuẩn: <b>{product.farmingStandard || 'VietGAP An Toàn'}</b></div>
-                  <div>• Nơi xuất xứ: <b>{product.origin || 'Vùng chăn nuôi bảo hộ'}</b></div>
-                  <div>• Mã kiểm dịch: <b>{product.veterinaryInspectionCode || 'KD-POULTRY-2026'}</b></div>
+                  <div>• Tiêu chuẩn: <b>{product.farmingStandard || 'Chính Hãng (Full Box)'}</b></div>
+                  <div>• Nơi xuất xứ: <b>{product.origin || 'Chính Hãng Phân Phối'}</b></div>
+                  <div>• Mã kiểm định / CO-CQ: <b>{product.veterinaryInspectionCode || 'CO-CQ-2026'}</b></div>
                 </div>
               </div>
             </div>

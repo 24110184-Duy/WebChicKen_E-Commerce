@@ -15,7 +15,7 @@ interface StorefrontLayoutProps {
 export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, isAuthenticated, logout } = useAuthStore()
+  const { user, isAuthenticated, isSeller, logout } = useAuthStore()
   const { totalQuantity } = useCartStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
@@ -33,14 +33,28 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
     }
   }
 
+  const handleSellerCenterClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!isAuthenticated) {
+      navigate(PATHS.LOGIN, { state: { from: PATHS.SELLER.DASHBOARD } })
+      return
+    }
+    if (isSeller) {
+      navigate(PATHS.SELLER.DASHBOARD)
+    } else {
+      navigate(PATHS.SELLER.REGISTER)
+    }
+  }
+
   const handleLogout = async () => {
     try { await authApi.logout() } catch { /* ignore */ }
     logout()
+    navigate(PATHS.HOME, { replace: true })
   }
 
   const initials = user?.fullName
     ? user.fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-    : user?.email?.[0]?.toUpperCase() ?? 'U'
+    : user?.email?.[0]?.toUpperCase() ?? user?.phone?.[0] ?? 'U'
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
@@ -48,12 +62,19 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
       <div className="storefront-top-strip">
         <div className="storefront-top-inner">
           <div>
-            <span>Welcome to ChickyMart — 100% Certified Free-Range & Organic Poultry</span>
+            <span>Chào mừng bạn đến với ChickyMart — Sàn Thương Mại Điện Tử Trực Tuyến Đa Ngành</span>
             <span style={{ margin: '0 10px', opacity: 0.4 }}>|</span>
-            <span style={{ color: '#facc15', fontWeight: 700 }}>Free Express Shipping on orders over 300,000 VND</span>
+            <span style={{ color: '#facc15', fontWeight: 700 }}>Miễn phí vận chuyển toàn quốc cho đơn hàng từ 150.000₫</span>
           </div>
           <div className="storefront-top-links">
-            <Link to={PATHS.SELLER.PRODUCTS} className="storefront-top-link">Seller Center</Link>
+            <button
+              type="button"
+              onClick={handleSellerCenterClick}
+              className="storefront-top-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+            >
+              Seller Center
+            </button>
             <span style={{ opacity: 0.3 }}>|</span>
             <Link to={PATHS.ACCOUNT.NOTIFICATIONS} className="storefront-top-link">Notifications</Link>
             <span style={{ opacity: 0.3 }}>|</span>
@@ -70,7 +91,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
             <WebChicKenLogo size="md" />
             <div>
               <div className="storefront-brand-text">ChickyMart</div>
-              <div className="storefront-brand-sub">Fresh Farm Marketplace</div>
+              <div className="storefront-brand-sub">Online Shopping Marketplace</div>
             </div>
           </Link>
 
@@ -80,7 +101,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search fresh chickens, organic cuts, farm eggs, marinades..."
+              placeholder="Tìm kiếm sản phẩm, thương hiệu, điện tử, thời trang, đời sống..."
               className="storefront-search-input"
             />
             <button type="submit" className="storefront-search-btn">
@@ -117,7 +138,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
                     {initials}
                   </span>
                   <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {user.fullName || user.email.split('@')[0]}
+                    {user.fullName || user.username || (user.email ? user.email.split('@')[0] : user.phone) || 'User'}
                   </span>
                 </Link>
                 <button
@@ -208,7 +229,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
               ChickyMart — Online E-Commerce Marketplace
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.6, color: '#94a3b8', maxWidth: 360 }}>
-              Leading certified farm-to-table poultry marketplace in Vietnam. Providing healthy, antibiotic-free, hormone-free fresh whole chickens, cuts, organic herbal poultry and fresh eggs delivered cold to your doorstep.
+              Nền tảng mua sắm trực tuyến hàng đầu, kết nối người mua và nhà bán uy tín. Đa dạng danh mục: Thiết bị điện tử, Thời trang, Đời sống, Sức khỏe sắc đẹp với chính sách bảo vệ người mua toàn diện.
             </p>
           </div>
 
@@ -224,13 +245,13 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
           </div>
 
           <div>
-            <div className="footer-col-title">About ChickyMart</div>
+            <div className="footer-col-title">Về WebChicKen</div>
             <ul className="footer-links">
-              <li><span className="footer-link">About Us</span></li>
-              <li><span className="footer-link">Farm Partners</span></li>
-              <li><span className="footer-link">HACCP Quality Certification</span></li>
-              <li><span className="footer-link">Privacy Policy</span></li>
-              <li><span className="footer-link">Terms of Service</span></li>
+              <li><span className="footer-link">Giới Thiệu Sàn</span></li>
+              <li><span className="footer-link">Đối Tác & Thương Hiệu</span></li>
+              <li><span className="footer-link">Chính Sách Hàng Chính Hãng</span></li>
+              <li><span className="footer-link">Chính Sách Bảo Mật</span></li>
+              <li><span className="footer-link">Điều Khoản Dịch Vụ</span></li>
             </ul>
           </div>
 
@@ -240,7 +261,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
               Secure payment via ATM Cards, Visa, MasterCard, and Cash on Delivery (COD).
             </p>
             <div style={{ display: 'inline-block', background: 'rgba(255, 255, 255, 0.08)', padding: '6px 12px', borderRadius: 6, fontSize: 12, color: '#fde68a', fontWeight: 700 }}>
-              100% Quality Freshness Guaranteed
+              100% Cam Kết Hàng Chính Hãng & Bảo Vệ Người Mua
             </div>
           </div>
         </div>

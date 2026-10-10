@@ -97,7 +97,8 @@ export const SellerOrdersPage: React.FC = () => {
   // Cancel modal state
   const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false)
   const [orderToCancel, setOrderToCancel] = useState<SellerOrder | null>(null)
-  const [cancelReason, setCancelReason] = useState<string>('Out of stock at farm storage')
+  const [cancelReason, setCancelReason] = useState<string>('Out of stock in warehouse')
+  const [shopId, setShopId] = useState<string>('')
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMsg({ text, type })
@@ -111,23 +112,37 @@ export const SellerOrdersPage: React.FC = () => {
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (targetShopId?: string) => {
+    const sid = targetShopId || shopId
+    if (!sid) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      const res = await sellerApi.fetchStoreOrders('store-1', {
+      const res = await sellerApi.fetchStoreOrders(sid, {
         status: 'ALL',
       })
       setOrders(res.items)
       setStatusCounts(res.counts)
     } catch {
-      showToast('Failed to load store orders', 'error')
+      showToast('Lỗi khi tải danh sách đơn hàng', 'error')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [shopId])
 
   useEffect(() => {
-    loadOrders()
+    sellerApi.getMyStore().then((store) => {
+      if (store) {
+        setShopId(store.id)
+        loadOrders(store.id)
+      } else {
+        setLoading(false)
+      }
+    }).catch(() => {
+      setLoading(false)
+    })
   }, [loadOrders])
 
   // Filtered & Sorted orders
@@ -195,9 +210,11 @@ export const SellerOrdersPage: React.FC = () => {
 
   // Quick action: Confirm single order
   const handleConfirmOrder = async (order: SellerOrder) => {
+    const targetShop = order.storeId || shopId
+    if (!targetShop) return
     setActionLoading(order.orderCode)
     try {
-      await sellerApi.updateStoreOrderStatus('store-1', order.orderCode, {
+      await sellerApi.updateStoreOrderStatus(targetShop, order.orderCode, {
         status: 'CONFIRMED',
         reason: 'Seller confirmed order and began packaging preparation',
       })
@@ -227,7 +244,8 @@ export const SellerOrdersPage: React.FC = () => {
     let count = 0
     for (const order of pendingSelected) {
       try {
-        await sellerApi.updateStoreOrderStatus('store-1', order.orderCode, {
+        const targetShop = order.storeId || shopId
+        await sellerApi.updateStoreOrderStatus(targetShop, order.orderCode, {
           status: 'CONFIRMED',
           reason: 'Batch confirmed by Seller',
         })
@@ -250,8 +268,10 @@ export const SellerOrdersPage: React.FC = () => {
   // Submit fulfillment dispatch
   const handleFulfillSubmit = async (payload: FulfillOrderPayload) => {
     if (!orderToFulfill) return
+    const targetShop = orderToFulfill.storeId || shopId
+    if (!targetShop) return
     try {
-      await sellerApi.updateStoreOrderStatus('store-1', orderToFulfill.orderCode, payload)
+      await sellerApi.updateStoreOrderStatus(targetShop, orderToFulfill.orderCode, payload)
       showToast(`Order #${orderToFulfill.orderCode} dispatched via ${payload.carrier}!`, 'success')
       setIsFulfillmentModalOpen(false)
       setOrderToFulfill(null)
@@ -263,9 +283,11 @@ export const SellerOrdersPage: React.FC = () => {
 
   // Quick action: Mark delivered
   const handleMarkDelivered = async (order: SellerOrder) => {
+    const targetShop = order.storeId || shopId
+    if (!targetShop) return
     setActionLoading(order.orderCode)
     try {
-      await sellerApi.updateStoreOrderStatus('store-1', order.orderCode, {
+      await sellerApi.updateStoreOrderStatus(targetShop, order.orderCode, {
         status: 'DELIVERED',
         reason: 'Carrier confirmed successful handover to buyer',
       })
@@ -284,16 +306,18 @@ export const SellerOrdersPage: React.FC = () => {
   // Open cancel modal
   const handlePromptCancel = (order: SellerOrder) => {
     setOrderToCancel(order)
-    setCancelReason('Out of stock at farm storage')
+    setCancelReason('Out of stock in warehouse')
     setIsCancelModalOpen(true)
   }
 
   // Confirm cancel
   const handleConfirmCancel = async () => {
     if (!orderToCancel) return
+    const targetShop = orderToCancel.storeId || shopId
+    if (!targetShop) return
     setActionLoading(orderToCancel.orderCode)
     try {
-      await sellerApi.updateStoreOrderStatus('store-1', orderToCancel.orderCode, {
+      await sellerApi.updateStoreOrderStatus(targetShop, orderToCancel.orderCode, {
         status: 'CANCELLED',
         reason: cancelReason,
       })
@@ -435,7 +459,7 @@ export const SellerOrdersPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={loadOrders}
+              onClick={() => loadOrders()}
               disabled={loading}
               className="seller-primary-refresh-btn"
             >
@@ -1163,7 +1187,7 @@ export const SellerOrdersPage: React.FC = () => {
 
               <div className="seller-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.5 }}>
-                  Are you sure you want to cancel this order? This will release reserved poultry stock back to farm inventory and notify the buyer.
+                  Are you sure you want to cancel this order? This will release reserved stock back to store inventory and notify the buyer.
                 </p>
 
                 <div className="seller-form-group">
@@ -1173,10 +1197,10 @@ export const SellerOrdersPage: React.FC = () => {
                     onChange={(e) => setCancelReason(e.target.value)}
                     className="seller-form-select"
                   >
-                    <option value="Out of stock at farm storage">Out of stock at farm storage</option>
+                    <option value="Out of stock in warehouse">Out of stock in warehouse</option>
                     <option value="Customer requested cancellation">Customer requested cancellation</option>
-                    <option value="Unable to guarantee cold-chain delivery to address">
-                      Unable to guarantee cold-chain delivery to address
+                    <option value="Unable to deliver to customer address">
+                      Unable to deliver to customer address
                     </option>
                     <option value="Pricing or product attribute error">Pricing or product attribute error</option>
                   </select>

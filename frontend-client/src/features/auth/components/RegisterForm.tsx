@@ -107,10 +107,12 @@ export const RegisterForm: React.FC = () => {
       login(
         {
           id: response.user.userId,
-          email: response.user.email || response.user.username || response.user.phone || '',
+          email: response.user.email || '',
           fullName: response.user.fullName,
           avatarUrl: response.user.logoUrl,
           roles: response.user.roles,
+          phone: response.user.phone || normalizedPhone,
+          username: response.user.username || '',
         },
         response.accessToken
       )

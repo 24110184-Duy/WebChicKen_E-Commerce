@@ -1,6 +1,7 @@
 package com.example.webchicken.modules.identity.service.impl;
 
 import com.example.webchicken.common.exception.AuthorizationException;
+import com.example.webchicken.common.exception.ConflictException;
 import com.example.webchicken.common.exception.NotFoundException;
 import com.example.webchicken.common.exception.ValidationException;
 import com.example.webchicken.modules.identity.dao.AddressDAO;
@@ -71,7 +72,30 @@ public class CustomerServiceImpl implements CustomerService {
             user.setFullName(req.fullName().trim());
         }
         if (req.phone() != null) {
-            user.setPhone(req.phone().trim());
+            String newPhone = req.phone().trim();
+            if (newPhone.isBlank()) {
+                user.setPhone(null);
+            } else if (!newPhone.equals(user.getPhone())) {
+                userDAO.findByPhone(newPhone)
+                        .filter(other -> !other.getUserId().equals(userId))
+                        .ifPresent(other -> {
+                            throw new ConflictException("Số điện thoại này đã được sử dụng bởi tài khoản khác.");
+                        });
+                user.setPhone(newPhone);
+            }
+        }
+        if (req.email() != null) {
+            String newEmail = req.email().trim();
+            if (newEmail.isBlank()) {
+                user.setEmail(null);
+            } else if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+                userDAO.findByEmail(newEmail)
+                        .filter(other -> !other.getUserId().equals(userId))
+                        .ifPresent(other -> {
+                            throw new ConflictException("Email này đã được sử dụng bởi tài khoản khác.");
+                        });
+                user.setEmail(newEmail);
+            }
         }
         if (req.logoUrl() != null) {
             user.setLogoUrl(req.logoUrl().trim());

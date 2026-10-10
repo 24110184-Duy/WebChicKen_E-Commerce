@@ -70,23 +70,23 @@ export const PaymentResultPage: React.FC = () => {
     recipient: {
       recipientName: 'Nguyen Van A',
       phoneNumber: '0901234567',
-      streetAddress: '123 Farm Green Road, Ward 5',
+      streetAddress: '123 Nguyen Hue Boulevard, Ben Nghe Ward',
       district: 'District 1',
       city: 'Ho Chi Minh City',
     },
     shippingMethod: {
-      name: 'Express Farm-to-Door 2H',
-      estimatedTime: 'Within 2 hours (Cold Chain Guaranteed)',
+      name: 'Express Delivery 2H',
+      estimatedTime: 'Trong vòng 2 giờ (Giao hỏa tốc)',
     },
     paymentMethod: isVNPayCallback ? 'VNPAY' : 'COD',
     items: [
       {
         productId: 'prod-1',
-        name: 'Fresh Free-Range Whole Chicken',
-        skuName: '1.4kg - 1.6kg (Cleaned)',
-        priceMinor: 165000,
+        name: 'Tai Nghe Bluetooth Không Dây Chống Ồn ANC',
+        skuName: 'Màu Đen Nhám (Matte Black)',
+        priceMinor: 499000,
         quantity: 1,
-        imageUrl: 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=400&q=80',
+        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
       },
     ],
     merchandiseSubtotalMinor: 165000,
@@ -153,7 +153,7 @@ export const PaymentResultPage: React.FC = () => {
                 {isVNPayCallback ? 'Thank You For Your Payment!' : 'Thank You For Your Order!'}
               </h1>
               <p className="result-desc">
-                Your fresh farm poultry order has been recorded. Our partner farm is packing your items under certified cold-chain standards.
+                Đơn hàng của bạn đã được ghi nhận trên hệ thống sàn. Người bán đang chuẩn bị và đóng gói sản phẩm để bàn giao cho đơn vị vận chuyển.
               </p>
             </div>
           )}
@@ -173,7 +173,7 @@ export const PaymentResultPage: React.FC = () => {
               <div className="result-step-line active" />
               <div className="result-step active">
                 <div className="result-step-circle">3</div>
-                <div className="result-step-title">Farm Packaging</div>
+                <div className="result-step-title">Processing</div>
               </div>
               <div className="result-step-line" />
               <div className="result-step">
@@ -289,13 +289,13 @@ export const PaymentResultPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Farm Quality Guarantee Box */}
+          {/* Marketplace Buyer Protection Box */}
           <div className="result-guarantee-box">
-            <div className="result-guarantee-icon">❄️</div>
+            <div className="result-guarantee-icon">🛡️</div>
             <div>
-              <div className="result-guarantee-title">Cold-Chain Food Safety Guarantee</div>
+              <div className="result-guarantee-title">Cam Kết Chính Hãng & Bảo Vệ Khách Hàng</div>
               <div className="result-guarantee-desc">
-                Your fresh poultry is packed in insulated containers with temperature sensors maintained below 4°C from our farm straight to your door.
+                Đơn hàng được bảo đảm 100% hàng chính hãng, hỗ trợ đồng kiểm khi nhận hàng và miễn phí đổi trả trong 7 ngày nếu có lỗi từ nhà sản xuất.
               </div>
             </div>
           </div>

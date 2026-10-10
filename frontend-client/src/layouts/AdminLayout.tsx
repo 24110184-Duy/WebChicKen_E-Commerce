@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -17,6 +17,7 @@ import {
   Layers,
   MessageSquare,
 } from 'lucide-react'
+import { useAuthStore } from '../app/store/authStore'
 import { PATHS } from '../app/router/paths'
 
 export interface AdminLayoutProps {
@@ -25,8 +26,12 @@ export interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation()
-  const [adminName] = useState<string>('Nguyen Admin')
-  const [adminRole] = useState<'SUPER_ADMIN' | 'MODERATOR'>('SUPER_ADMIN')
+  const { user } = useAuthStore()
+  const adminName = user?.fullName || user?.email || user?.username || 'Quản Trị Viên'
+  const adminRole = user?.roles.find(r => ['SUPER_ADMIN', 'MODERATOR'].includes(r)) || 'SUPER_ADMIN'
+  const initials = user?.fullName
+    ? user.fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? 'AD'
 
   // Helper function to check active path
   const isActive = (path: string, exact: boolean = false) => {
@@ -74,7 +79,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         <div className="admin-topbar-right">
           {/* Admin Operator Info */}
           <div className="admin-operator-pill">
-            <div className="admin-operator-avatar">AD</div>
+            <div className="admin-operator-avatar">{initials}</div>
             <span className="admin-operator-name">{adminName}</span>
             <span className="admin-role-tag">{adminRole}</span>
           </div>
@@ -123,9 +128,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   <Store style={{ width: 17, height: 17 }} />
                   <span>Shop Approvals</span>
                 </div>
-                <span className="admin-nav-badge" title="Pending Seller Applications">
-                  3
-                </span>
               </Link>
 
               <Link
@@ -202,7 +204,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               >
                 <div className="admin-nav-item-content">
                   <Tag style={{ width: 17, height: 17 }} />
-                  <span>Brands & Farms</span>
+                  <span>Brands & Partners</span>
                 </div>
               </Link>
 

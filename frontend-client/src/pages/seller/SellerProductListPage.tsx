@@ -18,12 +18,14 @@ import {
   sellerApi,
   type SellerProductItem,
   type ProductStatus,
-  STANDARD_CATEGORIES,
+  type ProductCategoryOption,
 } from '../../features/seller/api/sellerApi'
 import { ProductFormModal } from '../../features/seller/components/ProductFormModal'
 import { formatMoney } from '../../shared/lib/formatMoney'
 
 export const SellerProductListPage: React.FC = () => {
+  const [shopId, setShopId] = useState<string>('')
+  const [categories, setCategories] = useState<ProductCategoryOption[]>([])
   const [allProducts, setAllProducts] = useState<SellerProductItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [activeTab, setActiveTab] = useState<ProductStatus | 'ALL' | 'LOW_STOCK'>(() => {
@@ -53,9 +55,18 @@ export const SellerProductListPage: React.FC = () => {
   const loadProducts = async () => {
     setLoading(true)
     try {
-      // Load all store products to maintain stable, persistent catalog metrics
-      const res = await sellerApi.getStoreProducts('store-1')
-      setAllProducts(res.items)
+      let currentShopId = shopId
+      if (!currentShopId) {
+        const store = await sellerApi.getMyStore()
+        if (store) {
+          currentShopId = store.id
+          setShopId(currentShopId)
+        }
+      }
+      if (currentShopId) {
+        const res = await sellerApi.getStoreProducts(currentShopId)
+        setAllProducts(res.items)
+      }
     } catch {
       setAllProducts([])
     } finally {
@@ -64,6 +75,11 @@ export const SellerProductListPage: React.FC = () => {
   }
 
   useEffect(() => {
+    sellerApi.getCategories().then((cats) => {
+      if (cats && cats.length > 0) {
+        setCategories(cats)
+      }
+    })
     loadProducts()
     const params = new URLSearchParams(window.location.search)
     const tabParam = params.get('tab')?.toUpperCase()
@@ -130,9 +146,10 @@ export const SellerProductListPage: React.FC = () => {
   }
 
   const handleTogglePublication = async (product: SellerProductItem) => {
+    if (!shopId) return
     const nextStatus: ProductStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
     try {
-      await sellerApi.setProductPublication('store-1', product.id, nextStatus)
+      await sellerApi.setProductPublication(shopId, product.id, nextStatus)
       showToast(`Product is now ${nextStatus === 'ACTIVE' ? 'LIVE on Storefront' : 'HIDDEN from Storefront'}`)
       loadProducts()
     } catch {
@@ -141,8 +158,9 @@ export const SellerProductListPage: React.FC = () => {
   }
 
   const handleDeleteProduct = async (productId: string) => {
+    if (!shopId) return
     try {
-      await sellerApi.deleteStoreProduct('store-1', productId)
+      await sellerApi.deleteStoreProduct(shopId, productId)
       setDeletingProductId(null)
       showToast('Product removed from catalog.')
       loadProducts()
@@ -158,7 +176,7 @@ export const SellerProductListPage: React.FC = () => {
         <div>
           <h1 className="seller-header-title">Product Catalog & Inventory</h1>
           <p className="seller-header-sub">
-            Manage your store's poultry items, SKU price variations, and real-time inventory levels.
+            Manage your store's product catalog, SKU price variations, and real-time inventory levels.
           </p>
         </div>
 
@@ -271,7 +289,7 @@ export const SellerProductListPage: React.FC = () => {
             className="seller-select-input"
           >
             <option value="ALL">All Categories</option>
-            {STANDARD_CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -295,7 +313,7 @@ export const SellerProductListPage: React.FC = () => {
               <p style={{ fontSize: 13, color: '#64748b', maxWidth: 400, margin: '0 auto 16px' }}>
                 {searchQuery || selectedCategory !== 'ALL' || activeTab !== 'ALL'
                   ? 'No products matched your search or status filter criteria.'
-                  : 'You have not added any poultry products to your store yet.'}
+                  : 'You have not added any products to your store yet.'}
               </p>
               <button
                 type="button"
@@ -337,7 +355,7 @@ export const SellerProductListPage: React.FC = () => {
                             <h4 className="seller-product-name">{p.name}</h4>
                             <div className="seller-product-meta">
                               <span style={{ color: '#0284c7', fontWeight: 600 }}>
-                                {p.categoryName || 'Poultry'}
+                                {p.categoryName || 'General'}
                               </span>
                               <span>•</span>
                               <span>{p.variantsCount} variant{p.variantsCount > 1 ? 's' : ''}</span>
@@ -486,6 +504,7 @@ export const SellerProductListPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleModalSuccess}
         initialProduct={editingProduct}
+        shopId={shopId}
       />
 
       {/* Toast Notification */}

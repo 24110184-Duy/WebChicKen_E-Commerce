@@ -196,12 +196,12 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
                 <span style={{ fontSize: 12, color: '#64748b' }}>Email giao dịch:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Mail style={{ width: 14, height: 14, color: '#6366f1' }} />
-                  {application.email || 'farm@webchicken.vn'}
+                  {application.email || 'support@webchicken.vn'}
                 </p>
               </div>
 
               <div>
-                <span style={{ fontSize: 12, color: '#64748b' }}>Địa chỉ trang trại / cơ sở:</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Địa chỉ kho / trụ sở doanh nghiệp:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <MapPin style={{ width: 14, height: 14, color: '#ef4444' }} />
                   {application.farmLocation || 'Đang cập nhật'}
@@ -209,9 +209,9 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
               </div>
 
               <div>
-                <span style={{ fontSize: 12, color: '#64748b' }}>Mô hình & Giống gia cầm:</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>Ngành hàng & Mô hình kinh doanh:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>
-                  {application.farmType || 'Gia cầm sạch nuôi thả'}
+                  {application.farmType || 'Thương mại điện tử & Bán lẻ'}
                 </p>
               </div>
 
@@ -229,7 +229,7 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
           <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '18px 20px' }}>
             <h4 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShieldCheck style={{ width: 16, height: 16, color: '#10b981' }} />
-              Thẩm Định Pháp Lý & Tiêu Chuẩn Nông Nghiệp Sạch
+              Thẩm Định Pháp Lý & Giấy Phép Đăng Ký Kinh Doanh
             </h4>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
@@ -245,14 +245,14 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
                 <span style={{ fontSize: 12, color: '#64748b' }}>Loại giấy chứng nhận:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#059669', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Award style={{ width: 14, height: 14 }} />
-                  {application.certificateType || 'VietGAP'}
+                  {application.certificateType || 'ĐKKD Hợp Lệ'}
                 </p>
               </div>
 
               <div>
                 <span style={{ fontSize: 12, color: '#64748b' }}>Số hiệu văn bản chứng nhận:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>
-                  {application.certificateNumber || 'VG-POULTRY-2025-01'}
+                  {application.certificateNumber || 'DKKD-2025-01'}
                 </p>
               </div>
 

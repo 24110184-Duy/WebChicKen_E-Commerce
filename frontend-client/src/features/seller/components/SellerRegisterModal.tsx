@@ -92,7 +92,7 @@ export const SellerRegisterModal: React.FC<SellerRegisterModalProps> = ({
                   type="text"
                   value={shopName}
                   onChange={(e) => setShopName(e.target.value)}
-                  placeholder="e.g. Chicky Organic Farm, Golden Chicken Store"
+                  placeholder="e.g. TechZone Official Store, Anker Flagship Store"
                   className="profile-input"
                   disabled={isSubmitting}
                   required

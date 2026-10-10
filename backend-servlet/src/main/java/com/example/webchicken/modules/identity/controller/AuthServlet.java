@@ -69,7 +69,7 @@ public class AuthServlet extends BaseApiServlet {
 
         // Sinh refresh token và gắn vào Cookie HttpOnly an toàn
         String refreshToken = authService().createRefreshToken(authResponse.user().userId());
-        setRefreshTokenCookie(resp, refreshToken, 7 * 24 * 60 * 60);
+        setRefreshTokenCookie(req, resp, refreshToken, 7 * 24 * 60 * 60);
 
         created(resp, authResponse);
     }
@@ -79,7 +79,7 @@ public class AuthServlet extends BaseApiServlet {
         AuthResponse authResponse = authService().login(reqBody);
 
         String refreshToken = authService().createRefreshToken(authResponse.user().userId());
-        setRefreshTokenCookie(resp, refreshToken, 7 * 24 * 60 * 60);
+        setRefreshTokenCookie(req, resp, refreshToken, 7 * 24 * 60 * 60);
 
         ok(resp, authResponse);
     }
@@ -93,7 +93,7 @@ public class AuthServlet extends BaseApiServlet {
         AuthResponse authResponse = authService().loginWithSocial(reqBody);
 
         String refreshToken = authService().createRefreshToken(authResponse.user().userId());
-        setRefreshTokenCookie(resp, refreshToken, 7 * 24 * 60 * 60);
+        setRefreshTokenCookie(req, resp, refreshToken, 7 * 24 * 60 * 60);
 
         ok(resp, authResponse);
     }
@@ -104,7 +104,9 @@ public class AuthServlet extends BaseApiServlet {
             // Thử đọc từ request body nếu client gửi qua JSON
             try {
                 TokenRefreshRequest body = readBody(req, TokenRefreshRequest.class);
-                token = body.refreshToken();
+                if (body != null) {
+                    token = body.refreshToken();
+                }
             } catch (Exception ignored) {}
         }
 
@@ -118,7 +120,7 @@ public class AuthServlet extends BaseApiServlet {
             authService().logout(token);
         }
         // Xóa cookie khỏi trình duyệt
-        setRefreshTokenCookie(resp, "", 0);
+        setRefreshTokenCookie(req, resp, "", 0);
         noContent(resp);
     }
 
@@ -134,13 +136,14 @@ public class AuthServlet extends BaseApiServlet {
         return null;
     }
 
-    private void setRefreshTokenCookie(HttpServletResponse resp, String value, int maxAgeSeconds) {
-        Cookie cookie = new Cookie(REFRESH_COOKIE_NAME, value);
+    private void setRefreshTokenCookie(HttpServletRequest req, HttpServletResponse resp, String value, int maxAgeSeconds) {
+        Cookie cookie = new Cookie(REFRESH_COOKIE_NAME, value != null ? value : "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/api/v1/auth");
+        boolean isSecure = req != null && (req.isSecure() || "https".equalsIgnoreCase(req.getHeader("X-Forwarded-Proto")));
+        cookie.setSecure(isSecure);
+        cookie.setPath("/");
         cookie.setMaxAge(maxAgeSeconds);
-        cookie.setAttribute("SameSite", "Strict");
+        cookie.setAttribute("SameSite", isSecure ? "None" : "Lax");
         resp.addCookie(cookie);
     }
 }

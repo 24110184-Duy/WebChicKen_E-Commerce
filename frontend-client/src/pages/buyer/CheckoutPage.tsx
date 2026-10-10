@@ -23,7 +23,7 @@ export const CheckoutPage: React.FC = () => {
   const [address, setAddress] = useState({
     recipientName: 'Nguyen Van A',
     phoneNumber: '0901234567',
-    streetAddress: '123 Farm Green Road, Ward 5',
+    streetAddress: '123 Nguyen Hue Boulevard, Ben Nghe Ward',
     district: 'District 1',
     city: 'Ho Chi Minh City',
   })
@@ -314,7 +314,7 @@ export const CheckoutPage: React.FC = () => {
               {storeGroups.map((group) => (
                 <div key={group.storeId} className="checkout-store-block">
                   <div className="checkout-store-header">
-                    <span>Farm Store: {group.storeName}</span>
+                    <span>Gian hàng: {group.storeName}</span>
                   </div>
 
                   {group.items.map((item) => (
@@ -399,7 +399,7 @@ export const CheckoutPage: React.FC = () => {
                   <div className="checkout-payment-details">
                     <div className="checkout-payment-name">Cash on Delivery (COD)</div>
                     <div className="checkout-payment-desc">
-                      Pay in cash upon doorstep delivery after inspecting the fresh poultry package.
+                      Pay in cash upon doorstep delivery after inspecting the package.
                     </div>
                   </div>
                 </div>
@@ -559,7 +559,7 @@ export const CheckoutPage: React.FC = () => {
               </button>
 
               <p className="checkout-policy-notice">
-                By placing this order, you agree to ChickyMart Terms of Service and Farm Safety Inspection Policy.
+                By placing this order, you agree to WebChicKen Marketplace Terms of Service and Customer Protection Policy.
               </p>
             </div>
           </div>

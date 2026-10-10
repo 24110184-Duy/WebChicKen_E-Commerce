@@ -1,3 +1,5 @@
+
+
 import { httpClient } from '../../../shared/api/httpClient'
 import type { AuthResponseData, LoginPayload, RegisterPayload } from '../types/auth'
 
@@ -24,7 +26,7 @@ export const authApi = {
 
   logout: async (): Promise<void> => {
     try {
-      await httpClient.post<void>('/auth/logout', {})
+      await httpClient.post<void>('/auth/logout', {}, { skipAuth: true })
     } catch {
       // Logout hoàn tất
     }
@@ -40,9 +42,13 @@ export const authApi = {
     throw new Error('Phiên đăng nhập hết hạn')
   },
 
-  loginWithGoogle: async (idToken: string): Promise<AuthResponseData> => {
+  loginWithGoogle: async (token: string): Promise<AuthResponseData> => {
     try {
-      const res = await httpClient.post<AuthResponseData>('/auth/social/google', { idToken }, { skipAuth: true })
+      const isAccessToken = token.startsWith('ya29.')
+      const payload = isAccessToken
+        ? { accessToken: token, provider: 'GOOGLE' }
+        : { idToken: token, provider: 'GOOGLE' }
+      const res = await httpClient.post<AuthResponseData>('/auth/social/google', payload, { skipAuth: true })
       if (res.data) return res.data
       throw new Error('Đăng nhập với Google thất bại.')
     } catch (err) {
