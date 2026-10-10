@@ -40,6 +40,7 @@ export interface Product {
 export interface ProductFilter {
   query?: string
   categoryId?: string
+  storeId?: string
   minPriceMinor?: number
   maxPriceMinor?: number
   sort?: 'newest' | 'price_asc' | 'price_desc' | 'top_rated' | 'popular'

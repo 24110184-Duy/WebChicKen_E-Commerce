@@ -6,7 +6,6 @@ import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import {
   MOCK_SHIPPING_METHODS,
-  MOCK_VOUCHERS,
   type ShippingMethod,
   type Voucher,
 } from '../../features/cart/types/cartTypes'
@@ -40,8 +39,6 @@ export const CheckoutPage: React.FC = () => {
 
   // Voucher State
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
-  const [voucherCodeInput, setVoucherCodeInput] = useState('')
-  const [voucherError, setVoucherError] = useState<string | null>(null)
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false)
 
   // Order Placement Loading State
@@ -103,35 +100,8 @@ export const CheckoutPage: React.FC = () => {
 
   const grandTotalMinor = Math.max(0, merchandiseSubtotalMinor + shippingTotalMinor - voucherDiscountMinor)
 
-  // Handle Voucher Apply
-  const handleApplyVoucher = (codeToApply?: string) => {
-    const code = (codeToApply || voucherCodeInput).trim().toUpperCase()
-    setVoucherError(null)
-
-    if (!code) {
-      setVoucherError('Please enter a voucher code')
-      return
-    }
-
-    const found = MOCK_VOUCHERS.find((v) => v.code === code && v.isActive)
-    if (!found) {
-      setVoucherError('Invalid or expired voucher code')
-      return
-    }
-
-    if (merchandiseSubtotalMinor < found.minOrderValueMinor) {
-      setVoucherError(`Order must be at least ${formatMoney(found.minOrderValueMinor)}`)
-      return
-    }
-
-    setAppliedVoucher(found)
-    setVoucherCodeInput(found.code)
-  }
-
   const handleRemoveVoucher = () => {
     setAppliedVoucher(null)
-    setVoucherCodeInput('')
-    setVoucherError(null)
     sessionStorage.removeItem('webchicken_checkout_voucher')
   }
 
@@ -467,99 +437,45 @@ export const CheckoutPage: React.FC = () => {
               <h2 className="checkout-summary-title">Summary & Payment</h2>
 
               {/* Voucher Apply Block */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 8 }}>
-                  Voucher Code
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {/* Row 1: Input Code + Apply/Remove Action */}
-                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <input
-                      type="text"
-                      className="cart-voucher-input"
-                      style={{ minWidth: 0, flex: 1 }}
-                      placeholder="ENTER CODE"
-                      value={voucherCodeInput}
-                      onChange={(e) => setVoucherCodeInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleApplyVoucher()
-                        }
-                      }}
-                    />
-                    {appliedVoucher ? (
-                      <button
-                        type="button"
-                        className="cart-voucher-apply-btn"
-                        style={{ backgroundColor: '#ef4444', flexShrink: 0, padding: '8px 14px' }}
-                        onClick={handleRemoveVoucher}
-                      >
-                        Remove
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="cart-voucher-apply-btn"
-                        style={{ flexShrink: 0, padding: '8px 14px' }}
-                        onClick={() => handleApplyVoucher()}
-                      >
-                        Apply
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Row 2: Select Voucher Button (Spans 100% width, fits card perfectly) */}
-                  <button
-                    type="button"
-                    style={{
-                      width: '100%',
-                      padding: '9px 14px',
-                      backgroundColor: '#f59e0b',
-                      color: '#0f172a',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                      boxSizing: 'border-box',
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d97706')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f59e0b')}
-                    onClick={() => setIsVoucherModalOpen(true)}
-                  >
-                    <Ticket style={{ width: 15, height: 15 }} />
-                    <span>{appliedVoucher ? 'Change Voucher' : 'Select Voucher'}</span>
-                  </button>
+              {/* Platform Voucher Bar (Shopee Style) */}
+              <div
+                className="platform-voucher-bar"
+                onClick={() => setIsVoucherModalOpen(true)}
+              >
+                <div className="platform-voucher-left">
+                  <Ticket className="platform-voucher-icon" />
+                  <span>Platform Voucher</span>
+                  {appliedVoucher && (
+                    <span className="platform-voucher-applied-badge">
+                      {appliedVoucher.code} (-{formatMoney(voucherDiscountMinor)})
+                    </span>
+                  )}
                 </div>
 
-                {voucherError && (
-                  <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 500 }}>
-                    {voucherError}
-                  </div>
-                )}
-
-                {appliedVoucher && (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#16a34a',
-                      marginTop: 8,
-                      fontWeight: 600,
-                      backgroundColor: '#f0fdf4',
-                      padding: '6px 10px',
-                      borderRadius: 6,
-                      border: '1px solid #bbf7d0',
-                    }}
-                  >
-                    ✓ Applied: {appliedVoucher.code} ({appliedVoucher.title})
-                  </div>
-                )}
+                <div className="platform-voucher-right">
+                  <span>{appliedVoucher ? 'Change' : 'Select or enter code'}</span>
+                  {appliedVoucher && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveVoucher()
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        padding: '0 4px',
+                        fontSize: 13,
+                        fontWeight: 700,
+                      }}
+                      title="Remove voucher"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Price Breakdown */}
@@ -611,7 +527,12 @@ export const CheckoutPage: React.FC = () => {
         isOpen={isVoucherModalOpen}
         onClose={() => setIsVoucherModalOpen(false)}
         orderValueMinor={merchandiseSubtotalMinor}
+        appliedVoucherCode={appliedVoucher?.code}
         onSelectVoucher={(v) => {
+          if (!v) {
+            handleRemoveVoucher()
+            return
+          }
           setAppliedVoucher({
             voucherId: v.voucherId,
             code: v.code,
@@ -625,7 +546,6 @@ export const CheckoutPage: React.FC = () => {
             startDate: '',
             endDate: '',
           })
-          setVoucherCodeInput(v.code)
         }}
       />
     </StorefrontLayout>

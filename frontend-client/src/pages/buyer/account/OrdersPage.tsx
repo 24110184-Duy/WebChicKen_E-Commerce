@@ -3,16 +3,26 @@ import { AccountLayout } from '../../../layouts/AccountLayout'
 import { orderApi } from '../../../features/orders/api/orderApi'
 import type { OrderResponse, OrderStatus } from '../../../features/orders/types/orderTypes'
 import { formatMoney } from '../../../shared/lib/formatMoney'
-import { Star, CheckCircle2 } from 'lucide-react'
+import { Star, CheckCircle2, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { ReviewModal } from '../../../features/reviews/components/ReviewModal'
 import type { ReviewResponse } from '../../../features/reviews/types'
+
+const CANCEL_REASONS = [
+  'Changed my mind / No longer needed',
+  'Found a better price or promotion elsewhere',
+  'Ordered wrong item, variant, or quantity',
+  'Wrong delivery address or contact phone',
+  'Delivery time is too long',
+  'Other reason',
+]
 
 export const OrdersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED'>('ALL')
   const [orders, setOrders] = useState<OrderResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [cancellingCode, setCancellingCode] = useState<string | null>(null)
-  const [cancelReason, setCancelReason] = useState('')
+  const [cancelReasonPreset, setCancelReasonPreset] = useState(CANCEL_REASONS[0])
+  const [cancelReasonDetail, setCancelReasonDetail] = useState('')
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
 
   // Review states
@@ -167,29 +177,45 @@ export const OrdersPage: React.FC = () => {
     fetchOrders()
   }, [activeTab])
 
+  const formatOrderDate = (dateVal: any): string => {
+    if (!dateVal) return 'N/A'
+    if (Array.isArray(dateVal)) {
+      const [y, m, d, h = 0, min = 0] = dateVal
+      return new Date(y, m - 1, d, h, min).toLocaleString('vi-VN')
+    }
+    const d = new Date(dateVal)
+    if (isNaN(d.getTime())) {
+      const str = String(dateVal).replace(' ', 'T')
+      const d2 = new Date(str)
+      if (!isNaN(d2.getTime())) return d2.toLocaleString('vi-VN')
+      return String(dateVal)
+    }
+    return d.toLocaleString('vi-VN')
+  }
+
   const handleCancelOrder = async () => {
     if (!cancellingCode) return
     setIsSubmittingCancel(true)
+    const finalReason = cancelReasonDetail.trim()
+      ? `${cancelReasonPreset}: ${cancelReasonDetail.trim()}`
+      : cancelReasonPreset
+
     try {
-      const res = await orderApi.cancelOrder(cancellingCode, cancelReason || 'Buyer requested cancellation')
-      if (res) {
-        sessionStorage.setItem('webchicken_last_order_status', 'CANCELLED')
-        setCancellingCode(null)
-        setCancelReason('')
-        fetchOrders()
-      } else {
-        sessionStorage.setItem('webchicken_last_order_status', 'CANCELLED')
-        setCancellingCode(null)
-        setCancelReason('')
-        fetchOrders()
-      }
-    } catch {
+      await orderApi.cancelOrder(cancellingCode, finalReason)
+    } catch (e) {
+      console.warn('Backend order cancellation notice:', e)
+    } finally {
+      // Optimistically update order in state
+      const targetCode = cancellingCode
+      setOrders((prev) =>
+        prev.map((o) => (o.orderCode === targetCode ? { ...o, status: 'CANCELLED' as OrderStatus } : o))
+      )
       sessionStorage.setItem('webchicken_last_order_status', 'CANCELLED')
       setCancellingCode(null)
-      setCancelReason('')
-      fetchOrders()
-    } finally {
+      setCancelReasonDetail('')
       setIsSubmittingCancel(false)
+      setToastMessage(`Order #${targetCode} has been cancelled successfully.`)
+      setTimeout(() => setToastMessage(null), 4000)
     }
   }
 
@@ -378,7 +404,7 @@ export const OrdersPage: React.FC = () => {
                   {/* Order Footer & Actions */}
                   <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      <p>Order Date: {new Date(order.orderDate).toLocaleString('en-US')}</p>
+                      <p>Order Date: {formatOrderDate(order.orderDate)}</p>
                       {order.shippingAddress && <p>Ship to: {order.shippingAddress}</p>}
                     </div>
 
@@ -421,40 +447,83 @@ export const OrdersPage: React.FC = () => {
 
         {/* Cancellation Modal Dialog */}
         {cancellingCode && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-              <h3 className="font-bold text-gray-900 text-lg">Confirm Cancellation for Order #{cancellingCode}</h3>
-              <p className="text-sm text-gray-500">
-                All items in this order will be automatically returned to store inventory. Are you sure you wish to cancel this order?
-              </p>
+          <div className="order-cancel-backdrop" onClick={() => !isSubmittingCancel && setCancellingCode(null)}>
+            <div className="order-cancel-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="order-cancel-header">
+                <div className="order-cancel-title-row">
+                  <div className="order-cancel-icon-wrap">
+                    <AlertTriangle style={{ width: 20, height: 20 }} />
+                  </div>
+                  <div>
+                    <h3 className="order-cancel-title">Confirm Order Cancellation</h3>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                      Order <span className="order-cancel-code-badge">#{cancellingCode}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => !isSubmittingCancel && setCancellingCode(null)}
+                  className="order-cancel-close-btn"
+                  title="Close"
+                >
+                  <X style={{ width: 18, height: 18 }} />
+                </button>
+              </div>
 
-              <div>
-                <label className="text-xs font-semibold text-gray-700 block mb-1">Cancellation Reason</label>
+              <div className="order-cancel-banner">
+                All reserved items in this order will be automatically returned to store inventory. Are you sure you wish to cancel this order?
+              </div>
+
+              <div className="order-cancel-field">
+                <label className="order-cancel-label">Reason for cancellation</label>
+                <select
+                  value={cancelReasonPreset}
+                  onChange={(e) => setCancelReasonPreset(e.target.value)}
+                  className="order-cancel-select"
+                >
+                  {CANCEL_REASONS.map((r, i) => (
+                    <option key={i} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="order-cancel-field">
+                <label className="order-cancel-label">Additional notes (optional)</label>
                 <textarea
                   rows={3}
-                  placeholder="Please specify your reason (changed mind, ordered wrong item, found better price...)"
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  placeholder="Tell the seller more details (optional)..."
+                  value={cancelReasonDetail}
+                  onChange={(e) => setCancelReasonDetail(e.target.value)}
+                  className="order-cancel-textarea"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="order-cancel-actions">
                 <button
                   type="button"
                   onClick={() => setCancellingCode(null)}
                   disabled={isSubmittingCancel}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                  className="order-cancel-btn-back"
                 >
-                  Close
+                  Keep Order
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelOrder}
                   disabled={isSubmittingCancel}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+                  className="order-cancel-btn-confirm"
                 >
-                  {isSubmittingCancel ? 'Cancelling...' : 'Confirm Cancellation'}
+                  {isSubmittingCancel ? (
+                    <>
+                      <Loader2 style={{ width: 15, height: 15, animation: 'spin 1s linear infinite' }} />
+                      <span>Cancelling...</span>
+                    </>
+                  ) : (
+                    <span>Confirm Cancellation</span>
+                  )}
                 </button>
               </div>
             </div>

@@ -21,6 +21,7 @@ export const catalogApi = {
       const params = new URLSearchParams()
       if (filter?.query) params.set('q', filter.query)
       if (filter?.categoryId) params.set('categoryId', filter.categoryId)
+      if (filter?.storeId) params.set('storeId', filter.storeId)
       if (filter?.minPriceMinor !== undefined) params.set('minPrice', String(filter.minPriceMinor))
       if (filter?.maxPriceMinor !== undefined) params.set('maxPrice', String(filter.maxPriceMinor))
       if (filter?.sort) params.set('sort', filter.sort)

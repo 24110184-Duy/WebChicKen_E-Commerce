@@ -181,7 +181,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ productId, produ
                 key={star}
                 type="button"
                 onClick={() => {
-                  setSelectedRating(selectedRating === star ? undefined : star)
+                  setSelectedRating(star)
                   setOnlyWithMedia(false)
                   setPage(1)
                 }}
@@ -196,7 +196,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ productId, produ
           <button
             type="button"
             onClick={() => {
-              setOnlyWithMedia(!onlyWithMedia)
+              setOnlyWithMedia(true)
               setSelectedRating(undefined)
               setPage(1)
             }}

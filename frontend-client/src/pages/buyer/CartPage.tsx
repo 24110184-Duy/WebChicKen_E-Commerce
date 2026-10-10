@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { useCartStore } from '../../app/store/cartStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
+import { Ticket } from 'lucide-react'
 import { PATHS } from '../../app/router/paths'
-import { MOCK_VOUCHERS } from '../../features/cart/types/cartTypes'
 import type { Voucher } from '../../features/cart/types/cartTypes'
+import { VoucherModal } from '../../features/cart/components/VoucherModal'
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate()
@@ -28,41 +29,13 @@ export const CartPage: React.FC = () => {
     syncWithBackend()
   }, [])
 
-  const [voucherCodeInput, setVoucherCodeInput] = useState('')
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
-  const [voucherError, setVoucherError] = useState<string | null>(null)
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false)
 
   const isAllSelected = items.length > 0 && items.every((i) => i.selected)
 
-  // Handle Voucher Apply
-  const handleApplyVoucher = (codeToApply?: string) => {
-    const code = (codeToApply || voucherCodeInput).trim().toUpperCase()
-    setVoucherError(null)
-
-    if (!code) {
-      setVoucherError('Please enter a voucher code')
-      return
-    }
-
-    const found = MOCK_VOUCHERS.find((v) => v.code === code && v.isActive)
-    if (!found) {
-      setVoucherError('Invalid or expired voucher code')
-      return
-    }
-
-    if (totalAmountMinor < found.minOrderValueMinor) {
-      setVoucherError(`Order must be at least ${formatMoney(found.minOrderValueMinor)} to apply this voucher`)
-      return
-    }
-
-    setAppliedVoucher(found)
-    setVoucherCodeInput(found.code)
-  }
-
   const handleRemoveVoucher = () => {
     setAppliedVoucher(null)
-    setVoucherCodeInput('')
-    setVoucherError(null)
   }
 
   // Calculate voucher discount
@@ -286,61 +259,44 @@ export const CartPage: React.FC = () => {
               <div className="cart-summary-card">
                 <h2 className="cart-summary-title">Order Summary</h2>
 
-                {/* Voucher Box */}
-                <div className="cart-voucher-box">
-                  <label className="cart-voucher-label">Platform & Shop Voucher</label>
-                  <div className="cart-voucher-form">
-                    <input
-                      type="text"
-                      className="cart-voucher-input"
-                      placeholder="ENTER CODE"
-                      value={voucherCodeInput}
-                      onChange={(e) => setVoucherCodeInput(e.target.value)}
-                    />
-                    {appliedVoucher ? (
-                      <button
-                        type="button"
-                        className="cart-voucher-apply-btn"
-                        style={{ backgroundColor: '#ef4444' }}
-                        onClick={handleRemoveVoucher}
-                      >
-                        Remove
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="cart-voucher-apply-btn"
-                        onClick={() => handleApplyVoucher()}
-                      >
-                        Apply
-                      </button>
+                {/* Platform Voucher Bar (Shopee Style) */}
+                <div
+                  className="platform-voucher-bar"
+                  onClick={() => setIsVoucherModalOpen(true)}
+                >
+                  <div className="platform-voucher-left">
+                    <Ticket className="platform-voucher-icon" />
+                    <span>Platform Voucher</span>
+                    {appliedVoucher && (
+                      <span className="platform-voucher-applied-badge">
+                        {appliedVoucher.code} (-{formatMoney(voucherDiscountMinor)})
+                      </span>
                     )}
                   </div>
 
-                  {voucherError && (
-                    <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 500 }}>
-                      {voucherError}
-                    </div>
-                  )}
-
-                  {appliedVoucher && (
-                    <div style={{ fontSize: 12, color: '#16a34a', marginTop: 6, fontWeight: 600 }}>
-                      Applied: {appliedVoucher.code} ({appliedVoucher.title})
-                    </div>
-                  )}
-
-                  {/* Quick Voucher Chips */}
-                  <div className="cart-voucher-chips">
-                    {MOCK_VOUCHERS.map((v) => (
+                  <div className="platform-voucher-right">
+                    <span>{appliedVoucher ? 'Change' : 'Select or enter code'}</span>
+                    {appliedVoucher && (
                       <button
-                        key={v.code}
                         type="button"
-                        className={`cart-voucher-chip ${appliedVoucher?.code === v.code ? 'applied' : ''}`}
-                        onClick={() => handleApplyVoucher(v.code)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveVoucher()
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          padding: '0 4px',
+                          fontSize: 13,
+                          fontWeight: 700,
+                        }}
+                        title="Remove voucher"
                       >
-                        {v.code} ({v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : formatMoney(v.discountValue)})
+                        ✕
                       </button>
-                    ))}
+                    )}
                   </div>
                 </div>
 
@@ -390,6 +346,32 @@ export const CartPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <VoucherModal
+        isOpen={isVoucherModalOpen}
+        onClose={() => setIsVoucherModalOpen(false)}
+        orderValueMinor={totalAmountMinor}
+        appliedVoucherCode={appliedVoucher?.code}
+        onSelectVoucher={(v) => {
+          if (!v) {
+            handleRemoveVoucher()
+            return
+          }
+          setAppliedVoucher({
+            voucherId: v.voucherId,
+            code: v.code,
+            title: v.code,
+            description: `Discount ${formatMoney(v.discountAmountMinor)}`,
+            discountType: 'AMOUNT',
+            discountValue: v.discountAmountMinor,
+            minOrderValueMinor: 0,
+            maxDiscountMinor: v.discountAmountMinor,
+            isActive: true,
+            startDate: '',
+            endDate: '',
+          })
+        }}
+      />
     </StorefrontLayout>
   )
 }

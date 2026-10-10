@@ -7,6 +7,7 @@ import { useCartStore } from '../../app/store/cartStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import { ProductReviews } from '../../features/reviews/components/ProductReviews'
+import { ProductShopCard } from '../../features/shop'
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -40,27 +41,35 @@ export const ProductDetailPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  const handleAddToCart = () => {
-    if (!product || !selectedVariant) return
+  const handleAddToCart = async () => {
+    if (!product) return false
 
-    addItem({
-      skuId: selectedVariant.id,
+    const variant = selectedVariant || (product.variants && product.variants.length > 0 ? product.variants[0] : null)
+    const skuId = variant?.id || product.id
+    const skuName = variant?.attribute || 'Bản Tiêu Chuẩn'
+    const priceMinor = variant?.basePriceMinor || product.minPriceMinor || 0
+
+    await addItem({
+      skuId,
       productId: product.id,
-      name: `${product.name} (${selectedVariant.attribute})`,
-      skuName: selectedVariant.attribute,
-      priceMinor: selectedVariant.basePriceMinor,
-      imageUrl: selectedImage || product.thumbnailUrl,
+      name: variant ? `${product.name} (${skuName})` : product.name,
+      skuName,
+      priceMinor,
+      imageUrl: selectedImage || product.thumbnailUrl || (product.imageUrls && product.imageUrls[0]) || '',
       quantity,
-      storeId: product.storeId,
-      storeName: product.storeName,
+      storeId: product.storeId || 'store-1',
+      storeName: product.storeName || 'Official Store',
     })
 
-    showToast(`Added ${quantity} x "${product.name}" to cart!`)
+    showToast(`Đã thêm ${quantity} x "${product.name}" vào giỏ hàng!`)
+    return true
   }
 
-  const handleBuyNow = () => {
-    handleAddToCart()
-    navigate(PATHS.CART)
+  const handleBuyNow = async () => {
+    const success = await handleAddToCart()
+    if (success) {
+      navigate(PATHS.CART)
+    }
   }
 
   if (isLoading) {
@@ -159,19 +168,23 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* SKU Variant Options */}
-            <div className="pdp-section-label">Select Specification / Weight:</div>
-            <div className="pdp-variants-list">
-              {product.variants.map(v => (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setSelectedVariant(v)}
-                  className={`pdp-variant-pill ${selectedVariant?.id === v.id ? 'active' : ''}`}
-                >
-                  {v.attribute}
-                </button>
-              ))}
-            </div>
+            {product.variants && product.variants.length > 0 && (
+              <>
+                <div className="pdp-section-label">Select Specification / Weight:</div>
+                <div className="pdp-variants-list">
+                  {product.variants.map(v => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVariant(v)}
+                      className={`pdp-variant-pill ${selectedVariant?.id === v.id ? 'active' : ''}`}
+                    >
+                      {v.attribute}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* Quantity Selector */}
             <div className="pdp-qty-row">
@@ -232,6 +245,16 @@ export const ProductDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Shopee-style Shop Profile Card */}
+        <ProductShopCard
+          storeId={product.storeId}
+          initialStoreName={product.storeName}
+          productId={product.id}
+          productName={product.name}
+          productImage={selectedImage || product.thumbnailUrl}
+          productPrice={currentPrice}
+        />
 
         {/* Product Details & Specifications Tabs */}
         <div className="pdp-tabs-card">

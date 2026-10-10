@@ -4,6 +4,7 @@ import { useAuthStore } from '../app/store/authStore'
 import { useAccountNav } from '../app/store/accountNavStore'
 import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
+import chickenMascotImg from '../assets/chicken-mascot.png'
 
 interface AccountLayoutProps {
   children: React.ReactNode
@@ -14,6 +15,7 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuthStore()
   const { isAccountOpen, openAccountMenu, closeAccountMenu, toggleAccountMenu } = useAccountNav()
+  const [searchQuery, setSearchQuery] = React.useState('')
 
   React.useEffect(() => {
     if (!isAuthenticated) {
@@ -26,6 +28,15 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
     try { await authApi.logout() } catch { /* ignore */ }
     logout()
     navigate(PATHS.HOME, { replace: true })
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    } else {
+      navigate('/search')
+    }
   }
 
   const initials = user?.fullName
@@ -61,29 +72,85 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
       {/* Topbar ChickyMart Yellow Style */}
       <nav className="account-topbar">
         <div className="account-topbar-inner">
-          {/* Brand */}
+          {/* Brand with Chicken Mascot */}
           <Link to={PATHS.HOME} className="account-topbar-brand">
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                border: '2px solid #ffffff',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                backgroundColor: '#fef08a',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <img
+                src={chickenMascotImg}
+                alt="ChickyMart Mascot"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scale(1.15) translateY(2px)' }}
+              />
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="account-topbar-title">ChickyMart</span>
               <span className="account-topbar-subtitle">Account Center</span>
             </div>
           </Link>
 
-          {/* Search bar matching style */}
-          <div style={{ flex: 1, maxWidth: 500, margin: '0 28px', display: 'flex', alignItems: 'center', background: '#ffffff', borderRadius: 8, padding: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1.5px solid #fde68a' }}>
+          {/* Functional Search Bar */}
+          <form
+            onSubmit={handleSearchSubmit}
+            style={{
+              flex: 1,
+              maxWidth: 500,
+              margin: '0 28px',
+              display: 'flex',
+              alignItems: 'center',
+              background: '#ffffff',
+              borderRadius: 8,
+              padding: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1.5px solid #fde68a',
+            }}
+          >
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products, orders and vouchers..."
-              style={{ flex: 1, height: 34, border: 'none', outline: 'none', padding: '0 12px', fontSize: 13, color: '#333' }}
-              readOnly
+              style={{
+                flex: 1,
+                height: 34,
+                border: 'none',
+                outline: 'none',
+                padding: '0 12px',
+                fontSize: 13,
+                color: '#1e293b',
+                background: 'transparent',
+              }}
             />
             <button
-              type="button"
-              style={{ height: 34, padding: '0 18px', background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)', color: '#0f172a', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+              type="submit"
+              style={{
+                height: 34,
+                padding: '0 18px',
+                background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+                color: '#0f172a',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'opacity 0.15s ease',
+              }}
             >
               Search
             </button>
-          </div>
+          </form>
 
           {/* Right Header items */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

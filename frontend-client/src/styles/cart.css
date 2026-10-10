@@ -551,3 +551,483 @@
   color: #64748b;
   margin-top: 14px;
 }
+
+/* ==========================================================================
+   Shopee-Style Platform Voucher Trigger Bar & Modal Styles
+   ========================================================================== */
+
+/* Platform Voucher Trigger Row (Shopee Style) */
+.platform-voucher-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background-color: #ffffff;
+  border-top: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
+  margin: 16px 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 6px;
+}
+
+.platform-voucher-bar:hover {
+  background-color: #fefce8;
+  border-color: #fde047;
+}
+
+.platform-voucher-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.platform-voucher-icon {
+  width: 20px;
+  height: 20px;
+  color: #ee4d2d;
+  flex-shrink: 0;
+}
+
+.platform-voucher-applied-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.platform-voucher-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #0284c7; /* Shopee blue link */
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.platform-voucher-bar:hover .platform-voucher-right {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+/* Shopee-style Voucher Modal */
+.shopee-voucher-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease;
+}
+
+.shopee-voucher-modal {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.shopee-voucher-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.shopee-voucher-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.shopee-voucher-help {
+  font-size: 13px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shopee-voucher-help:hover {
+  color: #0284c7;
+}
+
+.shopee-voucher-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.shopee-voucher-close-btn:hover {
+  color: #0f172a;
+}
+
+/* Add Voucher Box */
+.shopee-voucher-input-box {
+  background-color: #f8fafc;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shopee-voucher-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shopee-voucher-input-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.shopee-voucher-input-field {
+  flex: 1;
+  padding: 9px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  background-color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.shopee-voucher-input-field:focus {
+  border-color: #ee4d2d;
+  box-shadow: 0 0 0 2px rgba(238, 77, 45, 0.15);
+}
+
+.shopee-voucher-apply-btn {
+  padding: 9px 20px;
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.shopee-voucher-apply-btn.active {
+  background-color: #ee4d2d;
+  color: #ffffff;
+  border-color: #ee4d2d;
+}
+
+.shopee-voucher-apply-btn.active:hover {
+  background-color: #dc2626;
+}
+
+/* Voucher List Body */
+.shopee-voucher-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background-color: #f8fafc;
+}
+
+.shopee-voucher-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.shopee-voucher-section-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+/* Ticket Item */
+.shopee-ticket-card {
+  position: relative;
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shopee-ticket-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shopee-ticket-card.selected {
+  border-color: #ee4d2d;
+  box-shadow: 0 0 0 1px #ee4d2d, 0 3px 10px rgba(238, 77, 45, 0.15);
+}
+
+.shopee-ticket-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #fcfcfc;
+}
+
+/* Ticket Left Stub */
+.shopee-ticket-stub {
+  width: 110px;
+  flex-shrink: 0;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  position: relative;
+  text-align: center;
+}
+
+.shopee-ticket-stub.freeship {
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+}
+
+.shopee-ticket-stub.discount {
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+}
+
+.shopee-ticket-stub-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.shopee-ticket-stub-main {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.shopee-ticket-stub-sub {
+  font-size: 10px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+/* Ticket Perforation border between Stub and Body */
+.shopee-ticket-perforation {
+  width: 0;
+  position: relative;
+  border-left: 2px dashed #e2e8f0;
+}
+
+.shopee-ticket-notch-top,
+.shopee-ticket-notch-bottom {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background-color: #f8fafc;
+  border-radius: 50%;
+  left: -7px;
+  z-index: 2;
+  border: 1px solid #e2e8f0;
+}
+
+.shopee-ticket-notch-top {
+  top: -7px;
+}
+
+.shopee-ticket-notch-bottom {
+  bottom: -7px;
+}
+
+/* Ticket Right Details */
+.shopee-ticket-details {
+  flex: 1;
+  padding: 12px 14px 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.shopee-ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shopee-ticket-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.shopee-ticket-badge-limited {
+  font-size: 10px;
+  font-weight: 800;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.shopee-ticket-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.shopee-ticket-min-spend {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.shopee-ticket-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: #ea580c;
+  background-color: #fff7ed;
+  border: 1px solid #ffedd5;
+  padding: 1px 6px;
+  border-radius: 3px;
+  width: fit-content;
+}
+
+.shopee-ticket-expiry {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shopee-ticket-radio-col {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shopee-ticket-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.shopee-ticket-card.selected .shopee-ticket-radio {
+  border-color: #ee4d2d;
+  background-color: #ee4d2d;
+}
+
+.shopee-ticket-radio-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+/* Ineligible Warning Note */
+.shopee-ticket-warning {
+  padding: 6px 14px;
+  background-color: #fffbeb;
+  border-top: 1px solid #fef3c7;
+  font-size: 11px;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Modal Footer */
+.shopee-voucher-footer {
+  padding: 14px 24px;
+  background-color: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.shopee-voucher-btn-cancel {
+  padding: 9px 24px;
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.shopee-voucher-btn-cancel:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.shopee-voucher-btn-ok {
+  padding: 9px 36px;
+  background-color: #ee4d2d;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(238, 77, 45, 0.35);
+  transition: all 0.15s;
+}
+
+.shopee-voucher-btn-ok:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+

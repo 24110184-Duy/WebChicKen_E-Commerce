@@ -86,8 +86,23 @@ export const cartStore = {
             })
           })
         })
-        state = { items: syncedItems, isLoading: false }
-        emitChange()
+
+        if (syncedItems.length > 0) {
+          state = { items: syncedItems, isLoading: false }
+          emitChange()
+        } else if (state.items.length === 0) {
+          state = { items: [], isLoading: false }
+          emitChange()
+        } else {
+          // If local items exist but backend returned empty (e.g. race condition),
+          // preserve local items and push them to backend
+          state = { ...state, isLoading: false }
+          emitChange()
+          for (const localItem of state.items) {
+            const variantId = localItem.skuId !== localItem.productId ? localItem.skuId : undefined
+            cartApi.addItem(localItem.productId, variantId, localItem.quantity).catch(() => {})
+          }
+        }
       } else {
         state = { ...state, isLoading: false }
         emitChange()
@@ -104,7 +119,7 @@ export const cartStore = {
 
     if (existingIndex > -1) {
       newItems = state.items.map((i, idx) =>
-        idx === existingIndex ? { ...i, quantity: i.quantity + item.quantity } : i
+        idx === existingIndex ? { ...i, quantity: i.quantity + item.quantity, selected: true } : i
       )
     } else {
       newItems = [...state.items, { ...item, selected: true }]
@@ -113,9 +128,38 @@ export const cartStore = {
     state = { ...state, items: newItems }
     emitChange()
 
-    // Async sync with backend if authenticated
+    // Sync with backend if authenticated
     if (authStore.getState().isAuthenticated) {
-      cartApi.addItem(item.productId, item.skuId, item.quantity).catch(() => {})
+      try {
+        const variantId = item.skuId !== item.productId ? item.skuId : undefined
+        const backendCart = await cartApi.addItem(item.productId, variantId, item.quantity)
+        if (backendCart && backendCart.storeGroups) {
+          const syncedItems: CartItem[] = []
+          backendCart.storeGroups.forEach((group) => {
+            group.items.forEach((backendItem) => {
+              syncedItems.push({
+                id: backendItem.itemId,
+                skuId: backendItem.variantId || backendItem.itemId,
+                productId: backendItem.productId,
+                name: backendItem.productName,
+                skuName: backendItem.variantAttribute,
+                priceMinor: backendItem.currentPriceMinor,
+                imageUrl: backendItem.thumbnailUrl,
+                quantity: backendItem.quantity,
+                storeId: group.storeId,
+                storeName: group.storeName,
+                selected: true,
+              })
+            })
+          })
+          if (syncedItems.length > 0) {
+            state = { ...state, items: syncedItems }
+            emitChange()
+          }
+        }
+      } catch (err) {
+        console.warn('Backend cart addItem error:', err)
+      }
     }
   },
 
