@@ -13,6 +13,7 @@ import {
 import { orderApi } from '../../features/orders/api/orderApi'
 import { paymentApi } from '../../features/payment/api/paymentApi'
 import { VoucherModal } from '../../features/cart/components/VoucherModal'
+import { Ticket } from 'lucide-react'
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
@@ -470,42 +471,71 @@ export const CheckoutPage: React.FC = () => {
                 <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 8 }}>
                   Voucher Code
                 </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    type="text"
-                    className="cart-voucher-input"
-                    placeholder="ENTER CODE"
-                    value={voucherCodeInput}
-                    onChange={(e) => setVoucherCodeInput(e.target.value)}
-                  />
-                  {appliedVoucher ? (
-                    <button
-                      type="button"
-                      className="cart-voucher-apply-btn"
-                      style={{ backgroundColor: '#ef4444' }}
-                      onClick={handleRemoveVoucher}
-                    >
-                      Remove
-                    </button>
-                  ) : (
-                    <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* Row 1: Input Code + Apply/Remove Action */}
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <input
+                      type="text"
+                      className="cart-voucher-input"
+                      style={{ minWidth: 0, flex: 1 }}
+                      placeholder="ENTER CODE"
+                      value={voucherCodeInput}
+                      onChange={(e) => setVoucherCodeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleApplyVoucher()
+                        }
+                      }}
+                    />
+                    {appliedVoucher ? (
                       <button
                         type="button"
                         className="cart-voucher-apply-btn"
+                        style={{ backgroundColor: '#ef4444', flexShrink: 0, padding: '8px 14px' }}
+                        onClick={handleRemoveVoucher}
+                      >
+                        Remove
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="cart-voucher-apply-btn"
+                        style={{ flexShrink: 0, padding: '8px 14px' }}
                         onClick={() => handleApplyVoucher()}
                       >
                         Apply
                       </button>
-                      <button
-                        type="button"
-                        className="cart-voucher-apply-btn"
-                        style={{ backgroundColor: '#f59e0b', color: '#111827', whiteSpace: 'nowrap' }}
-                        onClick={() => setIsVoucherModalOpen(true)}
-                      >
-                        Select Voucher
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  {/* Row 2: Select Voucher Button (Spans 100% width, fits card perfectly) */}
+                  <button
+                    type="button"
+                    style={{
+                      width: '100%',
+                      padding: '9px 14px',
+                      backgroundColor: '#f59e0b',
+                      color: '#0f172a',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      boxSizing: 'border-box',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#d97706')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#f59e0b')}
+                    onClick={() => setIsVoucherModalOpen(true)}
+                  >
+                    <Ticket style={{ width: 15, height: 15 }} />
+                    <span>{appliedVoucher ? 'Change Voucher' : 'Select Voucher'}</span>
+                  </button>
                 </div>
 
                 {voucherError && (
@@ -515,8 +545,19 @@ export const CheckoutPage: React.FC = () => {
                 )}
 
                 {appliedVoucher && (
-                  <div style={{ fontSize: 12, color: '#16a34a', marginTop: 6, fontWeight: 600 }}>
-                    Applied: {appliedVoucher.code} ({appliedVoucher.title})
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#16a34a',
+                      marginTop: 8,
+                      fontWeight: 600,
+                      backgroundColor: '#f0fdf4',
+                      padding: '6px 10px',
+                      borderRadius: 6,
+                      border: '1px solid #bbf7d0',
+                    }}
+                  >
+                    ✓ Applied: {appliedVoucher.code} ({appliedVoucher.title})
                   </div>
                 )}
               </div>
