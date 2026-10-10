@@ -32,9 +32,12 @@ Hệ thống thương mại điện tử đa nhà bán (marketplace) quy mô l�
 | Frontend SPA | React + TypeScript + Vite + Tailwind CSS | `frontend-client/` |
 | Giao tiếp | RESTful API, JSON, `/api/v1/...` | — |
 | Hạ tầng | Nginx (prod) · Docker (MySQL dev) | `infra/` |
-| Tài liệu | Kiến trúc, API, BA, ADR | `docs/dev-guides/`, `docs/api/`, `docs/ba/`, `docs/adr/` |
-
+| Tài liệu | Kiến trúc, API, BA, ADR, Nhật ký thay đổi | `docs/dev-guides/`, `docs/api/`, `docs/ba/`, `docs/adr/`, [`docs/CHANGELOG.md`](../CHANGELOG.md) |
+ 
 Nghiệp vụ chia 11 module: `identity`, `shop`, `catalog`, `inventory`, `cart`, `promotion`, `order`, `payment`, `review`, `media`, `backoffice`. (Shipping được mô phỏng bằng job định kỳ tự đổi trạng thái, không phải module độc lập.)
+ 
+> [!NOTE]
+> **Nhật ký thay đổi & Sửa lỗi (Project Changelog):** Khi tiếp nhận hoặc kéo mã nguồn dự án mới nhất về, vui lòng đọc [`docs/CHANGELOG.md`](../CHANGELOG.md) để cập nhật danh sách các tính năng đã sửa đổi và các lỗi (bug fixes) đã khắc phục.
 
 ---
 

@@ -141,10 +141,16 @@ export const SellerProductListPage: React.FC = () => {
   const displayedProducts = useMemo(() => {
     return allProducts.filter((p) => {
       // Tab filter
-      if (activeTab === 'LIVE' && p.status !== 'ACTIVE') return false
-      if (activeTab === 'SOLD_OUT' && (p.totalStock > 0 || p.status !== 'OUT_OF_STOCK')) return false
-      if (activeTab === 'VIOLATION' && p.status !== 'PENDING_APPROVAL') return false
-      if (activeTab === 'DELISTED' && p.status !== 'INACTIVE') return false
+      if (activeTab === 'LIVE') {
+        if (p.status !== 'ACTIVE' || (p.totalStock ?? 0) <= 0) return false
+      } else if (activeTab === 'SOLD_OUT') {
+        const isSoldOut = (p.totalStock ?? 0) <= 0 || p.status === 'OUT_OF_STOCK'
+        if (!isSoldOut) return false
+      } else if (activeTab === 'VIOLATION') {
+        if (p.status !== 'PENDING_APPROVAL') return false
+      } else if (activeTab === 'DELISTED') {
+        if (p.status !== 'INACTIVE') return false
+      }
 
       // Category filter
       if (selectedCategory !== 'ALL' && p.categoryId !== selectedCategory) return false
@@ -321,14 +327,47 @@ export const SellerProductListPage: React.FC = () => {
     loadProducts()
   }
 
-  const PRODUCT_TABS = [
-    { id: 'ALL', label: 'All' },
-    { id: 'LIVE', label: 'Live' },
-    { id: 'SOLD_OUT', label: `Sold out (${allProducts.filter((p) => p.totalStock === 0).length})` },
-    { id: 'VIOLATION', label: 'Violation (0)' },
-    { id: 'DELISTED', label: 'Delisted (0)' },
+  const liveCount = useMemo(() => {
+    return allProducts.filter((p) => p.status === 'ACTIVE' && (p.totalStock ?? 0) > 0).length
+  }, [allProducts])
+
+  const soldOutCount = useMemo(() => {
+    return allProducts.filter((p) => (p.totalStock ?? 0) <= 0 || p.status === 'OUT_OF_STOCK').length
+  }, [allProducts])
+
+  const violationCount = useMemo(() => {
+    return allProducts.filter((p) => p.status === 'PENDING_APPROVAL').length
+  }, [allProducts])
+
+  const delistedCount = useMemo(() => {
+    return allProducts.filter((p) => p.status === 'INACTIVE').length
+  }, [allProducts])
+
+  const PRODUCT_TABS = useMemo(() => [
+    { id: 'ALL', label: `All (${allProducts.length})` },
+    { id: 'LIVE', label: `Live (${liveCount})` },
+    { id: 'SOLD_OUT', label: `Sold out (${soldOutCount})` },
+    { id: 'VIOLATION', label: `Violation (${violationCount})` },
+    { id: 'DELISTED', label: `Delisted (${delistedCount})` },
     { id: 'UNPUBLISHED', label: 'Unpublished (0)' },
-  ]
+  ], [allProducts.length, liveCount, soldOutCount, violationCount, delistedCount])
+
+  const tabStatusSubtitle = useMemo(() => {
+    switch (activeTab) {
+      case 'LIVE':
+        return 'Ready to sell'
+      case 'SOLD_OUT':
+        return 'Out of stock'
+      case 'VIOLATION':
+        return 'Pending approval / Violation'
+      case 'DELISTED':
+        return 'Delisted / Hidden'
+      case 'UNPUBLISHED':
+        return 'Draft / Unpublished'
+      default:
+        return 'All store products'
+    }
+  }, [activeTab])
 
   return (
     <SellerLayout>
@@ -579,7 +618,7 @@ export const SellerProductListPage: React.FC = () => {
                 {displayedProducts.length} Products
               </span>
               <span style={{ fontSize: 12, color: '#8c8c8c' }}>•</span>
-              <span style={{ fontSize: 12, color: '#8c8c8c' }}>Ready to sell</span>
+              <span style={{ fontSize: 12, color: '#8c8c8c' }}>{tabStatusSubtitle}</span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

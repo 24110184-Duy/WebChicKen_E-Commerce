@@ -160,7 +160,8 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("Danh sách mặt hàng đặt mua không được để trống");
         }
 
-        // Đảm bảo hồ sơ khách hàng tồn tại trong bảng customers (chống lỗi vi phạm khóa ngoại fk_orders_customers khi Seller/Admin đặt hàng)
+        // Đảm bảo hồ sơ khách hàng tồn tại trong bảng customers (chống lỗi vi phạm khóa
+        // ngoại fk_orders_customers khi Seller/Admin đặt hàng)
         orderDAO.ensureCustomerExists(customerId);
 
         // 1. Phân giải thông tin sản phẩm và phân nhóm theo Store (TASK-44: Multi-shop
@@ -177,7 +178,8 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm: " + reqItem.productId()));
 
             if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new ValidationException("Sản phẩm '" + product.getName() + "' chưa được phê duyệt mở bán hoặc đang tạm ngưng.");
+                throw new ValidationException(
+                        "Sản phẩm '" + product.getName() + "' chưa được phê duyệt mở bán hoặc đang tạm ngưng.");
             }
 
             ProductVariantEntity variant = null;

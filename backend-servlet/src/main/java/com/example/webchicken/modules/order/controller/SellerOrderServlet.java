@@ -1,6 +1,7 @@
 package com.example.webchicken.modules.order.controller;
 
 import com.example.webchicken.common.enums.OrderStatus;
+import com.example.webchicken.common.enums.PaymentStatus;
 import com.example.webchicken.common.exception.AppException;
 import com.example.webchicken.common.exception.AuthorizationException;
 import com.example.webchicken.common.exception.NotFoundException;
@@ -78,17 +79,37 @@ public class SellerOrderServlet extends BaseApiServlet {
             // GET /api/v1/seller/orders/{shopId}
             String statusParam = getStringParam(req, "status", null);
             OrderStatus status = null;
+            boolean filterUnpaid = false;
+
             if (statusParam != null && !statusParam.isBlank() && !"ALL".equalsIgnoreCase(statusParam)) {
-                try {
-                    status = OrderStatus.valueOf(statusParam.toUpperCase());
-                } catch (IllegalArgumentException ignored) {}
+                String normalized = statusParam.trim().toUpperCase();
+                switch (normalized) {
+                    case "COMPLETED", "DELIVERED" -> status = OrderStatus.DELIVERED;
+                    case "TO_SHIP", "CONFIRMED" -> status = OrderStatus.CONFIRMED;
+                    case "SHIPPING" -> status = OrderStatus.SHIPPING;
+                    case "PENDING" -> status = OrderStatus.PENDING;
+                    case "CANCELLATION", "CANCELLED" -> status = OrderStatus.CANCELLED;
+                    case "RETURN_REFUND", "RETURNED" -> status = OrderStatus.RETURNED;
+                    case "UNPAID" -> filterUnpaid = true;
+                    default -> {
+                        try {
+                            status = OrderStatus.valueOf(normalized);
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+                }
             }
 
             int page = getIntParam(req, "page", 1);
-            int size = getIntParam(req, "size", 20);
+            int size = getIntParam(req, "size", 50);
             String q = getStringParam(req, "q", null);
 
             List<OrderResponse> orders = orderService().getStoreOrders(path.shopId(), status, page, size);
+
+            if (filterUnpaid) {
+                orders = orders.stream()
+                        .filter(o -> o.paymentStatus() == PaymentStatus.UNPAID)
+                        .toList();
+            }
 
             if (q != null && !q.isBlank()) {
                 String keyword = q.trim().toLowerCase();
@@ -96,20 +117,35 @@ public class SellerOrderServlet extends BaseApiServlet {
                         .filter(o -> (o.orderCode() != null && o.orderCode().toLowerCase().contains(keyword))
                                 || (o.recipientName() != null && o.recipientName().toLowerCase().contains(keyword))
                                 || (o.recipientPhone() != null && o.recipientPhone().toLowerCase().contains(keyword))
+                                || (o.shippingAddress() != null && o.shippingAddress().toLowerCase().contains(keyword))
                                 || (o.items() != null && o.items().stream().anyMatch(i -> i.productName() != null && i.productName().toLowerCase().contains(keyword))))
                         .toList();
             }
 
-            long totalCount = orderService().countStoreOrders(path.shopId(), status);
+            long totalCount = filterUnpaid ? orders.size() : orderService().countStoreOrders(path.shopId(), status);
 
             // Tab badge breakdown counts
+            long allCount = orderService().countStoreOrders(path.shopId(), null);
+            long pendingCount = orderService().countStoreOrders(path.shopId(), OrderStatus.PENDING);
+            long confirmedCount = orderService().countStoreOrders(path.shopId(), OrderStatus.CONFIRMED);
+            long shippingCount = orderService().countStoreOrders(path.shopId(), OrderStatus.SHIPPING);
+            long deliveredCount = orderService().countStoreOrders(path.shopId(), OrderStatus.DELIVERED);
+            long cancelledCount = orderService().countStoreOrders(path.shopId(), OrderStatus.CANCELLED);
+            long returnedCount = orderService().countStoreOrders(path.shopId(), OrderStatus.RETURNED);
+
             Map<String, Long> statusCounts = new HashMap<>();
-            statusCounts.put("all", orderService().countStoreOrders(path.shopId(), null));
-            statusCounts.put("pending", orderService().countStoreOrders(path.shopId(), OrderStatus.PENDING));
-            statusCounts.put("confirmed", orderService().countStoreOrders(path.shopId(), OrderStatus.CONFIRMED));
-            statusCounts.put("shipping", orderService().countStoreOrders(path.shopId(), OrderStatus.SHIPPING));
-            statusCounts.put("delivered", orderService().countStoreOrders(path.shopId(), OrderStatus.DELIVERED));
-            statusCounts.put("cancelled", orderService().countStoreOrders(path.shopId(), OrderStatus.CANCELLED));
+            statusCounts.put("all", allCount);
+            statusCounts.put("pending", pendingCount);
+            statusCounts.put("confirmed", confirmedCount);
+            statusCounts.put("to_ship", confirmedCount + pendingCount);
+            statusCounts.put("shipping", shippingCount);
+            statusCounts.put("delivered", deliveredCount);
+            statusCounts.put("completed", deliveredCount);
+            statusCounts.put("cancelled", cancelledCount);
+            statusCounts.put("cancellation", cancelledCount);
+            statusCounts.put("returned", returnedCount);
+            statusCounts.put("return_refund", returnedCount);
+            statusCounts.put("unpaid", 0L);
 
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("items", orders);

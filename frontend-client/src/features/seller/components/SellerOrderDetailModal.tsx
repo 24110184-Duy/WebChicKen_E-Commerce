@@ -47,8 +47,9 @@ export const SellerOrderDetailModal: React.FC<SellerOrderDetailModalProps> = ({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const formatVND = (minor: number) => {
-    return new Intl.NumberFormat('vi-VN').format(minor) + ' ₫'
+  const formatVND = (minor: number | undefined | null) => {
+    const val = typeof minor === 'number' && !isNaN(minor) ? minor : Number(minor) || 0
+    return new Intl.NumberFormat('vi-VN').format(val) + ' ₫'
   }
 
   // Stepper calculations
@@ -263,38 +264,42 @@ export const SellerOrderDetailModal: React.FC<SellerOrderDetailModalProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {order.items.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <img
-                            src={item.imageUrl || 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=100'}
-                            alt={item.productName}
-                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }}
-                          />
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}>
-                              {item.productName}
-                            </div>
-                            {item.variantName && (
-                              <div style={{ fontSize: 12, color: '#64748b' }}>
-                                Variant: {item.variantName}
+                  {order.items.map((item) => {
+                    const unitPrice = item.unitPriceMinor ?? item.unitPriceAtPurchaseMinor ?? 0
+                    const lineTotal = item.subtotalMinor ?? (unitPrice * (item.quantity || 1))
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <img
+                              src={item.imageUrl || 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=100'}
+                              alt={item.productName}
+                              style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13.5, color: '#0f172a' }}>
+                                {item.productName}
                               </div>
-                            )}
+                              {item.variantName && (
+                                <div style={{ fontSize: 12, color: '#64748b' }}>
+                                  Variant: {item.variantName}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'center', fontSize: 13, color: '#475569' }}>
-                        {formatVND(item.unitPriceAtPurchaseMinor)}
-                      </td>
-                      <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13.5 }}>
-                        x{item.quantity}
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 800, fontSize: 13.5, color: '#0f172a' }}>
-                        {formatVND(item.unitPriceAtPurchaseMinor * item.quantity)}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td style={{ textAlign: 'center', fontSize: 13, color: '#475569' }}>
+                          {formatVND(unitPrice)}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: 700, fontSize: 13.5 }}>
+                          x{item.quantity}
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 800, fontSize: 13.5, color: '#0f172a' }}>
+                          {formatVND(lineTotal)}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

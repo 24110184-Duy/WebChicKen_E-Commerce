@@ -112,7 +112,9 @@ export interface SellerOrderItem {
   variantName?: string
   imageUrl?: string
   quantity: number
-  unitPriceAtPurchaseMinor: number
+  unitPriceMinor?: number
+  unitPriceAtPurchaseMinor?: number
+  subtotalMinor?: number
 }
 
 export interface SellerOrder {
