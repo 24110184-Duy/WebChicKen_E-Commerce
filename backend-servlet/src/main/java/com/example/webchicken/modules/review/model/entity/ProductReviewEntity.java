@@ -34,6 +34,7 @@ public class ProductReviewEntity {
     @Column(name = "comment", columnDefinition = "TEXT", nullable = false)
     private String comment;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     @Column(name = "media_urls", columnDefinition = "JSON")
     private String mediaUrls;
 

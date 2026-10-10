@@ -1,6 +1,8 @@
 package com.example.webchicken.modules.catalog.controller;
 
 import com.example.webchicken.common.exception.AppException;
+import com.example.webchicken.common.exception.NotFoundException;
+import com.example.webchicken.common.model.AuthenticatedUser;
 import com.example.webchicken.common.model.PageResult;
 import com.example.webchicken.modules.catalog.model.dto.request.CreateProductRequest;
 import com.example.webchicken.modules.catalog.model.dto.request.ProductFilterCriteria;
@@ -39,10 +41,20 @@ public class ProductServlet extends BaseApiServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String pathInfo = req.getPathInfo();
         try {
+            AuthenticatedUser user = getAuthenticatedUser(req);
+            boolean isAdmin = user != null && user.isAdmin();
+
             // GET /api/v1/products/{id} -> Single Product Detail
             if (pathInfo != null && pathInfo.length() > 1) {
                 String id = pathInfo.substring(1);
                 ProductDetailResponse detail = service().getProductDetail(id);
+                // Nếu sản phẩm chưa ACTIVE, chỉ Admin hoặc chính gian hàng sở hữu mới được xem
+                if (detail.status() != ProductStatus.ACTIVE && !isAdmin) {
+                    boolean isOwner = user != null && detail.storeId() != null && detail.storeId().equals(user.userId());
+                    if (!isOwner) {
+                        throw new NotFoundException("Sản phẩm không tồn tại hoặc chưa được kích hoạt mở bán");
+                    }
+                }
                 ok(resp, detail);
                 return;
             }
@@ -54,12 +66,19 @@ public class ProductServlet extends BaseApiServlet {
             Long minPrice = req.getParameter("minPrice") != null ? getLongParam(req, "minPrice", 0) : null;
             Long maxPrice = req.getParameter("maxPrice") != null ? getLongParam(req, "maxPrice", Long.MAX_VALUE) : null;
             String statusParam = getStringParam(req, "status", null);
+
             ProductStatus status = null;
-            if (statusParam != null) {
-                try {
-                    status = ProductStatus.valueOf(statusParam.toUpperCase());
-                } catch (IllegalArgumentException ignored) {}
+            if (isAdmin) {
+                if (statusParam != null && !statusParam.equalsIgnoreCase("ALL")) {
+                    try {
+                        status = ProductStatus.valueOf(statusParam.toUpperCase());
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            } else {
+                // Khách mua và công chúng chỉ xem các sản phẩm ACTIVE (đã được Admin phê duyệt)
+                status = ProductStatus.ACTIVE;
             }
+
             String sort = getStringParam(req, "sort", "newest");
             int page = getIntParam(req, "page", 0);
             if (page > 0) page = page - 1; // Convert 1-indexed from client to 0-indexed

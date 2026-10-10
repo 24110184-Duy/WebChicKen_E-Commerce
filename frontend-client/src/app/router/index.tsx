@@ -58,7 +58,14 @@ export const AppRouter = () => {
       <Route path="/p/:slug" element={<ProductDetailPage />} />
 
       {/* Cart & Checkout Routes */}
-      <Route path={PATHS.CART} element={<CartPage />} />
+      <Route
+        path={PATHS.CART}
+        element={
+          <RequireAuth>
+            <CartPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path={PATHS.CHECKOUT}
         element={

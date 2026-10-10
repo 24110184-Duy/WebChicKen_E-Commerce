@@ -17,6 +17,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RESTful Controller cho đánh giá & phản hồi sản phẩm (TASK-56).
@@ -24,6 +26,8 @@ import java.util.List;
  */
 @WebServlet(name = "ReviewServlet", urlPatterns = {"/api/v1/reviews", "/api/v1/reviews/*"})
 public class ReviewServlet extends BaseApiServlet {
+
+    private static final Logger log = LoggerFactory.getLogger(ReviewServlet.class);
 
     public ReviewServlet() {
         super();
@@ -125,8 +129,10 @@ public class ReviewServlet extends BaseApiServlet {
                 ReviewResponse created = reviewService().createReview(userId, request);
                 created(resp, created);
             } catch (AppException e) {
+                log.error("ReviewServlet error [{}]: {}", e.getErrorCode(), e.getMessage(), e);
                 writeJson(resp, e.getHttpStatus(), ApiResponse.fail(ApiError.of(e.getErrorCode(), e.getMessage())));
             } catch (Exception e) {
+                log.error("ReviewServlet unexpected error: {}", e.getMessage(), e);
                 badRequest(resp, "INTERNAL_ERROR", "Failed to create review: " + e.getMessage());
             }
             return;

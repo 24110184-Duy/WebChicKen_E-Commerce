@@ -40,16 +40,16 @@ public class AuthorizationFilter implements Filter {
                 : uri;
         AuthenticatedUser user = (AuthenticatedUser) httpReq.getAttribute(AuthenticationFilter.CURRENT_USER_ATTR);
 
-        // 1. Kiểm tra quyền Admin
-        if (path.startsWith("/api/v1/admin")) {
+        // 1. Kiểm tra quyền Admin (/api/v1/admin/*)
+        if (isAdminPath(path)) {
             if (user == null || !user.isAdmin()) {
                 sendForbidden(httpRes, "Bạn không có quyền quản trị để truy cập chức năng này.");
                 return;
             }
         }
 
-        // 2. Kiểm tra quyền Seller
-        if (path.startsWith("/api/v1/seller")) {
+        // 2. Kiểm tra quyền Seller (/api/v1/seller/*, /api/v1/sellers/*, loại trừ /api/v1/seller-applications)
+        if (isSellerPath(path)) {
             if (user == null || (!user.isSeller() && !user.isAdmin())) {
                 sendForbidden(httpRes, "Chỉ tài khoản Người bán mới có quyền truy cập khu vực này.");
                 return;
@@ -57,6 +57,26 @@ public class AuthorizationFilter implements Filter {
         }
 
         chain.doFilter(req, res);
+    }
+
+    private boolean isAdminPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        return path.equals("/api/v1/admin") || path.startsWith("/api/v1/admin/");
+    }
+
+    private boolean isSellerPath(String path) {
+        if (path == null) {
+            return false;
+        }
+        if (path.startsWith("/api/v1/seller-applications")) {
+            return false;
+        }
+        return path.equals("/api/v1/seller")
+                || path.startsWith("/api/v1/seller/")
+                || path.equals("/api/v1/sellers")
+                || path.startsWith("/api/v1/sellers/");
     }
 
     private void sendForbidden(HttpServletResponse resp, String message) throws IOException {

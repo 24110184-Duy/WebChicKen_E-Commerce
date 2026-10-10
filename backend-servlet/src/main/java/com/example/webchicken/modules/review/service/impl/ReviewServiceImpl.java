@@ -148,6 +148,7 @@ public class ReviewServiceImpl implements ReviewService {
                 throw new ConflictException("REVIEW_ALREADY_EXISTS",
                         "You have already submitted a review for this purchased item.");
             }
+            log.error("Failed to insert review entity: {}", e.getMessage(), e);
             throw e;
         }
 

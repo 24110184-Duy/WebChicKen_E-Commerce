@@ -24,6 +24,15 @@ interface CartState {
 const STORAGE_KEY = 'webchicken_guest_cart'
 
 function loadFromStorage(): CartItem[] {
+  // Chỉ tải giỏ hàng nếu người dùng đã đăng nhập; khách chưa đăng nhập luôn có giỏ hàng rỗng
+  if (!authStore.getState().isAuthenticated) {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Ignore
+    }
+    return []
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? JSON.parse(raw) : []
@@ -34,6 +43,10 @@ function loadFromStorage(): CartItem[] {
 
 function saveToStorage(items: CartItem[]) {
   try {
+    if (!authStore.getState().isAuthenticated) {
+      localStorage.removeItem(STORAGE_KEY)
+      return
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   } catch {
     // Ignore storage errors
@@ -61,7 +74,10 @@ export const cartStore = {
   },
 
   syncWithBackend: async () => {
-    if (!authStore.getState().isAuthenticated) return
+    if (!authStore.getState().isAuthenticated) {
+      cartStore.resetCart()
+      return
+    }
     state = { ...state, isLoading: true }
     emitChange()
 
@@ -113,7 +129,21 @@ export const cartStore = {
     }
   },
 
-  addItem: async (item: Omit<CartItem, 'selected'>) => {
+  resetCart: () => {
+    state = { items: [], isLoading: false }
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Ignore
+    }
+    listeners.forEach((listener) => listener())
+  },
+
+  addItem: async (item: Omit<CartItem, 'selected'>): Promise<boolean> => {
+    if (!authStore.getState().isAuthenticated) {
+      return false
+    }
+
     const existingIndex = state.items.findIndex((i) => i.skuId === item.skuId)
     let newItems: CartItem[]
 
@@ -161,6 +191,8 @@ export const cartStore = {
         console.warn('Backend cart addItem error:', err)
       }
     }
+
+    return true
   },
 
   updateQuantity: async (skuId: string, quantity: number) => {
@@ -265,5 +297,20 @@ export function useCartStore() {
     toggleSelectStore: cartStore.toggleSelectStore,
     toggleSelectAll: cartStore.toggleSelectAll,
     clearCart: cartStore.clearCart,
+    resetCart: cartStore.resetCart,
   }
 }
+
+// Tự động lắng nghe thay đổi xác thực:
+// - Khi người dùng đăng xuất: xóa sạch giỏ hàng trên UI và localStorage ngay lập tức
+// - Khi người dùng đăng nhập: đồng bộ giỏ hàng từ backend
+let prevAuthenticated = authStore.getState().isAuthenticated
+authStore.subscribe(() => {
+  const currentAuthenticated = authStore.getState().isAuthenticated
+  if (!currentAuthenticated && prevAuthenticated) {
+    cartStore.resetCart()
+  } else if (currentAuthenticated && !prevAuthenticated) {
+    cartStore.syncWithBackend()
+  }
+  prevAuthenticated = currentAuthenticated
+})

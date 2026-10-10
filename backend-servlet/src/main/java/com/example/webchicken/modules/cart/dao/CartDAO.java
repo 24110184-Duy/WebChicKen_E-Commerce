@@ -8,6 +8,7 @@ import jakarta.persistence.NoResultException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 /**
  * Data Access Object cho bảng carts (TASK-38).
@@ -20,24 +21,26 @@ public class CartDAO extends BaseDAO {
 
     /**
      * Lấy giỏ hàng theo customer_id kèm danh sách items.
+     * Sử dụng getResultList() an toàn tuyệt đối chống NonUniqueResultException.
      */
     public Optional<CartEntity> findByCustomerId(String customerId) {
         return executeQuery(em -> {
-            try {
-                CartEntity cart = em.createQuery(
-                        "SELECT DISTINCT c FROM CartEntity c LEFT JOIN FETCH c.items WHERE c.customerId = :customerId",
-                        CartEntity.class)
-                        .setParameter("customerId", customerId)
-                        .getSingleResult();
-                return Optional.of(cart);
-            } catch (NoResultException e) {
+            List<CartEntity> carts = em.createQuery(
+                    "SELECT DISTINCT c FROM CartEntity c LEFT JOIN FETCH c.items WHERE c.customerId = :customerId ORDER BY c.updatedAt DESC",
+                    CartEntity.class)
+                    .setParameter("customerId", customerId)
+                    .getResultList();
+            if (carts.isEmpty()) {
                 return Optional.empty();
             }
+            return Optional.of(carts.get(0));
         });
     }
 
     /**
      * Lấy giỏ hàng hiện tại hoặc tạo mới nếu chưa tồn tại.
+     * Bắt ngoại lệ duplicate key khi xảy ra tranh chấp race condition giữa các
+     * luồng.
      */
     public CartEntity getOrCreateCart(String customerId) {
         Optional<CartEntity> existing = findByCustomerId(customerId);
@@ -45,9 +48,29 @@ public class CartDAO extends BaseDAO {
             return existing.get();
         }
 
-        CartEntity newCart = new CartEntity(UUID.randomUUID().toString(), customerId);
-        executeInTransaction(em -> em.persist(newCart));
-        return newCart;
+        ensureCustomerProfile(customerId);
+
+        try {
+            CartEntity newCart = new CartEntity(UUID.randomUUID().toString(), customerId);
+            executeInTransaction(em -> em.persist(newCart));
+            return newCart;
+        } catch (Exception e) {
+            // Nếu luồng khác vừa tạo xong cùng lúc, truy vấn lại giỏ hàng vừa tạo
+            return findByCustomerId(customerId)
+                    .orElseThrow(() -> translateException("getOrCreateCart", e));
+        }
+    }
+
+    private void ensureCustomerProfile(String customerId) {
+        if (customerId == null || customerId.isBlank()) return;
+        try {
+            executeInTransaction(em -> {
+                em.createNativeQuery("INSERT INTO customers (id, tier, loyalty_point) VALUES (?, 'STANDARD', 0) ON CONFLICT (id) DO NOTHING")
+                        .setParameter(1, customerId)
+                        .executeUpdate();
+            });
+        } catch (Exception ignored) {
+        }
     }
 
     /**

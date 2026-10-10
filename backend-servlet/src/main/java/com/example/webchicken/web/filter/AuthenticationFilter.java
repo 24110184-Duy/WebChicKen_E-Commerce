@@ -101,9 +101,12 @@ public class AuthenticationFilter implements Filter {
             return true;
         }
 
-        // Cho phép duyệt danh mục và sản phẩm công khai với method GET
+        // Cho phép duyệt danh mục, sản phẩm, đánh giá sản phẩm và thông tin gian hàng công khai với method GET
         if ("GET".equalsIgnoreCase(method)) {
-            if (path.startsWith("/api/v1/products") || path.startsWith("/api/v1/categories")) {
+            if (path.startsWith("/api/v1/products")
+                    || path.startsWith("/api/v1/categories")
+                    || path.startsWith("/api/v1/reviews/products")
+                    || path.startsWith("/api/v1/stores")) {
                 return true;
             }
         }

@@ -1,15 +1,30 @@
 package com.example.webchicken.modules.catalog.model.dto.request;
 
+import com.example.webchicken.modules.catalog.model.enums.ProductStatus;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record CreateProductRequest(
         String storeId,
         String categoryId,
         String name,
         String description,
         List<String> imageUrls,
-        List<CreateVariantRequest> variants
+        List<CreateVariantRequest> variants,
+        ProductStatus status
 ) {
+    public CreateProductRequest(
+            String storeId,
+            String categoryId,
+            String name,
+            String description,
+            List<String> imageUrls,
+            List<CreateVariantRequest> variants
+    ) {
+        this(storeId, categoryId, name, description, imageUrls, variants, ProductStatus.PENDING_APPROVAL);
+    }
+
     public CreateProductRequest {
         if (storeId == null || storeId.trim().isEmpty()) {
             throw new IllegalArgumentException("storeId must not be empty");
@@ -28,6 +43,9 @@ public record CreateProductRequest(
         }
         if (variants == null || variants.isEmpty()) {
             throw new IllegalArgumentException("Product must have at least one variant");
+        }
+        if (status == null) {
+            status = ProductStatus.PENDING_APPROVAL;
         }
     }
 }

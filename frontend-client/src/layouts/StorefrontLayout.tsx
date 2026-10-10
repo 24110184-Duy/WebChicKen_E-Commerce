@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { WebChicKenLogo } from '../features/auth/components/WebChicKenLogo'
 import { useAuthStore } from '../app/store/authStore'
-import { useCartStore } from '../app/store/cartStore'
+import { useCartStore, cartStore } from '../app/store/cartStore'
 import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
 import { catalogApi } from '../features/catalog/api/catalogApi'
@@ -48,6 +48,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
 
   const handleLogout = async () => {
     try { await authApi.logout() } catch { /* ignore */ }
+    cartStore.resetCart()
     logout()
     navigate(PATHS.HOME, { replace: true })
   }
@@ -71,7 +72,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
               type="button"
               onClick={handleSellerCenterClick}
               className="storefront-top-link"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+              style={{ background: 'none', border: 'none', cursor: 'padding', padding: 0, font: 'inherit' }}
             >
               Seller Center
             </button>
@@ -112,9 +113,18 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
           {/* Right Header Actions */}
           <div className="storefront-header-actions">
             {/* Cart Widget */}
-            <Link to={PATHS.CART} className="storefront-cart-btn">
+            <Link
+              to={PATHS.CART}
+              className="storefront-cart-btn"
+              onClick={(e) => {
+                if (!isAuthenticated) {
+                  e.preventDefault()
+                  navigate(PATHS.LOGIN, { state: { from: PATHS.CART } })
+                }
+              }}
+            >
               <span>Cart</span>
-              {totalQuantity > 0 && (
+              {isAuthenticated && totalQuantity > 0 && (
                 <span className="storefront-cart-badge">{totalQuantity}</span>
               )}
             </Link>

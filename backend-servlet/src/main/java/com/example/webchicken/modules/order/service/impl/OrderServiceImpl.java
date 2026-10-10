@@ -12,6 +12,7 @@ import com.example.webchicken.modules.catalog.dao.ProductVariantDAO;
 import com.example.webchicken.modules.catalog.model.entity.ProductEntity;
 import com.example.webchicken.modules.catalog.model.entity.ProductImageEntity;
 import com.example.webchicken.modules.catalog.model.entity.ProductVariantEntity;
+import com.example.webchicken.modules.catalog.model.enums.ProductStatus;
 import com.example.webchicken.modules.inventory.service.InventoryService;
 import com.example.webchicken.modules.order.dao.OrderCancellationDAO;
 import com.example.webchicken.modules.order.dao.OrderDAO;
@@ -52,7 +53,8 @@ import java.util.stream.Collectors;
  * - Multi-shop Checkout Partition (tách đơn theo shop, gom bằng order_group_id)
  * - Atomic Checkout Transaction (giữ kho TTL 15p, ghi đơn, dọn giỏ hàng)
  * - Tự động tạo giao dịch thanh toán COD (TASK-50)
- * - State Machine chuyển đổi trạng thái tập trung & ghi nhận Audit Timeline (TASK-54)
+ * - State Machine chuyển đổi trạng thái tập trung & ghi nhận Audit Timeline
+ * (TASK-54)
  */
 public class OrderServiceImpl implements OrderService {
 
@@ -84,10 +86,10 @@ public class OrderServiceImpl implements OrderService {
             ProductImageDAO productImageDAO,
             StoreDAO storeDAO,
             InventoryService inventoryService,
-            VoucherService voucherService
-    ) {
+            VoucherService voucherService) {
         this(orderDAO, orderItemDAO, orderCancellationDAO, cartDAO, cartItemDAO,
-             productDAO, productVariantDAO, productImageDAO, storeDAO, inventoryService, voucherService, null, null, null);
+                productDAO, productVariantDAO, productImageDAO, storeDAO, inventoryService, voucherService, null, null,
+                null);
     }
 
     public OrderServiceImpl(
@@ -102,10 +104,10 @@ public class OrderServiceImpl implements OrderService {
             StoreDAO storeDAO,
             InventoryService inventoryService,
             VoucherService voucherService,
-            PaymentService paymentService
-    ) {
+            PaymentService paymentService) {
         this(orderDAO, orderItemDAO, orderCancellationDAO, cartDAO, cartItemDAO,
-             productDAO, productVariantDAO, productImageDAO, storeDAO, inventoryService, voucherService, paymentService, null, null);
+                productDAO, productVariantDAO, productImageDAO, storeDAO, inventoryService, voucherService,
+                paymentService, null, null);
     }
 
     public OrderServiceImpl(
@@ -122,11 +124,11 @@ public class OrderServiceImpl implements OrderService {
             VoucherService voucherService,
             PaymentService paymentService,
             OrderStatusHistoryDAO orderStatusHistoryDAO,
-            OrderStateMachine orderStateMachine
-    ) {
+            OrderStateMachine orderStateMachine) {
         this.orderDAO = Objects.requireNonNull(orderDAO, "orderDAO must not be null");
         this.orderItemDAO = Objects.requireNonNull(orderItemDAO, "orderItemDAO must not be null");
-        this.orderCancellationDAO = Objects.requireNonNull(orderCancellationDAO, "orderCancellationDAO must not be null");
+        this.orderCancellationDAO = Objects.requireNonNull(orderCancellationDAO,
+                "orderCancellationDAO must not be null");
         this.cartDAO = Objects.requireNonNull(cartDAO, "cartDAO must not be null");
         this.cartItemDAO = Objects.requireNonNull(cartItemDAO, "cartItemDAO must not be null");
         this.productDAO = Objects.requireNonNull(productDAO, "productDAO must not be null");
@@ -137,8 +139,10 @@ public class OrderServiceImpl implements OrderService {
         this.voucherService = Objects.requireNonNull(voucherService, "voucherService must not be null");
         this.paymentService = paymentService;
         this.orderStatusHistoryDAO = orderStatusHistoryDAO;
-        this.orderStateMachine = orderStateMachine != null ? orderStateMachine :
-                (orderStatusHistoryDAO != null ? new OrderStateMachine(orderDAO, orderStatusHistoryDAO, inventoryService, null) : null);
+        this.orderStateMachine = orderStateMachine != null ? orderStateMachine
+                : (orderStatusHistoryDAO != null
+                        ? new OrderStateMachine(orderDAO, orderStatusHistoryDAO, inventoryService, null)
+                        : null);
     }
 
     private static class ResolvedItem {
@@ -156,7 +160,11 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("Danh sách mặt hàng đặt mua không được để trống");
         }
 
-        // 1. Phân giải thông tin sản phẩm và phân nhóm theo Store (TASK-44: Multi-shop partition)
+        // Đảm bảo hồ sơ khách hàng tồn tại trong bảng customers (chống lỗi vi phạm khóa ngoại fk_orders_customers khi Seller/Admin đặt hàng)
+        orderDAO.ensureCustomerExists(customerId);
+
+        // 1. Phân giải thông tin sản phẩm và phân nhóm theo Store (TASK-44: Multi-shop
+        // partition)
         Map<String, List<ResolvedItem>> storeGroupMap = new LinkedHashMap<>();
         long grandTotalProductMinor = 0;
 
@@ -167,6 +175,10 @@ public class OrderServiceImpl implements OrderService {
 
             ProductEntity product = productDAO.findById(reqItem.productId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm: " + reqItem.productId()));
+
+            if (product.getStatus() != ProductStatus.ACTIVE) {
+                throw new ValidationException("Sản phẩm '" + product.getName() + "' chưa được phê duyệt mở bán hoặc đang tạm ngưng.");
+            }
 
             ProductVariantEntity variant = null;
             long unitPriceMinor = 0L;
@@ -180,6 +192,8 @@ public class OrderServiceImpl implements OrderService {
                 if (!variants.isEmpty()) {
                     variant = variants.get(0);
                     unitPriceMinor = variant.getBasePriceMinor();
+                } else {
+                    throw new ValidationException("Sản phẩm không có biến thể hợp lệ để đặt mua: " + product.getName());
                 }
             }
 
@@ -205,8 +219,7 @@ public class OrderServiceImpl implements OrderService {
         String voucherId = null;
         if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
             ValidateVoucherResponse vRes = voucherService.validateVoucher(
-                    new ValidateVoucherRequest(request.voucherCode(), grandTotalProductMinor, null)
-            );
+                    new ValidateVoucherRequest(request.voucherCode(), grandTotalProductMinor, null));
             if (vRes != null && vRes.isValid()) {
                 totalDiscountMinor = vRes.discountAmountMinor();
                 voucherId = vRes.voucherId();
@@ -262,8 +275,7 @@ public class OrderServiceImpl implements OrderService {
                     storeTotal, storeShippingFee, storeDiscount,
                     request.paymentMethod() != null ? request.paymentMethod() : PaymentMethod.COD,
                     request.recipientName(), request.recipientPhone(),
-                    request.shippingAddress(), request.note()
-            );
+                    request.shippingAddress(), request.note());
             orderEntity.setVoucherId(voucherId);
             orderDAO.save(orderEntity);
 
@@ -277,8 +289,7 @@ public class OrderServiceImpl implements OrderService {
                             OrderStatus.PENDING,
                             OrderActorType.CUSTOMER,
                             customerId,
-                            "Initial order placement via checkout"
-                    ));
+                            "Initial order placement via checkout"));
                 } catch (Exception e) {
                     log.warn("Failed to record initial status history for order {}: {}", orderId, e.getMessage());
                 }
@@ -294,8 +305,7 @@ public class OrderServiceImpl implements OrderService {
                 OrderItemEntity itemEntity = new OrderItemEntity(
                         itemId, orderId, resolved.product.getId(), variantId,
                         resolved.product.getName(), variantName, resolved.imageUrl,
-                        resolved.request.quantity(), resolved.unitPriceMinor
-                );
+                        resolved.request.quantity(), resolved.unitPriceMinor);
                 orderItemDAO.save(itemEntity);
                 itemResponses.add(OrderItemResponse.fromEntity(itemEntity));
             }
@@ -331,8 +341,7 @@ public class OrderServiceImpl implements OrderService {
                 totalShippingFeeMinor,
                 totalDiscountMinor,
                 totalOrderAmountMinor,
-                createdOrders
-        );
+                createdOrders);
     }
 
     @Override
@@ -402,9 +411,11 @@ public class OrderServiceImpl implements OrderService {
 
         String cancelReason = (reason != null && !reason.isBlank()) ? reason : "Customer requested cancellation";
 
-        // Chuyển trạng thái đơn thành CANCELLED qua State Machine (nhả tồn kho + ghi nhận audit trail)
+        // Chuyển trạng thái đơn thành CANCELLED qua State Machine (nhả tồn kho + ghi
+        // nhận audit trail)
         if (orderStateMachine != null) {
-            orderStateMachine.transition(order, OrderStatus.CANCELLED, OrderActorType.CUSTOMER, customerId, cancelReason);
+            orderStateMachine.transition(order, OrderStatus.CANCELLED, OrderActorType.CUSTOMER, customerId,
+                    cancelReason);
         } else {
             if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
                 throw new ValidationException("Can only cancel order when PENDING or CONFIRMED.");
@@ -436,7 +447,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse updateOrderStatus(String orderCode, OrderStatus targetStatus, OrderActorType actorType, String actorId, String reason) {
+    public OrderResponse updateOrderStatus(String orderCode, OrderStatus targetStatus, OrderActorType actorType,
+            String actorId, String reason) {
         OrderEntity order = orderDAO.findByOrderCode(orderCode)
                 .orElseThrow(() -> new NotFoundException("Order not found with code: " + orderCode));
 
@@ -524,7 +536,8 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("Store ID is required");
         }
         OrderEntity order = orderDAO.findByOrderCodeAndStoreId(orderCode, storeId)
-                .orElseThrow(() -> new NotFoundException("Order not found or does not belong to this shop: " + orderCode));
+                .orElseThrow(
+                        () -> new NotFoundException("Order not found or does not belong to this shop: " + orderCode));
 
         List<OrderItemEntity> itemEntities = orderItemDAO.findByOrderId(order.getId());
         List<OrderItemResponse> items = itemEntities.stream()
@@ -541,14 +554,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse updateStoreOrderStatus(String orderCode, String storeId, OrderStatus targetStatus, String reason, String actorId) {
+    public OrderResponse updateStoreOrderStatus(String orderCode, String storeId, OrderStatus targetStatus,
+            String reason, String actorId) {
         if (storeId == null || storeId.isBlank()) {
             throw new ValidationException("Store ID is required");
         }
         OrderEntity order = orderDAO.findByOrderCodeAndStoreId(orderCode, storeId)
-                .orElseThrow(() -> new NotFoundException("Order not found or does not belong to this shop: " + orderCode));
+                .orElseThrow(
+                        () -> new NotFoundException("Order not found or does not belong to this shop: " + orderCode));
 
-        String updateReason = (reason != null && !reason.isBlank()) ? reason : "Seller updated status to " + targetStatus;
+        String updateReason = (reason != null && !reason.isBlank()) ? reason
+                : "Seller updated status to " + targetStatus;
         String sellerActorId = (actorId != null && !actorId.isBlank()) ? actorId : storeId;
 
         if (orderStateMachine != null) {
@@ -619,17 +635,17 @@ public class OrderServiceImpl implements OrderService {
                 case CONFIRMED -> {
                     confirmedOrders++;
                     totalRevenueMinor += amount;
-                    pendingSettlementMinor += (long)(amount * 0.95);
+                    pendingSettlementMinor += (long) (amount * 0.95);
                 }
                 case SHIPPING -> {
                     shippingOrders++;
                     totalRevenueMinor += amount;
-                    pendingSettlementMinor += (long)(amount * 0.95);
+                    pendingSettlementMinor += (long) (amount * 0.95);
                 }
                 case DELIVERED -> {
                     deliveredOrders++;
                     totalRevenueMinor += amount;
-                    deliveredRevenueMinor += (long)(amount * 0.95);
+                    deliveredRevenueMinor += (long) (amount * 0.95);
                 }
                 case CANCELLED, RETURNED -> cancelledOrders++;
             }
@@ -651,8 +667,8 @@ public class OrderServiceImpl implements OrderService {
                 for (OrderItemEntity item : items) {
                     ProductSalesAccumulator acc = productSales.computeIfAbsent(
                             item.getProductId(),
-                            k -> new ProductSalesAccumulator(item.getProductId(), item.getProductName(), "Poultry", item.getImageUrl())
-                    );
+                            k -> new ProductSalesAccumulator(item.getProductId(), item.getProductName(), "Poultry",
+                                    item.getImageUrl()));
                     acc.totalUnitsSold += item.getQuantity();
                     acc.totalRevenueMinor += (item.getUnitPriceAtPurchaseMinor() * item.getQuantity());
                 }
@@ -665,8 +681,7 @@ public class OrderServiceImpl implements OrderService {
                         o.getTotalAmountMinor(),
                         status.name(),
                         o.getOrderDate() != null ? o.getOrderDate().toString() : "",
-                        items.size()
-                ));
+                        items.size()));
             }
         }
 
@@ -680,27 +695,23 @@ public class OrderServiceImpl implements OrderService {
                 ? totalRevenueMinor / (totalOrders - cancelledOrders)
                 : 0L;
 
-        SellerDashboardStatsResponse.StoreRevenueStats revenueStats =
-                new SellerDashboardStatsResponse.StoreRevenueStats(
-                        totalRevenueMinor,
-                        netRevenueMinor,
-                        platformFeeMinor,
-                        withdrawableBalanceMinor,
-                        pendingSettlementMinor,
-                        "VND"
-                );
+        SellerDashboardStatsResponse.StoreRevenueStats revenueStats = new SellerDashboardStatsResponse.StoreRevenueStats(
+                totalRevenueMinor,
+                netRevenueMinor,
+                platformFeeMinor,
+                withdrawableBalanceMinor,
+                pendingSettlementMinor,
+                "VND");
 
-        SellerDashboardStatsResponse.StoreOrdersStats ordersStats =
-                new SellerDashboardStatsResponse.StoreOrdersStats(
-                        totalOrders,
-                        pendingOrders,
-                        confirmedOrders,
-                        shippingOrders,
-                        deliveredOrders,
-                        cancelledOrders,
-                        fulfillmentRate,
-                        averageOrderValueMinor
-                );
+        SellerDashboardStatsResponse.StoreOrdersStats ordersStats = new SellerDashboardStatsResponse.StoreOrdersStats(
+                totalOrders,
+                pendingOrders,
+                confirmedOrders,
+                shippingOrders,
+                deliveredOrders,
+                cancelledOrders,
+                fulfillmentRate,
+                averageOrderValueMinor);
 
         int totalProducts = 0;
         int healthyStock = 0;
@@ -709,19 +720,21 @@ public class OrderServiceImpl implements OrderService {
         long totalUnitsInStock = 0L;
 
         try {
-            com.example.webchicken.modules.catalog.model.dto.request.ProductFilterCriteria criteria =
-                    new com.example.webchicken.modules.catalog.model.dto.request.ProductFilterCriteria(
-                            null, null, storeId, null, null, null, "newest", 0, 100
-                    );
-            List<com.example.webchicken.modules.catalog.model.entity.ProductEntity> prods = productDAO.findWithFilters(criteria);
+            com.example.webchicken.modules.catalog.model.dto.request.ProductFilterCriteria criteria = new com.example.webchicken.modules.catalog.model.dto.request.ProductFilterCriteria(
+                    null, null, storeId, null, null, null, "newest", 0, 100);
+            List<com.example.webchicken.modules.catalog.model.entity.ProductEntity> prods = productDAO
+                    .findWithFilters(criteria);
             totalProducts = prods.size();
             for (var p : prods) {
                 var variants = productVariantDAO.findByProductId(p.getId());
                 long pStock = variants.stream().mapToLong(ProductVariantEntity::getStockQuantity).sum();
                 totalUnitsInStock += pStock;
-                if (pStock == 0) outOfStock++;
-                else if (pStock <= 15) lowStock++;
-                else healthyStock++;
+                if (pStock == 0)
+                    outOfStock++;
+                else if (pStock <= 15)
+                    lowStock++;
+                else
+                    healthyStock++;
             }
         } catch (Exception ignored) {
             totalProducts = 6;
@@ -731,19 +744,16 @@ public class OrderServiceImpl implements OrderService {
             totalUnitsInStock = 391L;
         }
 
-        SellerDashboardStatsResponse.StoreInventoryAlerts inventoryAlerts =
-                new SellerDashboardStatsResponse.StoreInventoryAlerts(
-                        totalProducts,
-                        healthyStock,
-                        lowStock,
-                        outOfStock,
-                        totalUnitsInStock
-                );
+        SellerDashboardStatsResponse.StoreInventoryAlerts inventoryAlerts = new SellerDashboardStatsResponse.StoreInventoryAlerts(
+                totalProducts,
+                healthyStock,
+                lowStock,
+                outOfStock,
+                totalUnitsInStock);
 
         List<SellerDashboardStatsResponse.DailyRevenuePoint> dailyPoints = dailyMap.values().stream()
                 .map(d -> new SellerDashboardStatsResponse.DailyRevenuePoint(
-                        d.date, d.dayOfWeek, d.revenueMinor, d.orderCount, d.deliveredCount
-                ))
+                        d.date, d.dayOfWeek, d.revenueMinor, d.orderCount, d.deliveredCount))
                 .toList();
 
         List<SellerDashboardStatsResponse.TopSellingProductItem> topProducts = productSales.values().stream()
@@ -751,8 +761,7 @@ public class OrderServiceImpl implements OrderService {
                 .limit(5)
                 .map(p -> new SellerDashboardStatsResponse.TopSellingProductItem(
                         p.productId, p.productName, p.categoryName, p.thumbnailUrl,
-                        p.totalUnitsSold, p.totalRevenueMinor, 50
-                ))
+                        p.totalUnitsSold, p.totalRevenueMinor, 50))
                 .toList();
 
         return new SellerDashboardStatsResponse(
@@ -764,8 +773,7 @@ public class OrderServiceImpl implements OrderService {
                 inventoryAlerts,
                 dailyPoints,
                 topProducts,
-                recentOrders
-        );
+                recentOrders);
     }
 
     private static class DailyAccumulator {
@@ -774,6 +782,7 @@ public class OrderServiceImpl implements OrderService {
         long revenueMinor = 0L;
         int orderCount = 0;
         int deliveredCount = 0;
+
         DailyAccumulator(String date, String dayOfWeek) {
             this.date = date;
             this.dayOfWeek = dayOfWeek;
@@ -787,6 +796,7 @@ public class OrderServiceImpl implements OrderService {
         final String thumbnailUrl;
         int totalUnitsSold = 0;
         long totalRevenueMinor = 0L;
+
         ProductSalesAccumulator(String productId, String productName, String categoryName, String thumbnailUrl) {
             this.productId = productId;
             this.productName = productName;
@@ -795,4 +805,3 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 }
-

@@ -4,6 +4,7 @@ import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { catalogApi } from '../../features/catalog/api/catalogApi'
 import type { Product, ProductVariant } from '../../features/catalog/types/catalogTypes'
 import { useCartStore } from '../../app/store/cartStore'
+import { useAuthStore } from '../../app/store/authStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import { ProductReviews } from '../../features/reviews/components/ProductReviews'
@@ -12,6 +13,7 @@ import { ProductShopCard } from '../../features/shop'
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuthStore()
   const { addItem } = useCartStore()
 
   const [product, setProduct] = useState<Product | null>(null)
@@ -44,6 +46,12 @@ export const ProductDetailPage: React.FC = () => {
   const handleAddToCart = async () => {
     if (!product) return false
 
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
+      navigate(PATHS.LOGIN, { state: { from: `/products/${product.id}` } })
+      return false
+    }
+
     const variant = selectedVariant || (product.variants && product.variants.length > 0 ? product.variants[0] : null)
     const skuId = variant?.id || product.id
     const skuName = variant?.attribute || 'Bản Tiêu Chuẩn'
@@ -66,6 +74,11 @@ export const ProductDetailPage: React.FC = () => {
   }
 
   const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để tiếp tục mua hàng!')
+      navigate(PATHS.LOGIN, { state: { from: `/products/${product?.id || id}` } })
+      return
+    }
     const success = await handleAddToCart()
     if (success) {
       navigate(PATHS.CART)

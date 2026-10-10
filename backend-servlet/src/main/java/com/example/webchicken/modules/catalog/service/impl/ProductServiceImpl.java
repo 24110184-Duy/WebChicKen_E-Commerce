@@ -1,6 +1,7 @@
 package com.example.webchicken.modules.catalog.service.impl;
 
 import com.example.webchicken.common.exception.NotFoundException;
+import com.example.webchicken.common.exception.ValidationException;
 import com.example.webchicken.common.model.PageResult;
 import com.example.webchicken.modules.catalog.dao.CategoryDAO;
 import com.example.webchicken.modules.catalog.dao.ProductDAO;
@@ -21,6 +22,7 @@ import com.example.webchicken.modules.catalog.service.ProductService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -51,13 +53,20 @@ public class ProductServiceImpl implements ProductService {
         String productId = UUID.randomUUID().toString();
         LocalDateTime now = LocalDateTime.now();
 
+        // BẮT BUỘC: Khi seller tạo sản phẩm mới, trạng thái ban đầu PHẢI LÀ PENDING_APPROVAL
+        // (chờ Admin phê duyệt) hoặc INACTIVE (lưu bản nháp).
+        // Tuyệt đối không cho phép tự kích hoạt thành ACTIVE trực tiếp khi tạo mới.
+        ProductStatus initialStatus = (request.status() == ProductStatus.INACTIVE)
+                ? ProductStatus.INACTIVE
+                : ProductStatus.PENDING_APPROVAL;
+
         ProductEntity product = new ProductEntity(
                 productId,
                 request.storeId(),
                 request.categoryId(),
                 request.name(),
                 request.description(),
-                ProductStatus.PENDING_APPROVAL,
+                initialStatus,
                 now,
                 now
         );
@@ -140,11 +149,68 @@ public class ProductServiceImpl implements ProductService {
         }
 
         if (request.status() != null) {
+            if (request.status() == ProductStatus.ACTIVE && product.getStatus() != ProductStatus.ACTIVE) {
+                if (product.getStatus() == ProductStatus.PENDING_APPROVAL || product.getRejectionReason() != null) {
+                    throw new ValidationException("Sản phẩm cần có sự phê duyệt của Quản trị viên (Admin) trước khi có thể mở bán công khai.");
+                }
+            }
             product.setStatus(request.status());
         }
 
         product.setUpdatedAt(LocalDateTime.now());
         ProductEntity updated = productDAO.update(product);
+
+        // Cập nhật danh sách hình ảnh sản phẩm nếu có truyền lên
+        if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+            productImageDAO.deleteByProductId(id);
+            for (String imgUrl : request.imageUrls()) {
+                if (imgUrl != null && !imgUrl.trim().isEmpty()) {
+                    ProductImageEntity imgEntity = new ProductImageEntity(
+                            UUID.randomUUID().toString(),
+                            id,
+                            imgUrl.trim()
+                    );
+                    productImageDAO.save(imgEntity);
+                }
+            }
+        }
+
+        // Cập nhật danh sách biến thể sản phẩm nếu có truyền lên
+        if (request.variants() != null && !request.variants().isEmpty()) {
+            List<ProductVariantEntity> existingVariants = productVariantDAO.findByProductId(id);
+            Map<String, ProductVariantEntity> existingMap = existingVariants.stream()
+                    .collect(Collectors.toMap(ProductVariantEntity::getAttribute, v -> v, (v1, v2) -> v1));
+
+            List<String> updatedVariantIds = new ArrayList<>();
+
+            for (CreateVariantRequest vReq : request.variants()) {
+                ProductVariantEntity existing = existingMap.get(vReq.attribute());
+                if (existing != null) {
+                    existing.setBasePriceMinor(vReq.basePriceMinor());
+                    existing.setStockQuantity(vReq.stockQuantity());
+                    productVariantDAO.update(existing);
+                    updatedVariantIds.add(existing.getId());
+                } else {
+                    ProductVariantEntity newVariant = new ProductVariantEntity(
+                            UUID.randomUUID().toString(),
+                            id,
+                            vReq.attribute(),
+                            vReq.basePriceMinor(),
+                            vReq.stockQuantity()
+                    );
+                    productVariantDAO.save(newVariant);
+                    updatedVariantIds.add(newVariant.getId());
+                }
+            }
+
+            for (ProductVariantEntity oldV : existingVariants) {
+                if (!updatedVariantIds.contains(oldV.getId())) {
+                    try {
+                        productVariantDAO.deleteById(oldV.getId());
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
 
         return getProductDetail(updated.getId());
     }

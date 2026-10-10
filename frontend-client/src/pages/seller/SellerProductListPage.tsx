@@ -8,6 +8,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Clock,
   AlertTriangle,
   CheckCircle2,
   Boxes,
@@ -43,6 +44,7 @@ export const SellerProductListPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [editingProduct, setEditingProduct] = useState<SellerProductItem | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
+  const [fetchingDetailId, setFetchingDetailId] = useState<string | null>(null)
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -131,7 +133,33 @@ export const SellerProductListPage: React.FC = () => {
     setIsModalOpen(true)
   }
 
-  const handleOpenEditModal = (product: SellerProductItem) => {
+  const handleOpenEditModal = async (product: SellerProductItem) => {
+    let currentShopId = shopId
+    if (!currentShopId) {
+      const store = await sellerApi.getMyStore()
+      if (store) {
+        currentShopId = store.id
+        setShopId(currentShopId)
+      }
+    }
+
+    if (currentShopId) {
+      setFetchingDetailId(product.id)
+      try {
+        const fullDetail = await sellerApi.getStoreProductDetail(currentShopId, product.id)
+        if (fullDetail) {
+          setEditingProduct(fullDetail)
+          setIsModalOpen(true)
+          return
+        }
+      } catch (err) {
+        console.error('Error fetching full product detail:', err)
+      } finally {
+        setFetchingDetailId(null)
+      }
+    }
+
+    // Fallback nếu không kết nối được
     setEditingProduct(product)
     setIsModalOpen(true)
   }
@@ -147,13 +175,34 @@ export const SellerProductListPage: React.FC = () => {
 
   const handleTogglePublication = async (product: SellerProductItem) => {
     if (!shopId) return
-    const nextStatus: ProductStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    if (product.status === 'PENDING_APPROVAL') {
+      showToast('Sản phẩm đang chờ Quản trị viên (Admin) phê duyệt, bạn chưa thể tự mở bán.')
+      return
+    }
+
+    // Nếu đang mở bán (ACTIVE) -> tạm ẩn (INACTIVE).
+    // Nếu đang tạm ẩn (INACTIVE):
+    //   - Nếu có lý do từ chối (rejectionReason) -> gửi duyệt lại (PENDING_APPROVAL).
+    //   - Nếu do seller tự tạm ẩn -> mở bán lại (ACTIVE).
+    const nextStatus: ProductStatus =
+      product.status === 'ACTIVE'
+        ? 'INACTIVE'
+        : product.rejectionReason
+          ? 'PENDING_APPROVAL'
+          : 'ACTIVE'
+
     try {
       await sellerApi.setProductPublication(shopId, product.id, nextStatus)
-      showToast(`Product is now ${nextStatus === 'ACTIVE' ? 'LIVE on Storefront' : 'HIDDEN from Storefront'}`)
+      if (nextStatus === 'PENDING_APPROVAL') {
+        showToast(`Đã gửi yêu cầu phê duyệt sản phẩm "${product.name}" lên Quản trị viên!`)
+      } else if (nextStatus === 'ACTIVE') {
+        showToast(`Đã mở bán lại sản phẩm "${product.name}" trên sàn thương mại điện tử!`)
+      } else {
+        showToast(`Đã tạm ẩn sản phẩm "${product.name}" khỏi sàn thương mại điện tử.`)
+      }
       loadProducts()
     } catch {
-      showToast('Failed to update publication status.')
+      showToast('Không thể cập nhật trạng thái hiển thị.')
     }
   }
 
@@ -411,15 +460,25 @@ export const SellerProductListPage: React.FC = () => {
                       {/* Action buttons */}
                       <td>
                         <div className="seller-actions-cell" style={{ justifyContent: 'flex-end' }}>
-                          {/* Toggle Active / Inactive */}
+                          {/* Toggle Active / Inactive / Pending */}
                           <button
                             type="button"
                             onClick={() => handleTogglePublication(p)}
                             className="seller-action-btn toggle"
-                            title={p.status === 'ACTIVE' ? 'Hide from storefront' : 'Publish to storefront'}
+                            title={
+                              p.status === 'PENDING_APPROVAL'
+                                ? 'Đang chờ Quản trị viên (Admin) phê duyệt'
+                                : p.status === 'ACTIVE'
+                                  ? 'Tạm ẩn khỏi sàn'
+                                  : p.rejectionReason
+                                    ? 'Gửi yêu cầu duyệt lại mở bán'
+                                    : 'Mở bán lại trên sàn'
+                            }
                           >
                             {p.status === 'ACTIVE' ? (
                               <EyeOff style={{ width: 13, height: 13 }} />
+                            ) : p.status === 'PENDING_APPROVAL' ? (
+                              <Clock style={{ width: 13, height: 13, color: '#f59e0b' }} />
                             ) : (
                               <Eye style={{ width: 13, height: 13 }} />
                             )}
@@ -430,9 +489,14 @@ export const SellerProductListPage: React.FC = () => {
                             type="button"
                             onClick={() => handleOpenEditModal(p)}
                             className="seller-action-btn"
+                            disabled={fetchingDetailId === p.id}
                             title="Edit product & variants"
                           >
-                            <Edit2 style={{ width: 13, height: 13 }} />
+                            {fetchingDetailId === p.id ? (
+                              <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" />
+                            ) : (
+                              <Edit2 style={{ width: 13, height: 13 }} />
+                            )}
                           </button>
 
                           {/* Delete Product */}

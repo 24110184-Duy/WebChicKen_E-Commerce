@@ -23,7 +23,12 @@ import java.util.List;
  *   <li>PUT  /{id}/review: Quản trị viên duyệt (APPROVED) hoặc từ chối (REJECTED)</li>
  * </ul>
  */
-@WebServlet(name = "SellerApplicationServlet", urlPatterns = {"/api/v1/seller-applications/*", "/api/v1/admin/shops/*"})
+@WebServlet(name = "SellerApplicationServlet", urlPatterns = {
+        "/api/v1/seller-applications",
+        "/api/v1/seller-applications/*",
+        "/api/v1/admin/shops",
+        "/api/v1/admin/shops/*"
+})
 public class SellerApplicationServlet extends BaseApiServlet {
 
     public SellerApplicationServlet() {

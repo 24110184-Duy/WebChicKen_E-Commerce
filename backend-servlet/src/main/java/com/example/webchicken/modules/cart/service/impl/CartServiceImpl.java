@@ -17,6 +17,7 @@ import com.example.webchicken.modules.catalog.dao.ProductVariantDAO;
 import com.example.webchicken.modules.catalog.model.entity.ProductEntity;
 import com.example.webchicken.modules.catalog.model.entity.ProductImageEntity;
 import com.example.webchicken.modules.catalog.model.entity.ProductVariantEntity;
+import com.example.webchicken.modules.catalog.model.enums.ProductStatus;
 import com.example.webchicken.modules.inventory.service.InventoryService;
 import com.example.webchicken.modules.shop.dao.StoreDAO;
 import com.example.webchicken.modules.shop.model.entity.StoreEntity;
@@ -109,7 +110,7 @@ public class CartServiceImpl implements CartService {
             long currentPriceMinor = (variant != null) ? variant.getBasePriceMinor() : 0L;
             int availableStock = (variant != null) ? inventoryService.getAvailableStock(variant.getId()) : 0;
 
-            boolean isAvailable = (variant != null) && availableStock >= ci.getQuantity();
+            boolean isAvailable = (variant != null) && (product.getStatus() == ProductStatus.ACTIVE) && availableStock >= ci.getQuantity();
             if (!isAvailable) {
                 hasOutOfStock = true;
             }
@@ -167,6 +168,12 @@ public class CartServiceImpl implements CartService {
     public CartResponse addItem(String customerId, AddToCartRequest req) {
         if (req.productId() == null || req.productId().isBlank()) {
             throw new ValidationException("productId is required");
+        }
+
+        ProductEntity product = productDAO.findById(req.productId())
+                .orElseThrow(() -> new NotFoundException("Sản phẩm không tồn tại: " + req.productId()));
+        if (product.getStatus() != ProductStatus.ACTIVE) {
+            throw new ValidationException("Sản phẩm chưa được Quản trị viên (Admin) phê duyệt hoặc đang tạm ngưng mở bán");
         }
 
         CartEntity cart = cartDAO.getOrCreateCart(customerId);

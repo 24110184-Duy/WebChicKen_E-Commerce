@@ -15,6 +15,7 @@ import {
 import {
   sellerApi,
   type SellerProductItem,
+  type ProductStatus,
   type CreateProductPayload,
   type UpdateProductPayload,
   type CreateVariantPayload,
@@ -52,7 +53,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [name, setName] = useState<string>('')
   const [categoryId, setCategoryId] = useState<string>('')
   const [description, setDescription] = useState<string>('')
-  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE')
+  const [status, setStatus] = useState<ProductStatus>('PENDING_APPROVAL')
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [variants, setVariants] = useState<CreateVariantPayload[]>([
     { attribute: 'Bản Tiêu Chuẩn', basePriceMinor: 499000, stockQuantity: 100 },
@@ -62,23 +63,34 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     sellerApi.getCategories().then((cats) => {
       if (cats && cats.length > 0) {
         setCategories(cats)
-        if (!categoryId) setCategoryId(cats[0].id)
+        setCategoryId((prev) => (!prev || prev.startsWith('cat-') ? cats[0].id : prev))
       }
     })
   }, [])
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (!isOpen) return
+
     if (initialProduct) {
-      setName(initialProduct.name)
-      setCategoryId(initialProduct.categoryId || 'cat-whole')
+      setName(initialProduct.name || '')
+      setCategoryId(initialProduct.categoryId || (categories.length > 0 ? categories[0].id : ''))
       setDescription(initialProduct.description || '')
-      setStatus(initialProduct.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE')
-      setImageUrls(initialProduct.imageUrls || [])
+      setStatus(initialProduct.status || 'PENDING_APPROVAL')
+      const initialImgs =
+        initialProduct.imageUrls && initialProduct.imageUrls.length > 0
+          ? initialProduct.imageUrls
+          : initialProduct.thumbnailUrl
+            ? [initialProduct.thumbnailUrl]
+            : [SAMPLE_PRODUCT_IMAGES[0]]
+      setImageUrls(initialImgs)
+
       if (initialProduct.variants && initialProduct.variants.length > 0) {
         setVariants(
           initialProduct.variants.map((v) => ({
@@ -87,19 +99,53 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             stockQuantity: v.stockQuantity,
           }))
         )
-      } else {
-        setVariants([{ attribute: 'Standard Size', basePriceMinor: 120000, stockQuantity: 20 }])
+        setIsLoadingDetail(false)
+      } else if (initialProduct.id) {
+        // Biến thể hoặc mô tả chi tiết chưa có sẵn trong danh sách tóm tắt, tự động tải chi tiết sản phẩm
+        setIsLoadingDetail(true)
+        const currentShopId = shopId || initialProduct.storeId
+        sellerApi
+          .getStoreProductDetail(currentShopId, initialProduct.id)
+          .then((detail) => {
+            if (detail) {
+              setName(detail.name || '')
+              if (detail.categoryId) setCategoryId(detail.categoryId)
+              setDescription(detail.description || '')
+              setStatus(detail.status || 'PENDING_APPROVAL')
+              if (detail.imageUrls && detail.imageUrls.length > 0) {
+                setImageUrls(detail.imageUrls)
+              } else if (detail.thumbnailUrl) {
+                setImageUrls([detail.thumbnailUrl])
+              }
+              if (detail.variants && detail.variants.length > 0) {
+                setVariants(
+                  detail.variants.map((v) => ({
+                    attribute: v.attribute,
+                    basePriceMinor: v.basePriceMinor,
+                    stockQuantity: v.stockQuantity,
+                  }))
+                )
+              }
+            }
+          })
+          .catch((err) => {
+            console.error('Lỗi khi tải chi tiết sản phẩm:', err)
+          })
+          .finally(() => {
+            setIsLoadingDetail(false)
+          })
       }
     } else {
       setName('')
-      setCategoryId('cat-electronics')
+      setCategoryId(categories.length > 0 ? categories[0].id : '')
       setDescription('')
-      setStatus('ACTIVE')
+      setStatus('PENDING_APPROVAL')
       setImageUrls([SAMPLE_PRODUCT_IMAGES[0]])
       setVariants([{ attribute: 'Bản Tiêu Chuẩn', basePriceMinor: 499000, stockQuantity: 100 }])
+      setIsLoadingDetail(false)
     }
     setErrorMessage(null)
-  }, [initialProduct, isOpen])
+  }, [initialProduct, isOpen, categories, shopId])
 
   if (!isOpen) return null
 
@@ -256,6 +302,18 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
     }
 
+    const resolvedCategoryId =
+      categoryId && categories.some((c) => c.id === categoryId)
+        ? categoryId
+        : categories.length > 0
+          ? categories[0].id
+          : ''
+
+    if (!resolvedCategoryId) {
+      setErrorMessage('Please select a valid product category.')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       let currentShopId = shopId || initialProduct?.storeId
@@ -270,7 +328,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       if (isEditing && initialProduct) {
         const payload: UpdateProductPayload = {
           name: name.trim(),
-          categoryId,
+          categoryId: resolvedCategoryId,
           description: description.trim(),
           status,
           imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_PRODUCT_IMAGES[0]],
@@ -283,7 +341,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         const payload: CreateProductPayload = {
           storeId: currentShopId,
           name: name.trim(),
-          categoryId,
+          categoryId: resolvedCategoryId,
           description: description.trim(),
           status,
           imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_PRODUCT_IMAGES[0]],
@@ -325,71 +383,108 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
         {/* Modal Body */}
         <div className="seller-modal-body">
-          {errorMessage && (
+          {isLoadingDetail ? (
             <div
               style={{
-                padding: '10px 14px',
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: 10,
-                fontSize: 12.5,
-                color: '#b91c1c',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: 8,
+                justifyContent: 'center',
+                padding: '60px 0',
+                gap: 14,
               }}
             >
-              <AlertCircle style={{ width: 16, height: 16, flexShrink: 0 }} />
-              <span>{errorMessage}</span>
+              <Loader2 style={{ width: 36, height: 36, color: '#f59e0b', animation: 'spin 1s linear infinite' }} />
+              <p style={{ fontSize: 14, color: '#64748b', fontWeight: 500 }}>
+                Đang tải dữ liệu sản phẩm và các biến thể...
+              </p>
             </div>
-          )}
-
-          {/* Section 1: Basic Information */}
-          <div className="seller-form-section">
-            <h4 className="seller-form-section-title">
-              <Layers style={{ width: 16, height: 16, color: '#f59e0b' }} />
-              <span>1. Basic Product Information</span>
-            </h4>
-
-            <div className="seller-form-group">
-              <label className="seller-form-label">Product Name *</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Tai Nghe Bluetooth Chống Ồn Sony WH-1000XM5 Chính Hãng"
-                className="seller-form-input"
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div className="seller-form-group">
-                <label className="seller-form-label">Category *</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="seller-form-select"
+          ) : (
+            <>
+              {errorMessage && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: 10,
+                    fontSize: 12.5,
+                    color: '#b91c1c',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
                 >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <AlertCircle style={{ width: 16, height: 16, flexShrink: 0 }} />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
-              <div className="seller-form-group">
-                <label className="seller-form-label">Publication Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                  className="seller-form-select"
-                >
-                  <option value="ACTIVE">Active (Live on Storefront)</option>
-                  <option value="INACTIVE">Inactive (Hidden / Draft)</option>
-                </select>
-              </div>
-            </div>
+              {/* Section 1: Basic Information */}
+              <div className="seller-form-section">
+                <h4 className="seller-form-section-title">
+                  <Layers style={{ width: 16, height: 16, color: '#f59e0b' }} />
+                  <span>1. Basic Product Information</span>
+                </h4>
+
+                <div className="seller-form-group">
+                  <label className="seller-form-label">Product Name *</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Tai Nghe Bluetooth Chống Ồn Sony WH-1000XM5 Chính Hãng"
+                    className="seller-form-input"
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div className="seller-form-group">
+                    <label className="seller-form-label">Category *</label>
+                    <select
+                      value={categoryId && categories.some((c) => c.id === categoryId) ? categoryId : (categories.length > 0 ? categories[0].id : '')}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="seller-form-select"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="seller-form-group">
+                    <label className="seller-form-label">Publication Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                      className="seller-form-select"
+                    >
+                      {isEditing && (initialProduct?.status === 'ACTIVE' || initialProduct?.status === 'OUT_OF_STOCK' || (initialProduct?.status === 'INACTIVE' && !initialProduct?.rejectionReason)) ? (
+                        <>
+                          <option value="ACTIVE">Đang mở bán (Live on Storefront)</option>
+                          <option value="INACTIVE">Tạm ẩn sản phẩm (Hidden)</option>
+                        </>
+                      ) : isEditing && initialProduct?.status === 'PENDING_APPROVAL' ? (
+                        <>
+                          <option value="PENDING_APPROVAL">Chờ duyệt mở bán (Pending Review)</option>
+                          <option value="INACTIVE">Lưu bản nháp (Tạm ẩn)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="PENDING_APPROVAL">Gửi duyệt mở bán (Chờ Admin phê duyệt)</option>
+                          <option value="INACTIVE">Lưu bản nháp (Ẩn sản phẩm)</option>
+                        </>
+                      )}
+                    </select>
+                    {!isEditing && (
+                      <span style={{ fontSize: 12, color: '#f59e0b', marginTop: 4, display: 'block' }}>
+                        * Sản phẩm mới sẽ được chuyển vào hàng đợi chờ Quản trị viên (Admin) phê duyệt trước khi mở bán.
+                      </span>
+                    )}
+                  </div>
+                </div>
 
             <div className="seller-form-group">
               <label className="seller-form-label">Mô Tả & Thông Tin Chi Tiết</label>
@@ -726,6 +821,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </button>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* Modal Footer */}
@@ -733,7 +830,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingDetail}
             className="seller-btn-secondary"
           >
             Cancel
@@ -741,7 +838,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           <button
             type="button"
             onClick={() => handleSubmit()}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingDetail}
             className="seller-btn-primary"
           >
             {isSubmitting ? (

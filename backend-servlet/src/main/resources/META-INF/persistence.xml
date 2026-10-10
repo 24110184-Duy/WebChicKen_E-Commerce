@@ -55,6 +55,9 @@
         <!-- review module -->
         <class>com.example.webchicken.modules.review.model.entity.ProductReviewEntity</class>
 
+        <!-- payment module -->
+        <class>com.example.webchicken.modules.payment.model.entity.PaymentEntity</class>
+
         <!-- backoffice module (TASK-67) -->
         <class>com.example.webchicken.modules.backoffice.model.entity.AuditLogEntity</class>
 

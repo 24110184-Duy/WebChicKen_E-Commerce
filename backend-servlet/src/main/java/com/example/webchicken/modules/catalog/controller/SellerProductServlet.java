@@ -128,17 +128,20 @@ public class SellerProductServlet extends BaseApiServlet {
             verifyOwnership(req, path.shopId());
 
             CreateProductRequest body = readBody(req, CreateProductRequest.class);
-            // Ensure product is bound to the shopId in URL path (chống IDOR)
-            if (!path.shopId().equals(body.storeId())) {
-                body = new CreateProductRequest(
-                        path.shopId(),
-                        body.categoryId(),
-                        body.name(),
-                        body.description(),
-                        body.imageUrls(),
-                        body.variants()
-                );
-            }
+            // Đảm bảo sản phẩm mới luôn gắn với shopId và bắt buộc qua phê duyệt của Admin
+            ProductStatus desiredStatus = (body.status() == ProductStatus.INACTIVE)
+                    ? ProductStatus.INACTIVE
+                    : ProductStatus.PENDING_APPROVAL;
+
+            body = new CreateProductRequest(
+                    path.shopId(),
+                    body.categoryId(),
+                    body.name(),
+                    body.description(),
+                    body.imageUrls(),
+                    body.variants(),
+                    desiredStatus
+            );
 
             ProductDetailResponse created = productService().createProduct(body);
             created(resp, created);
@@ -177,6 +180,19 @@ public class SellerProductServlet extends BaseApiServlet {
                     throw new ValidationException("Status is required for publication update");
                 }
                 ProductStatus newStatus = ProductStatus.valueOf(statusStr.toUpperCase());
+
+                // KIỂM SOÁT PHÊ DUYỆT ADMIN:
+                // Người bán không thể tự ý kích hoạt ACTIVE nếu chưa được Admin duyệt
+                if (newStatus == ProductStatus.ACTIVE) {
+                    ProductDetailResponse current = productService().getProductDetail(path.productId());
+                    if (current.status() == ProductStatus.PENDING_APPROVAL) {
+                        throw new ValidationException("Sản phẩm đang chờ Quản trị viên (Admin) phê duyệt, bạn không thể tự kích hoạt mở bán.");
+                    }
+                    if (current.status() == ProductStatus.INACTIVE && current.rejectionReason() != null) {
+                        throw new ValidationException("Sản phẩm bị từ chối hoặc chưa được Admin phê duyệt, vui lòng gửi duyệt lại (PENDING_APPROVAL).");
+                    }
+                }
+
                 productService().changeProductStatus(path.productId(), newStatus);
                 ProductDetailResponse updated = productService().getProductDetail(path.productId());
                 ok(resp, updated);

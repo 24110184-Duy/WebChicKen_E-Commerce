@@ -12,6 +12,8 @@ import {
 import { orderApi } from '../../features/orders/api/orderApi'
 import { paymentApi } from '../../features/payment/api/paymentApi'
 import { VoucherModal } from '../../features/cart/components/VoucherModal'
+import { AddressSelectModal } from '../../features/orders/components/AddressSelectModal'
+import { customerApi, type AddressResponse } from '../../features/auth/api/customerApi'
 import { Ticket } from 'lucide-react'
 
 export const CheckoutPage: React.FC = () => {
@@ -19,15 +21,53 @@ export const CheckoutPage: React.FC = () => {
   const { selectedItems, removeItem } = useCartStore()
   const isOrderPlacedRef = useRef(false)
 
-  // Delivery Address State
+  // Delivery Address State from Profile
+  const [addresses, setAddresses] = useState<AddressResponse[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>()
   const [address, setAddress] = useState({
-    recipientName: 'Nguyen Van A',
-    phoneNumber: '0901234567',
-    streetAddress: '123 Nguyen Hue Boulevard, Ben Nghe Ward',
-    district: 'District 1',
-    city: 'Ho Chi Minh City',
+    recipientName: '',
+    phoneNumber: '',
+    streetAddress: '',
+    district: '',
+    city: '',
+    isDefault: false,
   })
-  const [isEditingAddress, setIsEditingAddress] = useState(false)
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+
+  // Load user delivery addresses from profile on mount
+  useEffect(() => {
+    customerApi.getAddresses().then((res) => {
+      if (res && res.length > 0) {
+        setAddresses(res)
+        const defaultAddr = res.find((a) => a.isDefault) || res[0]
+        setSelectedAddressId(defaultAddr.addressId)
+        setAddress({
+          recipientName: defaultAddr.recipientName,
+          phoneNumber: defaultAddr.phone,
+          streetAddress: defaultAddr.addressLine1,
+          district: defaultAddr.district || '',
+          city: defaultAddr.city || '',
+          isDefault: defaultAddr.isDefault,
+        })
+      }
+    })
+  }, [])
+
+  const handleSelectAddress = (selected: AddressResponse) => {
+    setSelectedAddressId(selected.addressId)
+    setAddress({
+      recipientName: selected.recipientName,
+      phoneNumber: selected.phone,
+      streetAddress: selected.addressLine1,
+      district: selected.district || '',
+      city: selected.city || '',
+      isDefault: selected.isDefault,
+    })
+  }
+
+  const handleAddressCreated = (newAddr: AddressResponse) => {
+    setAddresses((prev) => [newAddr, ...prev.filter((a) => a.addressId !== newAddr.addressId)])
+  }
 
   // Shipping Method Selection per Store
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethod>(
@@ -108,6 +148,13 @@ export const CheckoutPage: React.FC = () => {
   // Handle Place Order
   const handlePlaceOrder = async () => {
     if (isSubmitting) return
+
+    if (!address.recipientName.trim() || !address.phoneNumber.trim() || !address.streetAddress.trim()) {
+      alert('Vui lòng chọn hoặc thiết lập địa chỉ nhận hàng trước khi tiến hành đặt hàng!')
+      setIsAddressModalOpen(true)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -119,21 +166,25 @@ export const CheckoutPage: React.FC = () => {
         })),
         recipientName: address.recipientName,
         recipientPhone: address.phoneNumber,
-        shippingAddress: `${address.streetAddress}, ${address.district}, ${address.city}`,
+        shippingAddress: `${address.streetAddress}${address.district ? `, ${address.district}` : ''}${address.city ? `, ${address.city}` : ''}`,
         voucherCode: appliedVoucher?.code,
         paymentMethod: paymentMethod === 'COD' ? ('COD' as const) : paymentMethod === 'BANK_TRANSFER' ? ('BANKING' as const) : ('VNPAY' as const),
         note: 'Customer order from storefront checkout',
       }
 
       const res = await orderApi.checkout(checkoutReq)
-      const primaryOrderCode = res && res.orders && res.orders.length > 0
-        ? res.orders[0].orderCode
-        : `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100000 + Math.random() * 900000)}`
+      if (!res || !res.orders || res.orders.length === 0) {
+        setIsSubmitting(false)
+        alert('Đặt hàng không thành công. Vui lòng thử lại sau!')
+        return
+      }
+
+      const primaryOrderCode = res.orders[0].orderCode
 
       const orderSummary = {
         orderCode: primaryOrderCode,
-        orderGroupId: res?.orderGroupId,
-        orders: res?.orders,
+        orderGroupId: res.orderGroupId,
+        orders: res.orders,
         createdAt: new Date().toISOString(),
         recipient: address,
         items: selectedItems,
@@ -204,68 +255,34 @@ export const CheckoutPage: React.FC = () => {
                 <button
                   type="button"
                   className="checkout-link-action"
-                  onClick={() => setIsEditingAddress(!isEditingAddress)}
+                  onClick={() => setIsAddressModalOpen(true)}
                 >
-                  {isEditingAddress ? 'Done Editing' : 'Change Address'}
+                  Change Address
                 </button>
               </div>
 
-              {isEditingAddress ? (
-                <div className="checkout-address-form">
-                  <div className="checkout-form-group">
-                    <label className="checkout-form-label">Full Name</label>
-                    <input
-                      type="text"
-                      className="checkout-form-input"
-                      value={address.recipientName}
-                      onChange={(e) => setAddress({ ...address, recipientName: e.target.value })}
-                    />
-                  </div>
-                  <div className="checkout-form-group">
-                    <label className="checkout-form-label">Phone Number</label>
-                    <input
-                      type="text"
-                      className="checkout-form-input"
-                      value={address.phoneNumber}
-                      onChange={(e) => setAddress({ ...address, phoneNumber: e.target.value })}
-                    />
-                  </div>
-                  <div className="checkout-form-group full">
-                    <label className="checkout-form-label">Street Address</label>
-                    <input
-                      type="text"
-                      className="checkout-form-input"
-                      value={address.streetAddress}
-                      onChange={(e) => setAddress({ ...address, streetAddress: e.target.value })}
-                    />
-                  </div>
-                  <div className="checkout-form-group">
-                    <label className="checkout-form-label">District</label>
-                    <input
-                      type="text"
-                      className="checkout-form-input"
-                      value={address.district}
-                      onChange={(e) => setAddress({ ...address, district: e.target.value })}
-                    />
-                  </div>
-                  <div className="checkout-form-group">
-                    <label className="checkout-form-label">City</label>
-                    <input
-                      type="text"
-                      className="checkout-form-input"
-                      value={address.city}
-                      onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                    />
-                  </div>
-                </div>
-              ) : (
+              {address.recipientName ? (
                 <div className="checkout-address-box">
-                  <span className="checkout-address-tag">Default Address</span>
+                  {address.isDefault && <span className="checkout-address-tag">Default Address</span>}
                   <div className="checkout-address-name">{address.recipientName}</div>
                   <div className="checkout-address-phone">{address.phoneNumber}</div>
                   <div className="checkout-address-text">
-                    {address.streetAddress}, {address.district}, {address.city}
+                    {address.streetAddress}
+                    {address.district ? `, ${address.district}` : ''}
+                    {address.city ? `, ${address.city}` : ''}
                   </div>
+                </div>
+              ) : (
+                <div className="p-5 bg-amber-50/50 border border-dashed border-amber-300 rounded-xl text-center">
+                  <p className="text-sm font-semibold text-slate-800 mb-1">Chưa có địa chỉ nhận hàng</p>
+                  <p className="text-xs text-slate-500 mb-3">Vui lòng chọn địa chỉ trong tài khoản hoặc thêm mới để tiếp tục.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddressModalOpen(true)}
+                    className="px-4 py-2 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-sm transition-colors"
+                  >
+                    + Chọn Hoặc Thêm Địa Chỉ
+                  </button>
                 </div>
               )}
             </div>
@@ -547,6 +564,15 @@ export const CheckoutPage: React.FC = () => {
             endDate: '',
           })
         }}
+      />
+
+      <AddressSelectModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        addresses={addresses}
+        selectedAddressId={selectedAddressId}
+        onSelectAddress={handleSelectAddress}
+        onAddressCreated={handleAddressCreated}
       />
     </StorefrontLayout>
   )

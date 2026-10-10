@@ -31,12 +31,14 @@ public class OrderDAO extends BaseDAO {
     }
 
     public Optional<OrderEntity> findById(String id) {
-        if (id == null || id.isBlank()) return Optional.empty();
+        if (id == null || id.isBlank())
+            return Optional.empty();
         return executeQuery(em -> Optional.ofNullable(em.find(OrderEntity.class, id)));
     }
 
     public Optional<OrderEntity> findByOrderCode(String orderCode) {
-        if (orderCode == null || orderCode.isBlank()) return Optional.empty();
+        if (orderCode == null || orderCode.isBlank())
+            return Optional.empty();
         return executeQuery(em -> {
             List<OrderEntity> list = em.createQuery(
                     "SELECT o FROM OrderEntity o WHERE o.orderCode = :orderCode", OrderEntity.class)
@@ -134,10 +136,12 @@ public class OrderDAO extends BaseDAO {
     }
 
     public Optional<OrderEntity> findByOrderCodeAndStoreId(String orderCode, String storeId) {
-        if (orderCode == null || orderCode.isBlank() || storeId == null || storeId.isBlank()) return Optional.empty();
+        if (orderCode == null || orderCode.isBlank() || storeId == null || storeId.isBlank())
+            return Optional.empty();
         return executeQuery(em -> {
             List<OrderEntity> list = em.createQuery(
-                    "SELECT o FROM OrderEntity o WHERE o.orderCode = :orderCode AND o.storeId = :storeId", OrderEntity.class)
+                    "SELECT o FROM OrderEntity o WHERE o.orderCode = :orderCode AND o.storeId = :storeId",
+                    OrderEntity.class)
                     .setParameter("orderCode", orderCode.trim())
                     .setParameter("storeId", storeId.trim())
                     .setMaxResults(1)
@@ -147,10 +151,12 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
-     * Tra cứu danh sách đơn hàng theo trạng thái (phục vụ Background Workers như ShippingSimulationJob).
+     * Tra cứu danh sách đơn hàng theo trạng thái (phục vụ Background Workers như
+     * ShippingSimulationJob).
      */
     public List<OrderEntity> findByStatus(OrderStatus status, int limit) {
-        if (status == null) return List.of();
+        if (status == null)
+            return List.of();
         return executeQuery(em -> {
             String jpql = "SELECT o FROM OrderEntity o WHERE o.status = :status ORDER BY o.orderDate ASC";
             TypedQuery<OrderEntity> query = em.createQuery(jpql, OrderEntity.class)
@@ -159,5 +165,20 @@ public class OrderDAO extends BaseDAO {
             return query.getResultList();
         });
     }
-}
 
+    /**
+     * Đảm bảo bản ghi hồ sơ khách hàng tồn tại trong bảng customers.
+     * Tránh lỗi vi phạm khóa ngoại fk_orders_customers khi Seller hoặc Admin thao tác mua hàng.
+     */
+    public void ensureCustomerExists(String customerId) {
+        if (customerId == null || customerId.isBlank()) return;
+        try {
+            executeInTransaction(em -> {
+                em.createNativeQuery("INSERT INTO customers (id, tier, loyalty_point) VALUES (?, 'STANDARD', 0) ON CONFLICT (id) DO NOTHING")
+                        .setParameter(1, customerId)
+                        .executeUpdate();
+            });
+        } catch (Exception ignored) {
+        }
+    }
+}

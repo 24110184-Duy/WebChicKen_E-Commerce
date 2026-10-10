@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../app/store/authStore'
 import { useAccountNav } from '../app/store/accountNavStore'
+import { cartStore } from '../app/store/cartStore'
 import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
 import chickenMascotImg from '../assets/chicken-mascot.png'
@@ -26,6 +27,7 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
   const handleLogout = async () => {
     closeAccountMenu()
     try { await authApi.logout() } catch { /* ignore */ }
+    cartStore.resetCart()
     logout()
     navigate(PATHS.HOME, { replace: true })
   }

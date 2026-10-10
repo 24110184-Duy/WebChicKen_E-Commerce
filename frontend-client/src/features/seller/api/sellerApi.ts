@@ -48,6 +48,7 @@ export interface SellerProductItem {
   name: string
   description: string
   status: ProductStatus
+  rejectionReason?: string
   imageUrls: string[]
   thumbnailUrl?: string
   minPriceMinor: number
