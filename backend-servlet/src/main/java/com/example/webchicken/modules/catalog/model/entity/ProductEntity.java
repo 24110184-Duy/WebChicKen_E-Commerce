@@ -35,6 +35,12 @@ public class ProductEntity {
     @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
 
+    @Column(name = "moderated_by", length = 100)
+    private String moderatedBy;
+
+    @Column(name = "moderation_note", length = 500)
+    private String moderationNote;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -75,6 +81,12 @@ public class ProductEntity {
 
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getModeratedBy() { return moderatedBy; }
+    public void setModeratedBy(String moderatedBy) { this.moderatedBy = moderatedBy; }
+
+    public String getModerationNote() { return moderationNote; }
+    public void setModerationNote(String moderationNote) { this.moderationNote = moderationNote; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

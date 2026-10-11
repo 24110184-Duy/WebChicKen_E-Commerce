@@ -8,11 +8,36 @@ import type {
 } from '../types/feedbackTypes'
 
 /**
+ * Customer / Người mua gửi phản hồi, báo lỗi hoặc tố cáo tới Admin
+ */
+export async function submitCustomerFeedback(payload: CreateFeedbackPayload): Promise<FeedbackItem> {
+  const resp = await httpClient.post<FeedbackItem>('/api/v1/feedbacks', payload)
+  return resp.data
+}
+
+/**
+ * Lấy danh sách phản hồi / khiếu nại của chính người dùng hiện tại (Customer)
+ */
+export async function fetchMyFeedbacks(page: number = 1, size: number = 20): Promise<FeedbackPageResponse> {
+  const query = new URLSearchParams()
+  query.set('page', String(page))
+  query.set('size', String(size))
+
+  const resp = await httpClient.get<FeedbackPageResponse>(`/api/v1/feedbacks?${query.toString()}`)
+  return resp.data || { items: [], total: 0, page, size, totalPages: 0 }
+}
+
+/**
  * Seller gửi thắc mắc hoặc khiếu nại mới
  */
 export async function submitSellerFeedback(payload: CreateFeedbackPayload): Promise<FeedbackItem> {
-  const resp = await httpClient.post<FeedbackItem>('/api/v1/seller/feedbacks', payload)
-  return resp.data
+  try {
+    const resp = await httpClient.post<FeedbackItem>('/api/v1/seller/feedbacks', payload)
+    return resp.data
+  } catch {
+    const resp = await httpClient.post<FeedbackItem>('/api/v1/feedbacks', payload)
+    return resp.data
+  }
 }
 
 /**
@@ -23,8 +48,18 @@ export async function fetchSellerFeedbacks(page: number = 1, size: number = 10):
   query.set('page', String(page))
   query.set('size', String(size))
 
-  const resp = await httpClient.get<FeedbackPageResponse>(`/api/v1/seller/feedbacks?${query.toString()}`)
-  return resp.data || { items: [], total: 0, page, size, totalPages: 0 }
+  try {
+    const resp = await httpClient.get<FeedbackPageResponse>(`/api/v1/seller/feedbacks?${query.toString()}`)
+    if (resp.data) return resp.data
+  } catch (err) {
+    try {
+      const resp = await httpClient.get<FeedbackPageResponse>(`/api/v1/feedbacks/my?${query.toString()}`)
+      if (resp.data) return resp.data
+    } catch {
+      return { items: [], total: 0, page, size, totalPages: 0 }
+    }
+  }
+  return { items: [], total: 0, page, size, totalPages: 0 }
 }
 
 /**

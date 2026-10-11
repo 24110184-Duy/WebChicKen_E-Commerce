@@ -354,6 +354,50 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </table>
                 </div>
               </div>
+              {/* Moderation History & Audit Box */}
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: 14,
+                  backgroundColor: product.moderatedBy === 'BOT_AUTO_APPROVER' ? '#faf5ff' : '#eff6ff',
+                  borderRadius: 10,
+                  border: product.moderatedBy === 'BOT_AUTO_APPROVER' ? '1px solid #e9d5ff' : '1px solid #bfdbfe',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: product.moderatedBy === 'BOT_AUTO_APPROVER' ? '#7e22ce' : '#1d4ed8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {product.moderatedBy === 'BOT_AUTO_APPROVER' ? '🤖 DUYỆT TỰ ĐỘNG BỞI BOT' : '🛡️ THẨM ĐỊNH QUẢN TRỊ VIÊN'}
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 9999, backgroundColor: '#ffffff', color: '#475569', border: '1px solid #cbd5e1' }}>
+                    {product.moderatedBy ? product.moderatedBy : 'Đang chờ Admin duyệt'}
+                  </span>
+                </div>
+                {product.moderationNote && (
+                  <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.5, marginTop: 4 }}>
+                    <b>Ghi chú kiểm duyệt:</b> {product.moderationNote}
+                  </div>
+                )}
+              </div>
+
+              {/* Health Risk Alert Banner */}
+              {(product.status === 'PENDING_APPROVAL' || product.moderationNote?.includes('sức khỏe') || product.moderationNote?.includes('thuốc')) && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '12px 14px',
+                    borderRadius: 8,
+                    backgroundColor: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
+                    <b>⚠️ Cảnh báo An toàn & Sức khỏe người tiêu dùng:</b> Sản phẩm chứa yếu tố/từ khóa liên quan đến dược phẩm, thuốc hoặc chăm sóc sức khỏe. Theo quy định sàn WebChicKen, sản phẩm này không thể tự động duyệt bởi Bot mà bắt buộc Admin phải kiểm tra giấy phép công bố sản phẩm hoặc chứng nhận lưu hành y tế trước khi bấm duyệt.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

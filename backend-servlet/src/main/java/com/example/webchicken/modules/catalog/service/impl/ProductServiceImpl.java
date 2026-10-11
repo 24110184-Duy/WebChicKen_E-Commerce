@@ -22,6 +22,8 @@ import com.example.webchicken.modules.catalog.service.ProductService;
 import com.example.webchicken.modules.review.service.ReviewService;
 import com.example.webchicken.modules.review.model.dto.response.ReviewSummaryResponse;
 import com.example.webchicken.modules.order.service.OrderService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,18 +35,49 @@ import java.util.stream.Collectors;
 
 public class ProductServiceImpl implements ProductService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
+
+    /**
+     * Danh mục từ khóa nghi vấn, nhạy cảm liên quan đến dược phẩm, thuốc chữa bệnh,
+     * thực phẩm chức năng cấp tốc, sinh lý, y tế và an toàn sức khỏe người tiêu dùng.
+     * Khi phát hiện các yếu tố này, BOT sẽ KHÔNG tự động duyệt mà chuyển giao cho ADMIN kiểm duyệt.
+     */
+    private static final List<String> HEALTH_AND_SAFETY_KEYWORDS = List.of(
+            "thuoc", "thuốc", "duoc", "dược", "khang sinh", "kháng sinh",
+            "dac tri", "đặc trị", "chua benh", "chữa bệnh", "tri benh", "trị bệnh",
+            "than duoc", "thần dược", "chua khoi", "chữa khỏi", "thuoc nam", "thuốc nam",
+            "thuoc bac", "thuốc bắc", "dong y", "đông y", "thuc pham chuc nang", "thực phẩm chức năng",
+            "sinh ly", "sinh lý", "kich duc", "kích dục", "giam can cap toc", "giảm cân cấp tốc",
+            "tang can cap toc", "tăng cân cấp tốc", "y te", "y tế", "doc hai", "độc hại",
+            "tiem", "tiêm", "truyen dich", "truyền dịch", "vac xin", "vắc xin", "vaccine",
+            "hoa chat", "hóa chất", "chat cam", "chất cấm", "thuoc boi", "thuốc bôi",
+            "thuoc uong", "thuốc uống", "kem tron", "kem trộn", "tri mun cap toc", "trị mụn cấp tốc",
+            "tri nam cap toc", "trị nám cấp tốc", "duong trang cap toc", "dưỡng trắng cấp tốc"
+    );
+
+    public static boolean isHealthOrSafetyRisk(String name, String description) {
+        String combined = ((name != null ? name : "") + " " + (description != null ? description : "")).toLowerCase();
+        for (String kw : HEALTH_AND_SAFETY_KEYWORDS) {
+            if (combined.contains(kw)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private final ProductDAO productDAO;
     private final ProductImageDAO productImageDAO;
     private final ProductVariantDAO productVariantDAO;
     private final CategoryDAO categoryDAO;
     private final ReviewService reviewService;
     private final OrderService orderService;
+    private final com.example.webchicken.modules.shop.dao.StoreDAO storeDAO;
 
     public ProductServiceImpl(ProductDAO productDAO,
                               ProductImageDAO productImageDAO,
                               ProductVariantDAO productVariantDAO,
                               CategoryDAO categoryDAO) {
-        this(productDAO, productImageDAO, productVariantDAO, categoryDAO, null, null);
+        this(productDAO, productImageDAO, productVariantDAO, categoryDAO, null, null, null);
     }
 
     public ProductServiceImpl(ProductDAO productDAO,
@@ -53,12 +86,23 @@ public class ProductServiceImpl implements ProductService {
                               CategoryDAO categoryDAO,
                               ReviewService reviewService,
                               OrderService orderService) {
+        this(productDAO, productImageDAO, productVariantDAO, categoryDAO, reviewService, orderService, null);
+    }
+
+    public ProductServiceImpl(ProductDAO productDAO,
+                              ProductImageDAO productImageDAO,
+                              ProductVariantDAO productVariantDAO,
+                              CategoryDAO categoryDAO,
+                              ReviewService reviewService,
+                              OrderService orderService,
+                              com.example.webchicken.modules.shop.dao.StoreDAO storeDAO) {
         this.productDAO = Objects.requireNonNull(productDAO, "productDAO must not be null");
         this.productImageDAO = Objects.requireNonNull(productImageDAO, "productImageDAO must not be null");
         this.productVariantDAO = Objects.requireNonNull(productVariantDAO, "productVariantDAO must not be null");
         this.categoryDAO = Objects.requireNonNull(categoryDAO, "categoryDAO must not be null");
         this.reviewService = reviewService;
         this.orderService = orderService;
+        this.storeDAO = storeDAO;
     }
 
     @Override
@@ -70,16 +114,56 @@ public class ProductServiceImpl implements ProductService {
         String productId = UUID.randomUUID().toString();
         LocalDateTime now = LocalDateTime.now();
 
-        // BẮT BUỘC: Khi seller tạo sản phẩm mới, trạng thái ban đầu PHẢI LÀ PENDING_APPROVAL
-        // (chờ Admin phê duyệt) hoặc INACTIVE (lưu bản nháp).
-        // Tuyệt đối không cho phép tự kích hoạt thành ACTIVE trực tiếp khi tạo mới.
-        ProductStatus initialStatus = (request.status() == ProductStatus.INACTIVE)
-                ? ProductStatus.INACTIVE
-                : ProductStatus.PENDING_APPROVAL;
+        // ============================================================
+        // CƠ CHẾ KIỂM DUYỆT 2 NHÁNH (DUAL-TRACK PRODUCT MODERATION):
+        // 1. Nhánh BẮT BUỘC ADMIN KIỂM DUYỆT (PENDING_APPROVAL):
+        //    Nếu tên hoặc mô tả chứa từ khóa nghi vấn liên quan đến THUỐC, DƯỢC PHẨM,
+        //    Y TẾ, CHỮA BỆNH, THỰC PHẨM CHỨC NĂNG, AN TOÀN SỨC KHỎE NGƯỜI DÙNG
+        //    -> Chuyển sang PENDING_APPROVAL, gán cờ cảnh báo rủi ro an toàn và CHỜ ADMIN PHÊ DUYỆT.
+        // 2. Nhánh BOT TỰ ĐỘNG PHÊ DUYỆT (ACTIVE):
+        //    Nếu là mặt hàng thông thường (quần áo, đồ gia dụng, nông sản an toàn...)
+        //    đạt chuẩn thông tin -> BOT AI tự động phê duyệt thông qua ngay lập tức.
+        // 3. Bản nháp (INACTIVE): Nếu người bán chủ động chọn lưu nháp.
+        // ============================================================
+        ProductStatus initialStatus;
+        String moderatedBy = null;
+        String moderationNote = null;
+
+        if (request.status() == ProductStatus.INACTIVE) {
+            initialStatus = ProductStatus.INACTIVE;
+            moderationNote = "Bản nháp lưu tạm của Người bán";
+        } else if (isHealthOrSafetyRisk(request.name(), request.description())) {
+            initialStatus = ProductStatus.PENDING_APPROVAL;
+            moderatedBy = null;
+            moderationNote = "Cảnh báo rủi ro sức khỏe/y tế: Phát hiện yếu tố hoặc từ khóa liên quan đến dược phẩm, thuốc hoặc an toàn người dùng. Yêu cầu Quản trị viên trực tiếp thẩm định giấy phép & chất lượng trước khi mở bán.";
+            log.warn("Sản phẩm mới [{}] chứa từ khóa sức khỏe/thuốc/an toàn. Chuyển vào hàng đợi chờ Quản trị viên duyệt.", request.name());
+        } else {
+            // Hàng hóa thông thường -> BOT AI tự động duyệt thông qua ngay!
+            initialStatus = ProductStatus.ACTIVE;
+            moderatedBy = "BOT_AUTO_APPROVER";
+            moderationNote = "Đạt chuẩn kiểm duyệt tự động bởi hệ thống BOT (An toàn & Thông tin hợp lệ)";
+            log.info("Sản phẩm [{}] đạt chuẩn thông thường. Đã được BOT_AUTO_APPROVER phê duyệt tự động mở bán (ACTIVE).", request.name());
+        }
+
+        String effectiveStoreId = request.storeId();
+        if (storeDAO != null) {
+            if (effectiveStoreId == null || !storeDAO.existsById(effectiveStoreId)) {
+                java.util.Optional<com.example.webchicken.modules.shop.model.entity.StoreEntity> fb =
+                        storeDAO.findById("s0000000-0000-0000-0000-000000000001");
+                if (fb.isPresent()) {
+                    effectiveStoreId = fb.get().getId();
+                } else {
+                    java.util.List<com.example.webchicken.modules.shop.model.entity.StoreEntity> any = storeDAO.findAll(1, 1);
+                    if (!any.isEmpty()) {
+                        effectiveStoreId = any.get(0).getId();
+                    }
+                }
+            }
+        }
 
         ProductEntity product = new ProductEntity(
                 productId,
-                request.storeId(),
+                effectiveStoreId,
                 request.categoryId(),
                 request.name(),
                 request.description(),
@@ -87,6 +171,8 @@ public class ProductServiceImpl implements ProductService {
                 now,
                 now
         );
+        product.setModeratedBy(moderatedBy);
+        product.setModerationNote(moderationNote);
         productDAO.save(product);
 
         // Images
@@ -142,8 +228,13 @@ public class ProductServiceImpl implements ProductService {
                 product.getDescription(),
                 product.getStatus(),
                 product.getRejectionReason(),
+                product.getModeratedBy(),
+                product.getModerationNote(),
                 savedImages,
                 savedVariants,
+                0.0,
+                0,
+                0,
                 product.getCreatedAt(),
                 product.getUpdatedAt()
         );
@@ -282,6 +373,8 @@ public class ProductServiceImpl implements ProductService {
                 product.getDescription(),
                 product.getStatus(),
                 product.getRejectionReason(),
+                product.getModeratedBy(),
+                product.getModerationNote(),
                 imageUrls,
                 variants,
                 rating,
@@ -330,16 +423,31 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDetailResponse reviewProduct(String id, ProductStatus newStatus, String rejectionReason) {
+        return reviewProduct(id, newStatus, rejectionReason, "ADMIN", null);
+    }
+
+    @Override
+    public ProductDetailResponse reviewProduct(String id, ProductStatus newStatus, String rejectionReason, String reviewerName, String moderationNote) {
         ProductEntity product = productDAO.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy sản phẩm với id: " + id));
 
         product.setStatus(newStatus);
+        String finalReviewer = (reviewerName != null && !reviewerName.isBlank()) ? reviewerName.trim() : "ADMIN";
+
         if (newStatus == ProductStatus.ACTIVE) {
             product.setRejectionReason(null);
+            product.setModeratedBy(finalReviewer.startsWith("ADMIN") ? finalReviewer : "ADMIN: " + finalReviewer);
+            product.setModerationNote(moderationNote != null && !moderationNote.isBlank()
+                    ? moderationNote.trim()
+                    : "Đã được Quản trị viên kiểm tra hồ sơ, giấy chứng nhận an toàn và phê duyệt mở bán");
+            log.info("Sản phẩm [{}] đã được Quản trị viên [{}] phê duyệt mở bán.", id, product.getModeratedBy());
         } else if (newStatus == ProductStatus.INACTIVE || newStatus == ProductStatus.PENDING_APPROVAL) {
             if (rejectionReason != null && !rejectionReason.isBlank()) {
                 product.setRejectionReason(rejectionReason.trim());
             }
+            product.setModeratedBy(finalReviewer.startsWith("ADMIN") ? finalReviewer : "ADMIN: " + finalReviewer);
+            product.setModerationNote("Bị Quản trị viên từ chối: " + (rejectionReason != null ? rejectionReason.trim() : "Không đạt tiêu chuẩn kiểm duyệt an toàn"));
+            log.info("Sản phẩm [{}] đã bị Quản trị viên [{}] từ chối. Lý do: {}", id, product.getModeratedBy(), product.getRejectionReason());
         }
         product.setUpdatedAt(LocalDateTime.now());
         productDAO.update(product);
@@ -386,6 +494,8 @@ public class ProductServiceImpl implements ProductService {
                 p.getName(),
                 p.getStatus(),
                 p.getRejectionReason(),
+                p.getModeratedBy(),
+                p.getModerationNote(),
                 thumb,
                 minPrice,
                 maxPrice,

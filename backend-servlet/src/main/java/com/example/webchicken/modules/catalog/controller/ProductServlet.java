@@ -131,9 +131,13 @@ public class ProductServlet extends BaseApiServlet {
                 return;
             }
 
-            String[] parts = pathInfo.split("/");
-            if (parts.length >= 2) {
-                String productId = parts[1];
+            String productId = pathInfo.replaceFirst("^/", "").replace("/review", "").replace("/moderation", "").trim();
+            if (productId.contains("/")) {
+                String[] segments = productId.split("/");
+                productId = segments[segments.length - 1];
+            }
+
+            if (!productId.isBlank()) {
                 try {
                     com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest body =
                             readBody(req, com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest.class);
@@ -143,15 +147,29 @@ public class ProductServlet extends BaseApiServlet {
                         return;
                     }
 
+                    String rawStatus = body.status().trim().toUpperCase();
+                    if ("REJECTED".equals(rawStatus) || "REJECT".equals(rawStatus)) {
+                        rawStatus = "INACTIVE";
+                    } else if ("APPROVE".equals(rawStatus) || "APPROVED".equals(rawStatus)) {
+                        rawStatus = "ACTIVE";
+                    }
+
                     ProductStatus targetStatus;
                     try {
-                        targetStatus = ProductStatus.valueOf(body.status().trim().toUpperCase());
+                        targetStatus = ProductStatus.valueOf(rawStatus);
                     } catch (IllegalArgumentException e) {
                         badRequest(resp, "VALIDATION_ERROR", "Trạng thái không hợp lệ (hỗ trợ ACTIVE, INACTIVE, PENDING_APPROVAL).");
                         return;
                     }
 
-                    ProductDetailResponse reviewed = service().reviewProduct(productId, targetStatus, body.rejectionReason());
+                    String adminName = (user.email() != null && !user.email().isBlank()) ? user.email() : user.userId();
+                    ProductDetailResponse reviewed = service().reviewProduct(
+                            productId,
+                            targetStatus,
+                            body.rejectionReason(),
+                            "ADMIN: " + adminName,
+                            body.moderationNote()
+                    );
 
                     try {
                         com.example.webchicken.modules.backoffice.service.AuditLogService auditService = getService("auditLogService");
@@ -197,7 +215,19 @@ public class ProductServlet extends BaseApiServlet {
             badRequest(resp, "MISSING_ID", "Product ID is required in URL path");
             return;
         }
-        String id = pathInfo.substring(1);
+
+        AuthenticatedUser user = getAuthenticatedUser(req);
+        if (user == null || !user.isAdmin()) {
+            forbidden(resp, "Chỉ Quản trị viên mới có quyền gỡ bỏ sản phẩm khỏi hệ thống sàn.");
+            return;
+        }
+
+        String id = pathInfo.replaceFirst("^/", "").trim();
+        if (id.contains("/")) {
+            String[] segments = id.split("/");
+            id = segments[segments.length - 1];
+        }
+
         try {
             service().deleteProduct(id);
             noContent(resp);

@@ -49,6 +49,8 @@ export interface SellerProductItem {
   description: string
   status: ProductStatus
   rejectionReason?: string
+  moderatedBy?: string
+  moderationNote?: string
   imageUrls: string[]
   thumbnailUrl?: string
   minPriceMinor: number

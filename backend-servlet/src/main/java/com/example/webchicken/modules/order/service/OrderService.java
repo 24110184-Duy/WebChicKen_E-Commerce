@@ -79,6 +79,16 @@ public interface OrderService {
      * Lấy số lượng đã bán (sold count) theo lô cho các sản phẩm.
      */
     java.util.Map<String, Integer> getProductSoldCounts(List<String> productIds);
+
+    /**
+     * Danh sách toàn bộ đơn hàng toàn sàn cho Quản Trị Viên (phân trang + lọc status).
+     */
+    List<OrderResponse> getAllPlatformOrders(OrderStatus status, int page, int size);
+
+    /**
+     * Tổng số đơn hàng toàn sàn.
+     */
+    long countAllPlatformOrders(OrderStatus status);
 }
 
 

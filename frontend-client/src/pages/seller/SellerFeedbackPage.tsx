@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   RefreshCw,
   ChevronRight,
+  ChevronDown,
   ShieldAlert,
   Sparkles,
   Upload,
@@ -67,21 +68,24 @@ export const SellerFeedbackPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500)
   }
 
-  const loadSellerFeedbacks = useCallback(async () => {
+  const loadSellerFeedbacks = useCallback(async (isManualRefresh: boolean = false) => {
     try {
       setLoading(true)
       const data = await fetchSellerFeedbacks(1, 50)
       setFeedbacks(data.items || [])
     } catch (err: any) {
-      console.error('Lỗi khi tải lịch sử phản hồi seller:', err)
-      showToast('Không thể tải lịch sử phản hồi.', 'error')
+      console.warn('Lỗi khi tải lịch sử phản hồi seller:', err)
+      setFeedbacks([])
+      if (isManualRefresh) {
+        showToast('Không thể tải lịch sử phản hồi.', 'error')
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadSellerFeedbacks()
+    loadSellerFeedbacks(false)
   }, [loadSellerFeedbacks])
 
   const handleTabChange = (tab: 'create' | 'history') => {
@@ -372,7 +376,7 @@ export const SellerFeedbackPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={loadSellerFeedbacks}
+              onClick={() => loadSellerFeedbacks(true)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -690,57 +694,50 @@ export const SellerFeedbackPage: React.FC = () => {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* Mục 1: Phân loại yêu cầu */}
               <div>
-                <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>
+                <label
+                  htmlFor="seller-feedback-type"
+                  style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}
+                >
                   1. Phân loại yêu cầu hỗ trợ <span style={{ color: '#ef4444' }}>*</span>
-                </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                  {[
-                    { id: 'INQUIRY', name: 'Thắc mắc vận hành', desc: 'Quy trình giao nhận, ví tiền & thanh toán', tag: 'Vận hành' },
-                    { id: 'COMPLAINT', name: 'Khiếu nại kiểm duyệt / đơn', desc: 'Kiểm duyệt sản phẩm, xử lý trả hàng', tag: 'Ưu tiên' },
-                    { id: 'SUGGESTION', name: 'Đề xuất cải tiến', desc: 'Góp ý tính năng mới cho sàn ChickyMart', tag: 'Góp ý' },
-                    { id: 'SYSTEM_BUG', name: 'Báo lỗi hệ thống', desc: 'Lỗi giao diện, không lưu được dữ liệu', tag: 'Kỹ thuật' },
-                    { id: 'OTHER', name: 'Ý kiến khác', desc: 'Các câu hỏi hoặc hợp tác kinh doanh khác', tag: 'Chung' },
-                  ].map((item) => {
-                    const isSelected = type === item.id
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setType(item.id as FeedbackType)}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          padding: '14px 16px',
-                          borderRadius: 6,
-                          border: isSelected ? '1.5px solid #eab308' : '1px solid #f1f5f9',
-                          backgroundColor: isSelected ? '#fefce8' : '#fafafa',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, fontSize: 13.5, color: isSelected ? '#854d0e' : '#1e293b' }}>
-                              {item.name}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                padding: '2px 8px',
-                                borderRadius: 10,
-                                backgroundColor: isSelected ? '#fef08a' : '#e2e8f0',
-                                color: isSelected ? '#854d0e' : '#475569',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {item.tag}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 12, color: '#64748b' }}>{item.desc}</div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                </label>
+                <div style={{ position: 'relative', maxWidth: 540 }}>
+                  <select
+                    id="seller-feedback-type"
+                    value={type}
+                    onChange={(e) => setType(e.target.value as FeedbackType)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 42px 12px 16px',
+                      fontSize: 14,
+                      color: '#0f172a',
+                      backgroundColor: '#ffffff',
+                      border: '1.5px solid #cbd5e1',
+                      borderRadius: 8,
+                      outline: 'none',
+                      appearance: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      transition: 'border-color 0.15s, box-shadow 0.15s',
+                    }}
+                  >
+                    <option value="INQUIRY">Thắc mắc vận hành — (Quy trình giao nhận, ví tiền & thanh toán)</option>
+                    <option value="COMPLAINT">Khiếu nại kiểm duyệt / đơn — (Kiểm duyệt sản phẩm, xử lý trả hàng)</option>
+                    <option value="SUGGESTION">Đề xuất cải tiến — (Góp ý tính năng mới cho sàn ChickyMart)</option>
+                    <option value="SYSTEM_BUG">Báo lỗi hệ thống — (Lỗi giao diện, không lưu được dữ liệu)</option>
+                    <option value="OTHER">Ý kiến khác — (Các câu hỏi hoặc hợp tác kinh doanh khác)</option>
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    style={{
+                      position: 'absolute',
+                      right: 14,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none',
+                      color: '#64748b',
+                    }}
+                  />
                 </div>
               </div>
 

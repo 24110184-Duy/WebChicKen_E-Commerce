@@ -27,5 +27,7 @@ public interface ProductService {
 
     ProductDetailResponse reviewProduct(String id, ProductStatus newStatus, String rejectionReason);
 
+    ProductDetailResponse reviewProduct(String id, ProductStatus newStatus, String rejectionReason, String reviewerName, String moderationNote);
+
     void deleteProduct(String id);
 }

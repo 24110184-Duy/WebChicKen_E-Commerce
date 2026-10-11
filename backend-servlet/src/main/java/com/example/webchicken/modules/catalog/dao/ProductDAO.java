@@ -18,6 +18,17 @@ public class ProductDAO extends BaseDAO {
 
     public ProductDAO(EntityManagerFactory emf) {
         super(emf);
+        ensureProductColumnsExist();
+    }
+
+    private void ensureProductColumnsExist() {
+        try {
+            executeInTransaction(em -> {
+                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(500)").executeUpdate();
+                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS moderated_by VARCHAR(100)").executeUpdate();
+                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS moderation_note VARCHAR(500)").executeUpdate();
+            });
+        } catch (Exception ignored) {}
     }
 
     public Optional<ProductEntity> findById(String id) {

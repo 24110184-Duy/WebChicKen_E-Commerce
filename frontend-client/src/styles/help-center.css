@@ -1,0 +1,462 @@
+/* ==========================================================================
+   WebChicKen Help Center & Customer Feedback / Report Styles
+   Theme: Amber / Gold / Slate - Shopee Pro & Modern Customer Care
+   ========================================================================== */
+
+.hc-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+/* ── 1. Hero Banner ── */
+.hc-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+  border-radius: 20px;
+  padding: 40px 36px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  margin-bottom: 28px;
+}
+
+.hc-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0) 70%);
+  pointer-events: none;
+}
+
+.hc-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 640px;
+}
+
+.hc-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.hc-hero-title {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.25;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.hc-hero-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.hc-hero-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  text-decoration: none;
+}
+
+.hc-btn-primary:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4);
+}
+
+.hc-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.hc-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ── 2. Tabs Navigation ── */
+.hc-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.hc-tab-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.hc-tab-btn:hover {
+  color: #0f172a;
+}
+
+.hc-tab-btn.active {
+  color: #d97706;
+  border-bottom-color: #d97706;
+}
+
+/* ── 3. Category Selector Cards ── */
+.hc-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.hc-category-card {
+  padding: 16px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.hc-category-card:hover {
+  border-color: #fde68a;
+  background: #fffbeb;
+  transform: translateY(-2px);
+}
+
+.hc-category-card.selected {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+}
+
+.hc-cat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.hc-cat-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.hc-cat-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ── 4. Ticket Submit Form ── */
+.hc-form-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  padding: 28px 32px;
+}
+
+.hc-form-header {
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hc-form-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.hc-form-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.hc-form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hc-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.hc-label span {
+  color: #ef4444;
+}
+
+.hc-input,
+.hc-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.hc-input:focus,
+.hc-textarea:focus {
+  border-color: #f59e0b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.hc-textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.hc-security-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #1e40af;
+  margin-bottom: 20px;
+}
+
+/* ── 5. My Tickets / Feedback History ── */
+.hc-tickets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hc-ticket-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.hc-ticket-card:hover {
+  border-color: #fde68a;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+  transform: translateY(-1px);
+}
+
+.hc-ticket-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hc-ticket-badge-type {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.hc-badge-bug {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.hc-badge-report {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.hc-badge-payment {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.hc-badge-suggestion {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.hc-badge-inquiry {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.hc-status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hc-status-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.hc-status-review {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.hc-status-resolved {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.hc-status-rejected {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.hc-ticket-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.hc-ticket-content {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.hc-admin-reply-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 10px;
+}
+
+.hc-admin-reply-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.hc-admin-reply-text {
+  font-size: 13px;
+  color: #14532d;
+  line-height: 1.5;
+}
+
+/* ── 6. FAQ Accordion ── */
+.hc-faq-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+
+.hc-faq-question {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  background: #ffffff;
+  user-select: none;
+}
+
+.hc-faq-question:hover {
+  background: #f8fafc;
+}
+
+.hc-faq-answer {
+  padding: 0 20px 16px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 14px;
+}

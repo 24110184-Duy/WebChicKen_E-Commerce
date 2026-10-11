@@ -191,6 +191,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private FeedbackResponse toResponse(FeedbackEntity entity) {
         String shopName = null;
         String userEmail = null;
+        String senderName = null;
 
         if (storeDAO != null) {
             try {
@@ -202,17 +203,23 @@ public class FeedbackServiceImpl implements FeedbackService {
 
         if (userDAO != null) {
             try {
-                userEmail = userDAO.findById(entity.getUserId())
-                        .map(UserEntity::getEmail)
-                        .orElse(null);
+                UserEntity u = userDAO.findById(entity.getUserId()).orElse(null);
+                if (u != null) {
+                    userEmail = u.getEmail();
+                    senderName = u.getFullName();
+                }
             } catch (Exception ignored) {}
         }
+
+        String senderRole = (shopName != null && !shopName.isBlank()) ? "SELLER" : "CUSTOMER";
 
         return new FeedbackResponse(
                 entity.getId(),
                 entity.getUserId(),
                 shopName,
                 userEmail,
+                senderName,
+                senderRole,
                 entity.getType(),
                 entity.getSubject(),
                 entity.getContent(),

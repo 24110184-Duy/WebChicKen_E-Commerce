@@ -23,7 +23,7 @@ import java.util.List;
  * RESTful Controller for Order Management & State Machine (TASK-46, TASK-49, TASK-54).
  * URL Patterns: /api/v1/orders, /api/v1/orders/*
  */
-@WebServlet(name = "OrderServlet", urlPatterns = {"/api/v1/orders", "/api/v1/orders/*"})
+@WebServlet(name = "OrderServlet", urlPatterns = {"/api/v1/orders", "/api/v1/orders/*", "/api/v1/admin/orders", "/api/v1/admin/orders/*"})
 public class OrderServlet extends BaseApiServlet {
 
     public OrderServlet() {
@@ -50,10 +50,21 @@ public class OrderServlet extends BaseApiServlet {
         return null;
     }
 
+    private boolean isAdmin(HttpServletRequest req) {
+        AuthenticatedUser user = getAuthenticatedUser(req);
+        if (user == null || user.roles() == null) return false;
+        return user.roles().stream().anyMatch(r ->
+                "ADMIN".equalsIgnoreCase(r) || "SUPER_ADMIN".equalsIgnoreCase(r) || "MODERATOR".equalsIgnoreCase(r));
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        AuthenticatedUser user = getAuthenticatedUser(req);
+        boolean admin = isAdmin(req);
+        boolean isPlatformPath = req.getRequestURI() != null && req.getRequestURI().contains("/admin/orders");
+
         String customerId = resolveCustomerId(req);
-        if (customerId == null) {
+        if (customerId == null && !admin) {
             unauthorized(resp, "Please login to view order information.");
             return;
         }
@@ -76,16 +87,25 @@ public class OrderServlet extends BaseApiServlet {
                     if (req.getParameter("size") != null) size = Integer.parseInt(req.getParameter("size"));
                 } catch (NumberFormatException ignored) {}
 
+                // Nếu là Admin gọi danh sách đơn toàn sàn
+                if (admin && (isPlatformPath || "platform".equalsIgnoreCase(req.getParameter("scope")) || "all".equalsIgnoreCase(req.getParameter("scope")))) {
+                    List<OrderResponse> orders = orderService().getAllPlatformOrders(status, page, size);
+                    ok(resp, orders);
+                    return;
+                }
+
+                // Người mua bình thường xem đơn của mình
                 List<OrderResponse> orders = orderService().getOrders(customerId, status, page, size);
                 ok(resp, orders);
             } else if (pathInfo.endsWith("/history")) {
                 // GET /api/v1/orders/{orderCode}/history (TASK-54 Timeline)
                 String orderCode = pathInfo.replaceFirst("/", "").replace("/history", "").trim();
-                List<OrderStatusHistoryResponse> history = orderService().getOrderStatusHistory(orderCode, customerId);
+                List<OrderStatusHistoryResponse> history = orderService().getOrderStatusHistory(orderCode, admin ? null : customerId);
                 ok(resp, history);
             } else {
                 String orderCode = pathInfo.replaceFirst("/", "").trim();
-                OrderResponse order = orderService().getOrderByCode(orderCode, customerId);
+                // Admin có quyền tra cứu đơn bất kỳ mà không bị IDOR check
+                OrderResponse order = orderService().getOrderByCode(orderCode, admin ? null : customerId);
                 ok(resp, order);
             }
         } catch (AppException e) {
@@ -97,8 +117,10 @@ public class OrderServlet extends BaseApiServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        AuthenticatedUser user = getAuthenticatedUser(req);
+        boolean admin = isAdmin(req);
         String customerId = resolveCustomerId(req);
-        if (customerId == null) {
+        if (customerId == null && !admin) {
             unauthorized(resp, "Please login to perform order actions.");
             return;
         }
@@ -118,8 +140,8 @@ public class OrderServlet extends BaseApiServlet {
                     body = readBody(req, CancelOrderRequest.class);
                 } catch (Exception ignored) {}
 
-                String reason = body != null ? body.reason() : "Customer requested cancellation";
-                OrderResponse cancelled = orderService().cancelOrder(orderCode, customerId, reason);
+                String reason = body != null ? body.reason() : (admin ? "Quản trị viên can thiệp hủy đơn" : "Customer requested cancellation");
+                OrderResponse cancelled = orderService().cancelOrder(orderCode, admin ? null : customerId, reason);
                 ok(resp, cancelled);
             } else if (pathInfo.endsWith("/status")) {
                 // POST /api/v1/orders/{orderCode}/status (State Machine Transition)
@@ -129,8 +151,9 @@ public class OrderServlet extends BaseApiServlet {
                     badRequest(resp, "INVALID_PAYLOAD", "Target order status is required");
                     return;
                 }
-                OrderActorType actorType = body.actorType() != null ? body.actorType() : OrderActorType.SELLER;
-                OrderResponse updated = orderService().updateOrderStatus(orderCode, body.status(), actorType, customerId, body.reason());
+                OrderActorType actorType = admin ? OrderActorType.ADMIN : (body.actorType() != null ? body.actorType() : OrderActorType.SELLER);
+                String actorId = admin ? (user != null ? user.userId() : "admin") : customerId;
+                OrderResponse updated = orderService().updateOrderStatus(orderCode, body.status(), actorType, actorId, body.reason());
                 ok(resp, updated);
             } else {
                 badRequest(resp, "INVALID_ENDPOINT", "Endpoint not supported: " + pathInfo);

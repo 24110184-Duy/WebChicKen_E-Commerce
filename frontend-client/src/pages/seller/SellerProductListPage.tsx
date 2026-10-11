@@ -980,6 +980,21 @@ export const SellerProductListPage: React.FC = () => {
                           <div style={{ fontWeight: 600, color: '#262626', marginBottom: 4, lineHeight: 1.3 }}>
                             {p.name}
                           </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
+                            {p.moderatedBy === 'BOT_AUTO_APPROVER' ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, backgroundColor: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe' }}>
+                                🤖 Bot AI Tự Duyệt
+                              </span>
+                            ) : p.moderatedBy ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                🛡️ {p.moderatedBy}
+                              </span>
+                            ) : p.status === 'PENDING_APPROVAL' ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+                                ⏳ Chờ Admin duyệt (Sức khỏe/Thuốc)
+                              </span>
+                            ) : null}
+                          </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: '#8c8c8c' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                               <Eye style={{ width: 12, height: 12 }} /> 62

@@ -7,10 +7,8 @@ import {
   Users,
   ScrollText,
   FolderTree,
-  Tag,
   ShoppingBag,
   Percent,
-  Star,
   Settings,
   ArrowUpRight,
   Shield,
@@ -199,16 +197,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </Link>
 
               <Link
-                to={PATHS.ADMIN.BRANDS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.BRANDS) ? 'active' : ''}`}
-              >
-                <div className="admin-nav-item-content">
-                  <Tag style={{ width: 17, height: 17 }} />
-                  <span>Brands & Partners</span>
-                </div>
-              </Link>
-
-              <Link
                 to={PATHS.ADMIN.ORDERS}
                 className={`admin-nav-item ${isActive(PATHS.ADMIN.ORDERS) ? 'active' : ''}`}
               >
@@ -229,27 +217,28 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </Link>
 
               <Link
-                to={PATHS.ADMIN.REVIEWS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.REVIEWS) ? 'active' : ''}`}
+                to={PATHS.ADMIN.SETTINGS}
+                className={`admin-nav-item ${isActive(PATHS.ADMIN.SETTINGS) ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
-                  <Star style={{ width: 17, height: 17 }} />
-                  <span>Reviews Monitor</span>
+                  <Settings style={{ width: 17, height: 17 }} />
+                  <span>System Configuration</span>
                 </div>
               </Link>
             </div>
           </div>
 
-          {/* Sidebar Footer Link */}
+          {/* Sidebar Footer Link - Back to Marketplace (như Seller) */}
           <div className="admin-sidebar-footer">
             <Link
-              to={PATHS.ADMIN.SETTINGS}
-              className={`admin-nav-item ${isActive(PATHS.ADMIN.SETTINGS) ? 'active' : ''}`}
-              style={{ fontSize: 13 }}
+              to={PATHS.HOME}
+              className="admin-nav-item"
+              style={{ fontSize: 13, color: '#94a3b8' }}
+              title="Quay lại sàn mua sắm ChickyMart"
             >
               <div className="admin-nav-item-content">
-                <Settings style={{ width: 16, height: 16 }} />
-                <span>System Configuration</span>
+                <ArrowUpRight style={{ width: 16, height: 16 }} />
+                <span>Back to Marketplace</span>
               </div>
             </Link>
           </div>

@@ -86,4 +86,4 @@ INSERT INTO vouchers (
     10000,
     0
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (code) DO NOTHING;

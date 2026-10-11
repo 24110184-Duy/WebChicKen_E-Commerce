@@ -95,8 +95,15 @@ public abstract class BaseDAO {
 
     /** Bọc mọi ngoại lệ CSDL thành {@link DataAccessException} (EXC-01). */
     protected DataAccessException translateException(String operation, Exception e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String rootMsg = (root != null && root.getMessage() != null && !root.getMessage().isBlank())
+                ? root.getMessage()
+                : e.getMessage();
         return new DataAccessException(
-                "Lỗi thao tác CSDL [" + operation + "]: " + e.getMessage(), e);
+                "Lỗi thao tác CSDL [" + operation + "]: " + rootMsg, e);
     }
 
     // ── Internal ───────────────────────────────────────────────────────────────

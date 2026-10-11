@@ -106,8 +106,12 @@ public class SellerAnalyticsServlet extends BaseApiServlet {
             return;
         }
 
-        if (user.hasRole("ADMIN") || user.hasRole("SUPER_ADMIN")) {
+        if (user.isAdmin()) {
             return;
+        }
+
+        if ("ALL".equalsIgnoreCase(shopId) || "PLATFORM".equalsIgnoreCase(shopId)) {
+            throw new AuthorizationException("Chỉ Quản trị viên nền tảng mới có quyền xem thống kê toàn sàn");
         }
 
         try {

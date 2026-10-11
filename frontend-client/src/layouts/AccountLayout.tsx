@@ -268,6 +268,20 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
               My Vouchers
             </Link>
 
+            {/* 5. Help Center & Feedback */}
+            <Link
+              to={PATHS.HELP_CENTER}
+              onClick={() => {
+                closeAccountMenu()
+                if (location.pathname === PATHS.HELP_CENTER) {
+                  window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+                }
+              }}
+              className="shopee-nav-header"
+            >
+              Help Center & Feedback
+            </Link>
+
             {/* Sign Out */}
             <button className="shopee-sidebar-signout" onClick={handleLogout}>
               Sign Out

@@ -26,6 +26,7 @@
         <class>com.example.webchicken.modules.shop.model.entity.StoreEntity</class>
         <class>com.example.webchicken.modules.shop.model.entity.SellerApplicationEntity</class>
         <class>com.example.webchicken.modules.shop.model.entity.FeedbackEntity</class>
+        <class>com.example.webchicken.modules.shop.model.entity.ChatMessageEntity</class>
 
         <!-- media module -->
         <class>com.example.webchicken.modules.media.model.entity.MediaAssetEntity</class>

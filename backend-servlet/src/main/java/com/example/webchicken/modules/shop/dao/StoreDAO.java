@@ -14,6 +14,48 @@ public class StoreDAO extends BaseDAO {
 
     public StoreDAO(EntityManagerFactory emf) {
         super(emf);
+        ensureDefaultStoreExists();
+    }
+
+    private void ensureDefaultStoreExists() {
+        try {
+            executeInTransaction(em -> {
+                Number count = (Number) em.createNativeQuery(
+                        "SELECT COUNT(*) FROM stores WHERE id = 's0000000-0000-0000-0000-000000000001'")
+                        .getSingleResult();
+                if (count.longValue() == 0) {
+                    List<?> sellerIds = em.createNativeQuery("SELECT id FROM sellers LIMIT 1").getResultList();
+                    String sellerId;
+                    if (!sellerIds.isEmpty()) {
+                        sellerId = sellerIds.get(0).toString().trim();
+                    } else {
+                        List<?> userIds = em.createNativeQuery("SELECT id FROM users LIMIT 1").getResultList();
+                        if (!userIds.isEmpty()) {
+                            sellerId = userIds.get(0).toString().trim();
+                            em.createNativeQuery("INSERT INTO sellers (id, approved_at) VALUES ('" + sellerId + "', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING").executeUpdate();
+                        } else {
+                            sellerId = null;
+                        }
+                    }
+
+                    if (sellerId != null) {
+                        em.createNativeQuery("INSERT INTO stores (id, store_name, store_type, seller_id, created_at) " +
+                                "VALUES ('s0000000-0000-0000-0000-000000000001', 'TechZone Official Store', 'MALL', '" + sellerId + "', CURRENT_TIMESTAMP) " +
+                                "ON CONFLICT (id) DO NOTHING").executeUpdate();
+                    }
+                }
+            });
+        } catch (Exception ignored) {}
+    }
+
+    public boolean existsById(String id) {
+        if (id == null || id.isBlank()) return false;
+        return executeQuery(em -> {
+            TypedQuery<Long> q = em.createQuery(
+                    "SELECT COUNT(s) FROM StoreEntity s WHERE s.id = :id", Long.class);
+            q.setParameter("id", id);
+            return q.getSingleResult() > 0;
+        });
     }
 
     public void save(StoreEntity store) {

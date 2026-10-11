@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   MessageSquare,
   Search,
@@ -34,6 +34,7 @@ export const AdminFeedbacksPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Filters & Pagination
+  const [senderFilter, setSenderFilter] = useState<'ALL' | 'CUSTOMER' | 'SELLER'>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [typeFilter, setTypeFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -97,7 +98,21 @@ export const AdminFeedbacksPage: React.FC = () => {
     loadFeedbacks()
   }, [loadFeedbacks])
 
+  const displayedFeedbacks = useMemo(() => {
+    return feedbacks.filter((item) => {
+      if (senderFilter === 'CUSTOMER') {
+        const isCustomer = item.senderRole === 'CUSTOMER' || !item.shopName
+        if (!isCustomer) return false
+      } else if (senderFilter === 'SELLER') {
+        const isSeller = item.senderRole === 'SELLER' || Boolean(item.shopName)
+        if (!isSeller) return false
+      }
+      return true
+    })
+  }, [feedbacks, senderFilter])
+
   const handleResetFilters = () => {
+    setSenderFilter('ALL')
     setStatusFilter('ALL')
     setTypeFilter('ALL')
     setSearchQuery('')
@@ -476,6 +491,28 @@ export const AdminFeedbacksPage: React.FC = () => {
               <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
             </div>
 
+            {/* Sender Dropdown */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Đối tượng gửi:</label>
+              <select
+                value={senderFilter}
+                onChange={(e) => setSenderFilter(e.target.value as any)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  fontSize: 13,
+                  backgroundColor: '#ffffff',
+                  outline: 'none',
+                  color: '#334155'
+                }}
+              >
+                <option value="ALL">Tất cả đối tượng</option>
+                <option value="CUSTOMER">👤 Khách hàng (Customer)</option>
+                <option value="SELLER">🏪 Người bán (Seller)</option>
+              </select>
+            </div>
+
             {/* Status Dropdown */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <label style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Trạng thái:</label>
@@ -563,14 +600,14 @@ export const AdminFeedbacksPage: React.FC = () => {
               <RefreshCw size={28} className="spin" style={{ margin: '0 auto 12px' }} />
               <div>Đang tải danh sách khiếu nại từ nhà bán...</div>
             </div>
-          ) : feedbacks.length === 0 ? (
+          ) : displayedFeedbacks.length === 0 ? (
             <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>
               <MessageSquare size={48} style={{ margin: '0 auto 14px', opacity: 0.4 }} />
               <p style={{ fontSize: 16, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>
                 Không tìm thấy khiếu nại hoặc phản hồi nào phù hợp
               </p>
               <p style={{ fontSize: 13, margin: 0 }}>
-                Thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm.
+                Thử điều chỉnh lại bộ lọc đối tượng, trạng thái hoặc từ khóa tìm kiếm.
               </p>
             </div>
           ) : (
@@ -589,7 +626,7 @@ export const AdminFeedbacksPage: React.FC = () => {
                     }}
                   >
                     <th style={{ padding: '14px 16px' }}>Mã phiếu</th>
-                    <th style={{ padding: '14px 16px' }}>Nhà bán / Nông trại</th>
+                    <th style={{ padding: '14px 16px' }}>Người gửi / Đối tượng</th>
                     <th style={{ padding: '14px 16px' }}>Phân loại</th>
                     <th style={{ padding: '14px 16px' }}>Chủ đề & Nội dung</th>
                     <th style={{ padding: '14px 16px' }}>Minh chứng</th>
@@ -599,7 +636,7 @@ export const AdminFeedbacksPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {feedbacks.map((item) => {
+                  {displayedFeedbacks.map((item: FeedbackItem) => {
                     const typeBadge = getTypeBadge(item.type)
                     return (
                       <tr
@@ -613,12 +650,57 @@ export const AdminFeedbacksPage: React.FC = () => {
                           {item.id}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>
-                            {item.shopName || 'Hộ kinh doanh mới'}
-                          </div>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                            {item.userEmail || item.userId}
-                          </div>
+                          {item.senderRole === 'SELLER' || item.shopName ? (
+                            <div>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  backgroundColor: '#f5f3ff',
+                                  color: '#7c3aed',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                🏪 Người bán
+                              </span>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>
+                                {item.shopName || 'Gian hàng đối tác'}
+                              </div>
+                              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                                {item.userEmail || item.userId}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  backgroundColor: '#ecfdf5',
+                                  color: '#059669',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                👤 Khách hàng
+                              </span>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>
+                                {item.senderName || 'Người mua hàng'}
+                              </div>
+                              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                                {item.userEmail || item.userId}
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
                           <span

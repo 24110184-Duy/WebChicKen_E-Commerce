@@ -24,8 +24,11 @@ import java.io.IOException;
  * - PUT  /api/v1/admin/feedbacks/{id}/respond: Admin giải quyết / phản hồi phiếu
  */
 @WebServlet(name = "FeedbackServlet", urlPatterns = {
+        "/api/v1/feedbacks",
         "/api/v1/feedbacks/*",
+        "/api/v1/seller/feedbacks",
         "/api/v1/seller/feedbacks/*",
+        "/api/v1/admin/feedbacks",
         "/api/v1/admin/feedbacks/*"
 })
 public class FeedbackServlet extends BaseApiServlet {

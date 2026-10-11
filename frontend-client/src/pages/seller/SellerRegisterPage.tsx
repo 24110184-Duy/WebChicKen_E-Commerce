@@ -219,14 +219,13 @@ const DEFAULT_SHIPPING_METHODS: ShippingMethodItem[] = [
 ]
 
 export const SellerRegisterPage: React.FC = () => {
-  const { user, isAuthenticated, isSeller } = useAuthStore()
+  const { user, isAuthenticated, isAdmin } = useAuthStore()
   const navigate = useNavigate()
 
-  // Kiểm tra tài khoản đã đăng ký thành Seller Centre chưa
+  // Kiểm tra tài khoản đã đăng ký gian hàng thực tế chưa (không chặn nếu chưa có gian hàng)
   const [alreadySeller, setAlreadySeller] = useState<boolean>(() => {
-    if (isSeller) return true
     if (typeof window !== 'undefined' && user?.id) {
-      return localStorage.getItem(`seller_registered_${user.id}`) === 'true'
+      return localStorage.getItem(`seller_store_${user.id}`) !== null
     }
     return false
   })
@@ -238,17 +237,19 @@ export const SellerRegisterPage: React.FC = () => {
       return
     }
 
-    if (isSeller || (user?.id && localStorage.getItem(`seller_registered_${user.id}`) === 'true')) {
-      setAlreadySeller(true)
-    }
-
     sellerApi.getMyStore().then((store) => {
       if (store) {
         setAlreadySeller(true)
         setExistingStoreName(store.storeName)
+      } else {
+        const hasLocalStore = user?.id && localStorage.getItem(`seller_store_${user.id}`)
+        setAlreadySeller(!!hasLocalStore)
       }
-    }).catch(() => {})
-  }, [isAuthenticated, isSeller, user?.id, navigate])
+    }).catch(() => {
+      const hasLocalStore = user?.id && localStorage.getItem(`seller_store_${user.id}`)
+      setAlreadySeller(!!hasLocalStore)
+    })
+  }, [isAuthenticated, user?.id, navigate])
 
   // Trạng thái màn hình: 'welcome' | 'form'
   const [screen, setScreen] = useState<'welcome' | 'form'>('welcome')
@@ -609,7 +610,7 @@ export const SellerRegisterPage: React.FC = () => {
               <span>Mỗi tài khoản chỉ được liên kết với 01 gian hàng duy nhất và không thể thực hiện đăng ký lại.</span>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, width: '100%', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, width: '100%', justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link
                 to={PATHS.HOME}
                 style={{
@@ -647,6 +648,32 @@ export const SellerRegisterPage: React.FC = () => {
               >
                 <span>Vào Kênh Người Bán</span>
               </Link>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAlreadySeller(false)
+                    setScreen('form')
+                    setCurrentStep(1)
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+                    color: '#facc15',
+                    border: '1px solid rgba(250, 204, 21, 0.4)',
+                    padding: '10px 20px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>Mở Gian Hàng Mới (Quyền Quản Trị)</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -133,8 +133,19 @@ public class SellerProductServlet extends BaseApiServlet {
                     ? ProductStatus.INACTIVE
                     : ProductStatus.PENDING_APPROVAL;
 
+            String effectiveStoreId = path.shopId();
+            AuthenticatedUser user = getAuthenticatedUser(req);
+            if (user != null) {
+                try {
+                    StoreResponse myStore = storeService().getStoreBySellerId(user.userId());
+                    if (myStore != null) {
+                        effectiveStoreId = myStore.id();
+                    }
+                } catch (Exception ignored) {}
+            }
+
             body = new CreateProductRequest(
-                    path.shopId(),
+                    effectiveStoreId,
                     body.categoryId(),
                     body.name(),
                     body.description(),
@@ -271,7 +282,7 @@ public class SellerProductServlet extends BaseApiServlet {
         }
 
         // Admin has universal override
-        if (user.hasRole("ADMIN") || user.hasRole("SUPER_ADMIN")) {
+        if (user.isAdmin()) {
             return;
         }
 

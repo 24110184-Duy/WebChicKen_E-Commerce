@@ -632,13 +632,19 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("Store ID is required");
         }
 
-        String storeName = "Chicky Farm Direct";
-        Optional<StoreEntity> storeOpt = storeDAO.findById(storeId);
-        if (storeOpt.isPresent()) {
-            storeName = storeOpt.get().getStoreName();
+        String storeName;
+        List<OrderEntity> orders;
+        if ("ALL".equalsIgnoreCase(storeId) || "PLATFORM".equalsIgnoreCase(storeId)) {
+            storeName = "Toàn Sàn ChickyMart";
+            orders = orderDAO.findAllOrders((OrderStatus) null, 0, 500);
+        } else {
+            storeName = "Chicky Farm Direct";
+            Optional<StoreEntity> storeOpt = storeDAO.findById(storeId);
+            if (storeOpt.isPresent()) {
+                storeName = storeOpt.get().getStoreName();
+            }
+            orders = orderDAO.findByStoreId(storeId, (OrderStatus) null, 0, 500);
         }
-
-        List<OrderEntity> orders = orderDAO.findByStoreId(storeId, (OrderStatus) null, 0, 500);
 
         int totalOrders = orders.size();
         int pendingOrders = 0;
@@ -849,5 +855,37 @@ public class OrderServiceImpl implements OrderService {
             this.categoryName = categoryName;
             this.thumbnailUrl = thumbnailUrl;
         }
+    }
+
+    @Override
+    public List<OrderResponse> getAllPlatformOrders(OrderStatus status, int page, int size) {
+        int pageNumber = Math.max(1, page);
+        int pageSize = Math.min(100, Math.max(1, size));
+        int offset = (pageNumber - 1) * pageSize;
+
+        List<OrderEntity> orders = orderDAO.findAllOrders(status, offset, pageSize);
+        List<OrderResponse> result = new ArrayList<>();
+
+        for (OrderEntity order : orders) {
+            List<OrderItemEntity> itemEntities = orderItemDAO.findByOrderId(order.getId());
+            List<OrderItemResponse> items = itemEntities.stream()
+                    .map(OrderItemResponse::fromEntity)
+                    .collect(Collectors.toList());
+
+            String storeName = "ChickyMart Store";
+            if (order.getStoreId() != null) {
+                storeName = storeDAO.findById(order.getStoreId())
+                        .map(StoreEntity::getStoreName)
+                        .orElse(storeName);
+            }
+
+            result.add(OrderResponse.fromEntity(order, storeName, items));
+        }
+        return result;
+    }
+
+    @Override
+    public long countAllPlatformOrders(OrderStatus status) {
+        return orderDAO.countAllOrders(status);
     }
 }

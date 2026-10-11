@@ -10,6 +10,8 @@ public record ProductSummaryResponse(
         String name,
         ProductStatus status,
         String rejectionReason,
+        String moderatedBy,
+        String moderationNote,
         String thumbnailUrl,
         long minPriceMinor,
         long maxPriceMinor,
@@ -32,7 +34,27 @@ public record ProductSummaryResponse(
             int totalStock,
             LocalDateTime createdAt
     ) {
-        this(id, storeId, categoryId, name, status, rejectionReason, thumbnailUrl,
+        this(id, storeId, categoryId, name, status, rejectionReason, null, null, thumbnailUrl,
                 minPriceMinor, maxPriceMinor, totalStock, 0.0, 0, 0, createdAt);
+    }
+
+    public ProductSummaryResponse(
+            String id,
+            String storeId,
+            String categoryId,
+            String name,
+            ProductStatus status,
+            String rejectionReason,
+            String thumbnailUrl,
+            long minPriceMinor,
+            long maxPriceMinor,
+            int totalStock,
+            double rating,
+            int ratingCount,
+            int soldCount,
+            LocalDateTime createdAt
+    ) {
+        this(id, storeId, categoryId, name, status, rejectionReason, null, null, thumbnailUrl,
+                minPriceMinor, maxPriceMinor, totalStock, rating, ratingCount, soldCount, createdAt);
     }
 }

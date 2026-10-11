@@ -10,11 +10,13 @@ import { PATHS } from '../../app/router/paths'
 import { ProductReviews } from '../../features/reviews/components/ProductReviews'
 import { ProductShopCard } from '../../features/shop'
 import { toast } from '../../components/feedback/Toast'
+import { ShieldAlert, EyeOff, ArrowRight } from 'lucide-react'
+import { AdminProductActionModal } from '../../features/admin/components/AdminProductActionModal'
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, isAdmin } = useAuthStore()
   const { addItem } = useCartStore()
 
   const [product, setProduct] = useState<Product | null>(null)
@@ -22,6 +24,25 @@ export const ProductDetailPage: React.FC = () => {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
+  const [isAdminActionModalOpen, setIsAdminActionModalOpen] = useState(false)
+  const [isModeratedByAdmin, setIsModeratedByAdmin] = useState(false)
+  const [moderationReason, setModerationReason] = useState('')
+
+  const handleModerationSuccess = (action: 'HIDE' | 'DELETE', reason: string) => {
+    setIsModeratedByAdmin(true)
+    setModerationReason(reason)
+    if (action === 'DELETE') {
+      toast.success('Đã gỡ bỏ vĩnh viễn sản phẩm khỏi sàn!')
+      setTimeout(() => {
+        navigate(PATHS.HOME)
+      }, 1200)
+    } else {
+      toast.success('Đã tạm ẩn sản phẩm khỏi sàn thành công!')
+      if (product) {
+        setProduct({ ...product, status: 'INACTIVE' })
+      }
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -122,6 +143,111 @@ export const ProductDetailPage: React.FC = () => {
           <span style={{ margin: '0 8px' }}>/</span>
           <span style={{ color: '#0f172a', fontWeight: 600 }}>{product.name}</span>
         </div>
+
+        {/* Admin Quick Action Banner khi lướt sàn */}
+        {isAdmin && (
+          <div
+            style={{
+              marginBottom: 18,
+              padding: '14px 20px',
+              backgroundColor: isModeratedByAdmin ? '#fef2f2' : '#fffbeb',
+              border: isModeratedByAdmin ? '1px solid #fecaca' : '1px solid #fde68a',
+              borderRadius: 12,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: isModeratedByAdmin ? '#dc2626' : '#f59e0b',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <ShieldAlert size={20} />
+              </div>
+              <div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: isModeratedByAdmin ? '#991b1b' : '#92400e',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Quyền Hạn Quản Trị Viên: Kiểm Soát Sản Phẩm Trên Sàn
+                </span>
+                <p style={{ fontSize: 13, color: isModeratedByAdmin ? '#b91c1c' : '#78350f', margin: '2px 0 0' }}>
+                  {isModeratedByAdmin ? (
+                    <span style={{ fontWeight: 700 }}>
+                      ⚠️ Sản phẩm này vừa bị bạn tạm ẩn / gỡ khỏi sàn ({moderationReason || 'Vi phạm chính sách'})
+                    </span>
+                  ) : (
+                    `Trạng thái: ${product.status} • Phát hiện sản phẩm không đạt chuẩn? Bạn có thể tạm ẩn hoặc gỡ bỏ ngay tại đây.`
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {!isModeratedByAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setIsAdminActionModalOpen(true)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #d97706',
+                    backgroundColor: '#f59e0b',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <EyeOff size={15} />
+                  <span>Tạm Ẩn / Gỡ Sản Phẩm</span>
+                </button>
+              )}
+
+              <Link
+                to={PATHS.ADMIN.PRODUCTS}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#334155',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>Mở Trong Admin Hub</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Main PDP Card */}
         <div className="pdp-main-card">
@@ -231,22 +357,42 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="pdp-actions-row">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="pdp-btn-cart"
+            {isModeratedByAdmin || product.status === 'INACTIVE' ? (
+              <div
+                style={{
+                  padding: '14px 18px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: 8,
+                  color: '#dc2626',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
               >
-                Add to Cart
-              </button>
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                className="pdp-btn-buy"
-              >
-                Buy Now
-              </button>
-            </div>
+                <EyeOff size={18} />
+                <span>Sản phẩm này hiện đang tạm ẩn / dừng bán trên sàn.</span>
+              </div>
+            ) : (
+              <div className="pdp-actions-row">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="pdp-btn-cart"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="pdp-btn-buy"
+                >
+                  Buy Now
+                </button>
+              </div>
+            )}
 
             {/* Marketplace Guarantees */}
             <div style={{ marginTop: 28, padding: '16px', background: '#f8fafc', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 8, border: '1px solid #f1f5f9' }}>
@@ -291,6 +437,19 @@ export const ProductDetailPage: React.FC = () => {
         {/* Customer Reviews & Feedback Section */}
         <ProductReviews productId={product.id} productTitle={product.name} />
       </div>
+
+      {/* Modal can thiệp của Quản trị viên */}
+      {isAdmin && product && (
+        <AdminProductActionModal
+          isOpen={isAdminActionModalOpen}
+          productId={product.id}
+          productName={product.name}
+          productImage={selectedImage || product.thumbnailUrl}
+          currentStatus={product.status}
+          onClose={() => setIsAdminActionModalOpen(false)}
+          onSuccess={handleModerationSuccess}
+        />
+      )}
     </StorefrontLayout>
   )
 }

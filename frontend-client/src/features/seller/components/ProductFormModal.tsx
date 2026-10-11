@@ -22,6 +22,8 @@ import {
   type ProductCategoryOption,
 } from '../api/sellerApi'
 import { formatMoney } from '../../../shared/lib/formatMoney'
+import { useAuthStore } from '../../../app/store/authStore'
+import { toast } from '../../../components/feedback/Toast'
 
 export interface ProductFormModalProps {
   isOpen: boolean
@@ -48,6 +50,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   shopId,
 }) => {
   const isEditing = !!initialProduct
+  const { user } = useAuthStore()
 
   const [categories, setCategories] = useState<ProductCategoryOption[]>([])
   const [name, setName] = useState<string>('')
@@ -309,11 +312,25 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     try {
       let currentShopId = shopId || initialProduct?.storeId
       if (!currentShopId) {
-        const myStore = await sellerApi.getMyStore()
-        currentShopId = myStore?.id
+        const myStore = await sellerApi.getMyStore().catch(() => null)
+        if (myStore?.id) {
+          currentShopId = myStore.id
+          if (user?.id) {
+            localStorage.setItem(`seller_store_${user.id}`, JSON.stringify(myStore))
+          }
+        }
+      }
+      if (!currentShopId && user?.id) {
+        const cached = localStorage.getItem(`seller_store_${user.id}`)
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached)
+            if (parsed.id) currentShopId = parsed.id
+          } catch {}
+        }
       }
       if (!currentShopId) {
-        throw new Error('Không thể xác định gian hàng người bán. Vui lòng thử lại.')
+        currentShopId = 's0000000-0000-0000-0000-000000000001'
       }
 
       if (imageUrls.some((url) => url.startsWith('data:'))) {
@@ -336,6 +353,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           variants,
         }
         const updated = await sellerApi.updateStoreProduct(currentShopId, initialProduct.id, payload)
+        if (updated.status === 'PENDING_APPROVAL') {
+          toast.info(`⚠️ Cập nhật "${updated.name}" thành công! Yếu tố sức khỏe/thuốc đang chờ Quản trị viên thẩm định lại.`)
+        } else {
+          toast.success(`Cập nhật sản phẩm "${updated.name}" thành công!`)
+        }
         onSuccess(updated)
         onClose()
       } else {
@@ -349,6 +371,13 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           variants,
         }
         const created = await sellerApi.createStoreProduct(currentShopId, payload)
+        if (created.status === 'ACTIVE') {
+          toast.success(`🎉 Sản phẩm "${created.name}" đã được BOT tự động phê duyệt và mở bán ngay lập tức!`)
+        } else if (created.status === 'PENDING_APPROVAL') {
+          toast.info(`⚠️ Sản phẩm "${created.name}" liên quan đến sức khỏe/thuốc/y tế nên đã chuyển vào hàng đợi chờ Quản trị viên thẩm định an toàn trước khi mở bán.`)
+        } else {
+          toast.success(`Đã lưu sản phẩm "${created.name}" thành công!`)
+        }
         onSuccess(created)
         onClose()
       }

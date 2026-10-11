@@ -129,6 +129,7 @@ public class CompositionRoot {
         StoreDAO             storeDAO             = new StoreDAO(emf);
         SellerApplicationDAO sellerApplicationDAO = new SellerApplicationDAO(emf);
         FeedbackDAO          feedbackDAO          = new FeedbackDAO(emf);
+        ChatMessageDAO       chatMessageDAO       = new ChatMessageDAO(emf);
 
         // Media
         MediaDAO mediaDAO = new MediaDAO(emf);
@@ -173,12 +174,12 @@ public class CompositionRoot {
         // Catalog
         CategoryService       categoryService       = new CategoryServiceImpl(categoryDAO);
         ProductService        productService        = new ProductServiceImpl(
-                productDAO, productImageDAO, productVariantDAO, categoryDAO, reviewService, orderService
+                productDAO, productImageDAO, productVariantDAO, categoryDAO, reviewService, orderService, storeDAO
         );
         ProductVariantService productVariantService = new ProductVariantServiceImpl(productVariantDAO);
 
         // Shop
-        StoreService             storeService             = new StoreServiceImpl(storeDAO);
+        StoreService             storeService             = new StoreServiceImpl(storeDAO, sellerDAO, userDAO);
         SellerApplicationService sellerApplicationService = new SellerApplicationServiceImpl(sellerApplicationDAO, storeDAO, sellerDAO, userDAO);
 
         // Backoffice Audit Log (TASK-67)
@@ -186,6 +187,9 @@ public class CompositionRoot {
 
         // Feedback to Admin (TASK-69)
         FeedbackService feedbackService = new FeedbackServiceImpl(feedbackDAO, storeDAO, userDAO, auditLogService);
+
+        // Customer & Seller Chat
+        ChatService chatService = new ChatServiceImpl(chatMessageDAO, storeDAO, userDAO);
 
         // Admin User Moderation (TASK-66, TASK-67)
         AdminUserService adminUserService = new AdminUserServiceImpl(
@@ -220,6 +224,7 @@ public class CompositionRoot {
         ctx.setAttribute("storeService",             storeService);
         ctx.setAttribute("sellerApplicationService", sellerApplicationService);
         ctx.setAttribute("feedbackService",          feedbackService);
+        ctx.setAttribute("chatService",              chatService);
 
         // Workers (TASK-55, TASK-68, TASK-70)
         com.example.webchicken.modules.inventory.worker.ExpiredReservationWorker expiredReservationWorker =

@@ -149,7 +149,7 @@ export function useAuthStore() {
     logout: authStore.logout,
     updateUser: authStore.updateUser,
     isAdmin: current.user?.roles.some((r) => ['SUPER_ADMIN', 'MODERATOR', 'ADMIN'].includes(r)) ?? false,
-    isSeller: current.user?.roles.includes('SELLER') ?? false,
+    isSeller: current.user?.roles.some((r) => ['SELLER', 'SUPER_ADMIN', 'MODERATOR', 'ADMIN'].includes(r)) ?? false,
     isCustomer: current.user?.roles.includes('CUSTOMER') ?? true,
   }
 }

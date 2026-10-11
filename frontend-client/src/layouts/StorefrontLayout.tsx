@@ -7,6 +7,8 @@ import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
 import { catalogApi } from '../features/catalog/api/catalogApi'
 import type { Category } from '../features/catalog/types/catalogTypes'
+import { CustomerFloatingChat } from '../features/shop/components/CustomerFloatingChat'
+import { ShieldCheck } from 'lucide-react'
 
 interface StorefrontLayoutProps {
   children: React.ReactNode
@@ -15,7 +17,7 @@ interface StorefrontLayoutProps {
 export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, isAuthenticated, isSeller, logout } = useAuthStore()
+  const { user, isAuthenticated, isSeller, isAdmin, logout } = useAuthStore()
   const { totalQuantity } = useCartStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
@@ -39,7 +41,7 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
       navigate(PATHS.LOGIN, { state: { from: PATHS.SELLER.DASHBOARD } })
       return
     }
-    const isRegisteredSeller = isSeller || (user?.id ? localStorage.getItem(`seller_registered_${user.id}`) === 'true' : false)
+    const isRegisteredSeller = isSeller || isAdmin || (user?.id ? localStorage.getItem(`seller_registered_${user.id}`) === 'true' : false)
     if (isRegisteredSeller) {
       navigate(PATHS.SELLER.DASHBOARD)
     } else {
@@ -73,12 +75,41 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
               type="button"
               onClick={handleSellerCenterClick}
               className="storefront-top-link"
-              style={{ background: 'none', border: 'none', cursor: 'padding', padding: 0, font: 'inherit' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
             >
               Seller Center
             </button>
+            {isAdmin && (
+              <>
+                <span style={{ opacity: 0.3 }}>|</span>
+                <Link
+                  to={PATHS.ADMIN.DASHBOARD}
+                  className="storefront-top-link"
+                  style={{
+                    color: '#facc15',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <ShieldCheck style={{ width: 13, height: 13 }} />
+                  <span>Admin Center</span>
+                </Link>
+              </>
+            )}
             <span style={{ opacity: 0.3 }}>|</span>
-            <Link to={PATHS.ACCOUNT.NOTIFICATIONS} className="storefront-top-link">Notifications</Link>
+            <Link
+              to={PATHS.HELP_CENTER}
+              className="storefront-top-link"
+              onClick={() => {
+                if (location.pathname === PATHS.HELP_CENTER) {
+                  window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+                }
+              }}
+            >
+              Help Center
+            </Link>
             <span style={{ opacity: 0.3 }}>|</span>
             <span style={{ color: '#cbd5e1' }}>Hotline: 1900-CHICKY</span>
           </div>
@@ -247,11 +278,35 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
           <div>
             <div className="footer-col-title">Customer Care</div>
             <ul className="footer-links">
-              <li><Link to={PATHS.ACCOUNT.PROFILE} className="footer-link">Help Center</Link></li>
+              <li>
+                <Link
+                  to={PATHS.HELP_CENTER}
+                  className="footer-link"
+                  onClick={() => {
+                    if (location.pathname === PATHS.HELP_CENTER) {
+                      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+                    }
+                  }}
+                >
+                  Help Center
+                </Link>
+              </li>
               <li><Link to={PATHS.ACCOUNT.ORDERS} className="footer-link">How to Buy</Link></li>
               <li><Link to={PATHS.ACCOUNT.ORDERS} className="footer-link">Shipping & Delivery</Link></li>
               <li><Link to={PATHS.ACCOUNT.ORDERS} className="footer-link">Return & Refund</Link></li>
-              <li><Link to={PATHS.ACCOUNT.NOTIFICATIONS} className="footer-link">Contact Customer Support</Link></li>
+              <li>
+                <Link
+                  to={PATHS.HELP_CENTER}
+                  className="footer-link"
+                  onClick={() => {
+                    if (location.pathname === PATHS.HELP_CENTER) {
+                      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+                    }
+                  }}
+                >
+                  Contact Customer Support
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -281,6 +336,9 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
           &copy; 2026 ChickyMart E-Commerce Marketplace. All rights reserved. Built with Java Servlet 6.0 & React SPA.
         </div>
       </footer>
+
+      {/* Floating Chat Widget for Customers */}
+      <CustomerFloatingChat />
     </div>
   )
 }

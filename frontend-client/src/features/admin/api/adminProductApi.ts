@@ -32,6 +32,8 @@ export const adminProductApi = {
           description: p.description,
           status: p.status,
           rejectionReason: p.rejectionReason,
+          moderatedBy: p.moderatedBy,
+          moderationNote: p.moderationNote,
           thumbnailUrl: p.thumbnailUrl,
           minPriceMinor: p.minPriceMinor,
           maxPriceMinor: p.maxPriceMinor,
@@ -66,11 +68,20 @@ export const adminProductApi = {
       description: p.description,
       status: p.status,
       rejectionReason: p.rejectionReason,
+      moderatedBy: p.moderatedBy,
+      moderationNote: p.moderationNote,
       thumbnailUrl: p.thumbnailUrl,
       minPriceMinor: p.minPriceMinor,
       maxPriceMinor: p.maxPriceMinor,
       totalStock: p.totalStock,
       createdAt: p.createdAt
     }
+  },
+
+  /**
+   * Quản trị viên gỡ bỏ sản phẩm khỏi hệ sinh thái (DELETE /api/v1/products/{id})
+   */
+  async deleteProduct(id: string): Promise<void> {
+    await httpClient.delete(`/products/${id}`)
   },
 }

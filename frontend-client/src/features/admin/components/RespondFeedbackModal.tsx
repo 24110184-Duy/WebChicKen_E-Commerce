@@ -145,7 +145,7 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                  Xử Lý Phản Hồi Từ Nhà Bán
+                  Xử Lý Phản Hồi Từ {feedback.senderRole === 'SELLER' || feedback.shopName ? 'Nhà Bán' : 'Khách Hàng'}
                 </h3>
                 <span
                   style={{
@@ -203,10 +203,20 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Building size={16} color="#2563eb" />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
-                {feedback.shopName || 'Hộ kinh doanh / Nhà bán chưa đặt tên'}
-              </span>
+              {feedback.senderRole === 'SELLER' || feedback.shopName ? (
+                <>
+                  <Building size={16} color="#2563eb" />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                    🏪 Nhà bán: {feedback.shopName || 'Gian Hàng Đối Tác'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>
+                    👤 Khách hàng: {feedback.senderName || 'Người mua hàng'}
+                  </span>
+                </>
+              )}
             </div>
             {feedback.userEmail && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b' }}>

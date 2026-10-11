@@ -1,4 +1,11 @@
-export type FeedbackType = 'INQUIRY' | 'COMPLAINT' | 'SUGGESTION' | 'SYSTEM_BUG' | 'OTHER'
+export type FeedbackType =
+  | 'INQUIRY'
+  | 'COMPLAINT'
+  | 'SUGGESTION'
+  | 'SYSTEM_BUG'
+  | 'STORE_REPORT'
+  | 'PAYMENT'
+  | 'OTHER'
 export type FeedbackStatus = 'PENDING' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED'
 
 export interface FeedbackItem {
@@ -6,6 +13,8 @@ export interface FeedbackItem {
   userId: string
   userEmail?: string
   shopName?: string
+  senderName?: string
+  senderRole?: 'CUSTOMER' | 'SELLER'
   type: FeedbackType
   subject: string
   content: string

@@ -8,6 +8,7 @@ import { RegisterPage } from '../../pages/public/auth/RegisterPage'
 import { HomePage } from '../../pages/public/HomePage'
 import { ProductListingPage } from '../../pages/public/ProductListingPage'
 import { ProductDetailPage } from '../../pages/public/ProductDetailPage'
+import { HelpCenterPage } from '../../pages/public/HelpCenterPage'
 import { CartPage } from '../../pages/buyer/CartPage'
 import { CheckoutPage } from '../../pages/buyer/CheckoutPage'
 import { PaymentResultPage } from '../../pages/buyer/PaymentResultPage'
@@ -22,6 +23,7 @@ import { SellerOrdersPage } from '../../pages/seller/SellerOrdersPage'
 import { SellerShipmentPage } from '../../pages/seller/SellerShipmentPage'
 import { SellerDashboardPage } from '../../pages/seller/SellerDashboardPage'
 import { SellerFeedbackPage } from '../../pages/seller/SellerFeedbackPage'
+import { SellerChatPage } from '../../pages/seller/SellerChatPage'
 import { SellerRegisterPage } from '../../pages/seller/SellerRegisterPage'
 import { AdminDashboardPage } from '../../pages/admin/AdminDashboardPage'
 import { SellersPage } from '../../pages/admin/Sellers'
@@ -30,6 +32,9 @@ import { AdminUsersPage } from '../../pages/admin/Users'
 import { AdminAuditLogsPage } from '../../pages/admin/AuditLogsPage'
 import { AdminFeedbacksPage } from '../../pages/admin/AdminFeedbacksPage'
 import { AdminVouchersPage } from '../../pages/admin/AdminVouchersPage'
+import { AdminCategoriesPage } from '../../pages/admin/AdminCategoriesPage'
+import { AdminOrdersPage } from '../../pages/admin/AdminOrdersPage'
+import { AdminSettingsPage } from '../../pages/admin/AdminSettingsPage'
 import { ForbiddenPage } from '../../pages/errors/ForbiddenPage'
 
 export const AppRouter = () => {
@@ -57,6 +62,7 @@ export const AppRouter = () => {
       <Route path="/products" element={<ProductListingPage />} />
       <Route path="/products/:id" element={<ProductDetailPage />} />
       <Route path="/p/:slug" element={<ProductDetailPage />} />
+      <Route path={PATHS.HELP_CENTER} element={<HelpCenterPage />} />
 
       {/* Cart & Checkout Routes */}
       <Route
@@ -106,8 +112,8 @@ export const AppRouter = () => {
         }
       />
 
-      {/* Protected Seller Center Routes (Must Have 'SELLER' Role) */}
-      <Route element={<RequireRole allowedRoles={['SELLER']} fallbackPath={PATHS.SELLER.REGISTER} />}>
+      {/* Protected Seller Center Routes (Must Have 'SELLER' or Admin Role) */}
+      <Route element={<RequireRole allowedRoles={['SELLER', 'ADMIN', 'SUPER_ADMIN', 'MODERATOR']} fallbackPath={PATHS.SELLER.REGISTER} />}>
         <Route path={PATHS.SELLER.DASHBOARD} element={<SellerDashboardPage />} />
         <Route path="/seller/dashboard" element={<SellerDashboardPage />} />
         <Route path={PATHS.SELLER.SHIPMENT} element={<SellerShipmentPage />} />
@@ -118,6 +124,8 @@ export const AppRouter = () => {
         <Route path="/seller/orders/:id" element={<SellerOrdersPage />} />
         <Route path={PATHS.SELLER.FEEDBACK} element={<SellerFeedbackPage />} />
         <Route path="/seller/feedback" element={<SellerFeedbackPage />} />
+        <Route path={PATHS.SELLER.CHAT} element={<SellerChatPage />} />
+        <Route path="/seller/chat" element={<SellerChatPage />} />
       </Route>
 
       {/* Protected Backoffice Admin Routes (Must Have ADMIN / SUPER_ADMIN / MODERATOR Role) */}
@@ -136,6 +144,12 @@ export const AppRouter = () => {
         <Route path="/admin/feedbacks" element={<AdminFeedbacksPage />} />
         <Route path={PATHS.ADMIN.VOUCHERS} element={<AdminVouchersPage />} />
         <Route path="/admin/vouchers" element={<AdminVouchersPage />} />
+        <Route path={PATHS.ADMIN.CATEGORIES} element={<AdminCategoriesPage />} />
+        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+        <Route path={PATHS.ADMIN.ORDERS} element={<AdminOrdersPage />} />
+        <Route path="/admin/orders" element={<AdminOrdersPage />} />
+        <Route path={PATHS.ADMIN.SETTINGS} element={<AdminSettingsPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
       </Route>
 
       {/* Error & Access Control Pages */}

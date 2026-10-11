@@ -13,6 +13,9 @@ import {
   Grid,
   Bell,
   HelpCircle,
+  MessageSquare,
+  ShieldCheck,
+  Plus,
 } from 'lucide-react'
 import { PATHS } from '../app/router/paths'
 import { sellerApi } from '../features/seller/api/sellerApi'
@@ -27,7 +30,7 @@ export interface SellerLayoutProps {
 export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, logout, isAdmin } = useAuthStore()
   const [storeName, setStoreName] = useState<string>('sellershopname')
   const [userDropdownOpen, setUserDropdownOpen] = useState<boolean>(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -78,27 +81,20 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
     navigate(PATHS.HOME, { replace: true })
   }
 
-  // Active check for 4 UI tabs & their sub-links
+  // Active check for UI tabs & their sub-links
   const searchParams = new URLSearchParams(location.search)
   const tabParam = searchParams.get('tab')
-  const actionParam = searchParams.get('action')
 
   const isOverviewActive = location.pathname === '/seller' || location.pathname === '/seller/dashboard'
   const isShipmentActive = location.pathname.startsWith('/seller/shipment') && !tabParam
   const isMassShipActive = location.pathname.startsWith('/seller/shipment') && tabParam === 'MASS_SHIP'
   const isShippingSettingActive = location.pathname.startsWith('/seller/shipment') && tabParam === 'SETTING'
 
-  const isOrderActive = location.pathname.startsWith('/seller/orders') && !tabParam
-  const isCancellationActive = location.pathname.startsWith('/seller/orders') && tabParam === 'CANCELLATION'
-  const isReturnRefundActive = location.pathname.startsWith('/seller/orders') && tabParam === 'RETURN_REFUND'
-
-  const isProductActive = location.pathname.startsWith('/seller/products') && !tabParam && !actionParam
-  const isAddProductActive = location.pathname.startsWith('/seller/products') && actionParam === 'new'
-  const isViolationActive = location.pathname.startsWith('/seller/products') && tabParam === 'VIOLATION'
+  const isOrderActive = location.pathname.startsWith('/seller/orders')
+  const isProductActive = location.pathname.startsWith('/seller/products')
 
   const isFeedbackActive = location.pathname.startsWith('/seller/feedback')
-  const isFeedbackNewActive = isFeedbackActive && tabParam !== 'history'
-  const isFeedbackHistoryActive = isFeedbackActive && tabParam === 'history'
+  const isChatActive = location.pathname.startsWith('/seller/chat')
 
   const initials = (storeName[0] || 'S').toUpperCase()
 
@@ -117,6 +113,27 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
         </div>
 
         <div className="seller-topbar-right">
+          {isAdmin && (
+            <Link
+              to={PATHS.ADMIN.DASHBOARD}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 6,
+                backgroundColor: '#0f172a',
+                color: '#facc15',
+                fontSize: 12,
+                fontWeight: 700,
+                textDecoration: 'none',
+                marginRight: 6,
+              }}
+            >
+              <ShieldCheck style={{ width: 14, height: 14 }} />
+              <span>Admin Center</span>
+            </Link>
+          )}
           {/* Quick utility icons */}
           <button
             type="button"
@@ -238,6 +255,29 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
                     <span>Shop Setting</span>
                   </div>
 
+                  {/* Quyền mở gian hàng mới cho Admin */}
+                  {isAdmin && (
+                    <div
+                      style={{
+                        padding: '9px 16px',
+                        fontSize: 13,
+                        color: '#b45309',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                      }}
+                      onClick={() => {
+                        setUserDropdownOpen(false)
+                        navigate(PATHS.SELLER.REGISTER)
+                      }}
+                    >
+                      <Plus style={{ width: 15, height: 15, color: '#d97706' }} />
+                      <span>Mở Gian Hàng Mới</span>
+                    </div>
+                  )}
+
                   {/* Quick Link: Help & Feedback */}
                   <div
                     style={{
@@ -331,7 +371,7 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
               </Link>
             </div>
 
-            {/* 3. ORDER (Ảnh 3) */}
+            {/* 3. ORDER */}
             <div className="seller-nav-group">
               <div className="seller-nav-group-title">Order</div>
               <Link
@@ -341,23 +381,9 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
                 <ClipboardList style={{ width: 17, height: 17 }} />
                 <span>My Orders</span>
               </Link>
-              <Link
-                to={`${PATHS.SELLER.ORDERS}?tab=CANCELLATION`}
-                className={`seller-nav-item ${isCancellationActive ? 'active' : ''}`}
-                style={{ paddingLeft: 34, fontSize: 12.5 }}
-              >
-                <span>Cancellation</span>
-              </Link>
-              <Link
-                to={`${PATHS.SELLER.ORDERS}?tab=RETURN_REFUND`}
-                className={`seller-nav-item ${isReturnRefundActive ? 'active' : ''}`}
-                style={{ paddingLeft: 34, fontSize: 12.5 }}
-              >
-                <span>Return/Refund</span>
-              </Link>
             </div>
 
-            {/* 4. PRODUCT (Ảnh 4) */}
+            {/* 4. PRODUCT */}
             <div className="seller-nav-group">
               <div className="seller-nav-group-title">Product</div>
               <Link
@@ -367,44 +393,40 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
                 <Package style={{ width: 17, height: 17 }} />
                 <span>My Products</span>
               </Link>
-              <Link
-                to={`${PATHS.SELLER.PRODUCTS}?action=new`}
-                className={`seller-nav-item ${isAddProductActive ? 'active' : ''}`}
-                style={{ paddingLeft: 34, fontSize: 12.5 }}
-              >
-                <span>Add New Product</span>
-              </Link>
-              <Link
-                to={`${PATHS.SELLER.PRODUCTS}?tab=VIOLATION`}
-                className={`seller-nav-item ${isViolationActive ? 'active' : ''}`}
-                style={{ paddingLeft: 34, fontSize: 12.5 }}
-              >
-                <span>Product Violations</span>
-              </Link>
             </div>
 
             {/* 5. CUSTOMER SERVICE (Chăm sóc & Phản hồi Admin) */}
             <div className="seller-nav-group">
               <div className="seller-nav-group-title">Customer Service</div>
               <Link
+                to={PATHS.SELLER.CHAT}
+                className={`seller-nav-item ${isChatActive ? 'active' : ''}`}
+              >
+                <MessageSquare style={{ width: 17, height: 17 }} />
+                <span>Customer Chat</span>
+              </Link>
+              <Link
                 to={PATHS.SELLER.FEEDBACK}
-                className={`seller-nav-item ${isFeedbackNewActive ? 'active' : ''}`}
+                className={`seller-nav-item ${isFeedbackActive ? 'active' : ''}`}
               >
                 <HelpCircle style={{ width: 17, height: 17 }} />
                 <span>Help & Feedback</span>
-              </Link>
-              <Link
-                to={`${PATHS.SELLER.FEEDBACK}?tab=history`}
-                className={`seller-nav-item ${isFeedbackHistoryActive ? 'active' : ''}`}
-                style={{ paddingLeft: 34, fontSize: 12.5 }}
-              >
-                <span>Ticket History</span>
               </Link>
             </div>
           </div>
 
           {/* Quick link bottom */}
           <div style={{ paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+            {isAdmin && (
+              <Link
+                to={PATHS.ADMIN.DASHBOARD}
+                className="seller-nav-item"
+                style={{ fontSize: 12.5, color: '#d97706', fontWeight: 700, marginBottom: 4 }}
+              >
+                <ShieldCheck style={{ width: 15, height: 15 }} />
+                <span>Back to Admin Center</span>
+              </Link>
+            )}
             <Link
               to={PATHS.HOME}
               className="seller-nav-item"

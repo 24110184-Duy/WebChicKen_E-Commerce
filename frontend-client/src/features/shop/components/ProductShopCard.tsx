@@ -10,6 +10,7 @@ import { shopApi } from '../api/shopApi'
 import { catalogApi } from '../../catalog/api/catalogApi'
 import type { StoreInfo } from '../types/shopTypes'
 import { formatMoney } from '../../../shared/lib/formatMoney'
+import { useChatStore } from '../../../app/store/chatStore'
 
 export interface ProductShopCardProps {
   storeId?: string
@@ -31,11 +32,13 @@ interface ChatMessage {
 export const ProductShopCard: React.FC<ProductShopCardProps> = ({
   storeId,
   initialStoreName,
+  productId,
   productName,
   productImage,
   productPrice,
 }) => {
   const navigate = useNavigate()
+  const { openChat } = useChatStore()
   const [store, setStore] = useState<StoreInfo | null>(null)
   const [productCount, setProductCount] = useState<number>(24)
   const [loading, setLoading] = useState<boolean>(true)
@@ -216,8 +219,13 @@ export const ProductShopCard: React.FC<ProductShopCardProps> = ({
             <div className="pdp-shop-actions">
               <button
                 type="button"
-                onClick={() => setIsChatOpen(true)}
-                className="pdp-shop-btn pdp-shop-btn-chat"
+                onClick={() => openChat(storeId, storeName, {
+                  id: productId,
+                  name: productName,
+                  image: productImage,
+                  priceMinor: productPrice,
+                })}
+                className="pdp-shop-btn pdp-shop-btn-chat cursor-pointer"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Chat Ngay</span>

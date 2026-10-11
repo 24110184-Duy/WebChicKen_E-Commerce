@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ShieldCheck,
   Search,
@@ -68,18 +69,22 @@ export const AdminProductsPage: React.FC = () => {
   const stats = useMemo(() => {
     const total = products.length
     const pending = products.filter((p) => p.status === 'PENDING_APPROVAL').length
+    const botApproved = products.filter((p) => p.moderatedBy === 'BOT_AUTO_APPROVER').length
+    const adminApproved = products.filter((p) => p.status === 'ACTIVE' && p.moderatedBy !== 'BOT_AUTO_APPROVER').length
     const active = products.filter((p) => p.status === 'ACTIVE').length
     const inactive = products.filter((p) => p.status === 'INACTIVE').length
-    return { total, pending, active, inactive }
+    return { total, pending, botApproved, adminApproved, active, inactive }
   }, [products])
 
   // Filter & Search
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       // 1. Tab filter
-      if (activeTab !== 'ALL' && p.status !== activeTab) {
-        return false
-      }
+      if (activeTab === 'PENDING_APPROVAL' && p.status !== 'PENDING_APPROVAL') return false
+      if (activeTab === 'ACTIVE' && p.status !== 'ACTIVE') return false
+      if (activeTab === 'BOT_APPROVED' && p.moderatedBy !== 'BOT_AUTO_APPROVER') return false
+      if (activeTab === 'ADMIN_APPROVED' && (p.status !== 'ACTIVE' || p.moderatedBy === 'BOT_AUTO_APPROVER')) return false
+      if (activeTab === 'INACTIVE' && p.status !== 'INACTIVE') return false
 
       // 2. Search query
       if (searchQuery.trim()) {
@@ -88,7 +93,9 @@ export const AdminProductsPage: React.FC = () => {
         const matchStore = p.storeName?.toLowerCase().includes(q) ?? false
         const matchCat = p.categoryName?.toLowerCase().includes(q) ?? false
         const matchOrigin = p.origin?.toLowerCase().includes(q) ?? false
-        return matchName || matchStore || matchCat || matchOrigin
+        const matchModerator = p.moderatedBy?.toLowerCase().includes(q) ?? false
+        const matchNote = p.moderationNote?.toLowerCase().includes(q) ?? false
+        return matchName || matchStore || matchCat || matchOrigin || matchModerator || matchNote
       }
 
       return true
@@ -108,9 +115,10 @@ export const AdminProductsPage: React.FC = () => {
       showToast(`Đã phê duyệt sản phẩm "${p.name}" cho phép mở bán công khai!`, 'success')
       setIsDetailModalOpen(false)
       loadProducts()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      showToast('Có lỗi xảy ra khi phê duyệt sản phẩm.', 'error')
+      const msg = err?.message || err?.error?.message || 'Có lỗi xảy ra khi phê duyệt sản phẩm.'
+      showToast(msg, 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -137,9 +145,10 @@ export const AdminProductsPage: React.FC = () => {
       setIsDetailModalOpen(false)
       setRejectingProduct(null)
       loadProducts()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      showToast('Lỗi khi từ chối sản phẩm.', 'error')
+      const msg = err?.message || err?.error?.message || 'Lỗi khi từ chối sản phẩm.'
+      showToast(msg, 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -218,43 +227,107 @@ export const AdminProductsPage: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              loadProducts()
-              showToast('Đã làm mới danh sách sản phẩm từ hệ thống.', 'success')
-            }}
-            style={{
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#475569',
-              backgroundColor: '#ffffff',
-              border: '1px solid #cbd5e1',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <RotateCcw size={14} />
-            <span>Làm mới Danh sách</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <Link
+              to="/seller/products?action=new"
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 700,
+                color: '#0f172a',
+                background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+                borderRadius: 8,
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 2px 6px rgba(234, 179, 8, 0.3)',
+              }}
+            >
+              <Package size={15} />
+              <span>Thêm Sản Phẩm Mới (Seller Center)</span>
+            </Link>
+
+            <button
+              onClick={() => {
+                loadProducts()
+                showToast('Đã làm mới danh sách sản phẩm từ hệ thống.', 'success')
+              }}
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#475569',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <RotateCcw size={14} />
+              <span>Làm mới Danh sách</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Banner: Cơ chế kiểm duyệt 2 luồng */}
+        <div
+          style={{
+            marginBottom: 20,
+            padding: '14px 18px',
+            borderRadius: 12,
+            backgroundColor: '#f8fafc',
+            border: '1px solid #cbd5e1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                backgroundColor: '#eff6ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#2563eb',
+                flexShrink: 0,
+              }}
+            >
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
+                Hệ Thống Kiểm Duyệt Sản Phẩm 2 Luồng (Dual-Track Moderation Bot & Admin)
+              </div>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 1.5 }}>
+                • <b>Luồng 1 (BOT AI tự động):</b> Đồ thông thường hợp lệ (thời trang, đồ gia dụng, nông sản...) được duyệt mở bán ngay.<br />
+                • <b>Luồng 2 (Admin thẩm định an toàn):</b> Món hàng khả nghi hoặc tag/tên liên quan đến sức khỏe, thuốc, thực phẩm chức năng... bắt buộc Quản trị viên duyệt chứng chỉ an toàn.
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 2. Bento KPI Cards */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 16,
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 14,
             marginBottom: 24,
           }}
         >
           <div
             onClick={() => setActiveTab('PENDING_APPROVAL')}
             style={{
-              padding: '16px 20px',
+              padding: '16px 18px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
               border: activeTab === 'PENDING_APPROVAL' ? '2px solid #f59e0b' : '1px solid #e2e8f0',
@@ -263,40 +336,61 @@ export const AdminProductsPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>CHỜ KIỂM DUYỆT</span>
+              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>CHỜ ADMIN DUYỆT</span>
               <Clock size={18} color="#d97706" />
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#d97706', marginTop: 8 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#d97706', marginTop: 6 }}>
               {stats.pending}
             </div>
-            <span style={{ fontSize: 12, color: '#b45309' }}>Cần Admin thẩm định gấp</span>
+            <span style={{ fontSize: 11.5, color: '#b45309', fontWeight: 500 }}>Nghi vấn thuốc / an toàn</span>
           </div>
 
           <div
-            onClick={() => setActiveTab('ACTIVE')}
+            onClick={() => setActiveTab('BOT_APPROVED')}
             style={{
-              padding: '16px 20px',
+              padding: '16px 18px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
-              border: activeTab === 'ACTIVE' ? '2px solid #10b981' : '1px solid #e2e8f0',
+              border: activeTab === 'BOT_APPROVED' ? '2px solid #8b5cf6' : '1px solid #e2e8f0',
               cursor: 'pointer',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>ĐÃ PHÊ DUYỆT</span>
-              <CheckCircle2 size={18} color="#059669" />
+              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>BOT TỰ DUYỆT</span>
+              <CheckCircle2 size={18} color="#7c3aed" />
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', marginTop: 8 }}>
-              {stats.active}
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#7c3aed', marginTop: 6 }}>
+              {stats.botApproved}
             </div>
-            <span style={{ fontSize: 12, color: '#047857' }}>Đang bán công khai</span>
+            <span style={{ fontSize: 11.5, color: '#6d28d9', fontWeight: 500 }}>Đạt chuẩn thông thường</span>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('ADMIN_APPROVED')}
+            style={{
+              padding: '16px 18px',
+              backgroundColor: '#ffffff',
+              borderRadius: 12,
+              border: activeTab === 'ADMIN_APPROVED' ? '2px solid #10b981' : '1px solid #e2e8f0',
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>ADMIN ĐÃ DUYỆT</span>
+              <ShieldCheck size={18} color="#059669" />
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#059669', marginTop: 6 }}>
+              {stats.adminApproved}
+            </div>
+            <span style={{ fontSize: 11.5, color: '#047857', fontWeight: 500 }}>Thẩm định an toàn</span>
           </div>
 
           <div
             onClick={() => setActiveTab('INACTIVE')}
             style={{
-              padding: '16px 20px',
+              padding: '16px 18px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
               border: activeTab === 'INACTIVE' ? '2px solid #ef4444' : '1px solid #e2e8f0',
@@ -305,19 +399,19 @@ export const AdminProductsPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>TỪ CHỐI / TẠM KHÓA</span>
+              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>TỪ CHỐI / TẠM KHÓA</span>
               <XCircle size={18} color="#dc2626" />
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#dc2626', marginTop: 8 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#dc2626', marginTop: 6 }}>
               {stats.inactive}
             </div>
-            <span style={{ fontSize: 12, color: '#b91c1c' }}>Vi phạm hoặc chưa đạt</span>
+            <span style={{ fontSize: 11.5, color: '#b91c1c', fontWeight: 500 }}>Vi phạm hoặc chưa đạt</span>
           </div>
 
           <div
             onClick={() => setActiveTab('ALL')}
             style={{
-              padding: '16px 20px',
+              padding: '16px 18px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
               border: activeTab === 'ALL' ? '2px solid #3b82f6' : '1px solid #e2e8f0',
@@ -326,13 +420,13 @@ export const AdminProductsPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>TỔNG SẢN PHẨM</span>
+              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>TỔNG SẢN PHẨM</span>
               <Package size={18} color="#2563eb" />
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', marginTop: 8 }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 6 }}>
               {stats.total}
             </div>
-            <span style={{ fontSize: 12, color: '#64748b' }}>Trên toàn sàn WebChicKen</span>
+            <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 500 }}>Toàn sàn WebChicKen</span>
           </div>
         </div>
 
@@ -358,11 +452,12 @@ export const AdminProductsPage: React.FC = () => {
             }}
           >
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {(
                 [
-                  { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: stats.pending },
-                  { key: 'ACTIVE', label: 'Đã duyệt', count: stats.active },
+                  { key: 'PENDING_APPROVAL', label: 'Chờ Admin duyệt (Sức khỏe)', count: stats.pending },
+                  { key: 'BOT_APPROVED', label: 'Bot AI duyệt', count: stats.botApproved },
+                  { key: 'ADMIN_APPROVED', label: 'Admin đã duyệt', count: stats.adminApproved },
                   { key: 'INACTIVE', label: 'Bị từ chối', count: stats.inactive },
                   { key: 'ALL', label: 'Tất cả', count: stats.total },
                 ] as const
@@ -412,7 +507,7 @@ export const AdminProductsPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm tên sản phẩm, gian hàng, xuất xứ..."
+                placeholder="Tìm tên sản phẩm, người duyệt, ghi chú..."
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',
@@ -458,6 +553,7 @@ export const AdminProductsPage: React.FC = () => {
                     <th style={{ padding: '12px 16px' }}>Gian hàng & Xuất xứ</th>
                     <th style={{ padding: '12px 16px' }}>Giá & Kho</th>
                     <th style={{ padding: '12px 16px' }}>Trạng thái</th>
+                    <th style={{ padding: '12px 16px' }}>Người duyệt / Cơ chế</th>
                     <th style={{ padding: '12px 16px' }}>Ngày nộp</th>
                     <th style={{ padding: '12px 16px', textAlign: 'right' }}>Thao tác</th>
                   </tr>
@@ -632,7 +728,80 @@ export const AdminProductsPage: React.FC = () => {
                           )}
                         </td>
 
-                        {/* Column 5: Date */}
+                        {/* Column 5: Moderated By / Audit Mode */}
+                        <td style={{ padding: '14px 16px' }}>
+                          {p.moderatedBy === 'BOT_AUTO_APPROVER' ? (
+                            <div>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '4px 8px',
+                                  borderRadius: 9999,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  backgroundColor: '#faf5ff',
+                                  color: '#7e22ce',
+                                  border: '1px solid #d8b4fe',
+                                }}
+                              >
+                                🤖 BOT Tự Động Duyệt
+                              </span>
+                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                                Đạt chuẩn thông thường
+                              </div>
+                            </div>
+                          ) : p.moderatedBy ? (
+                            <div>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '4px 8px',
+                                  borderRadius: 9999,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #bfdbfe',
+                                }}
+                              >
+                                🛡️ {p.moderatedBy}
+                              </span>
+                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                                Quản trị viên thẩm định
+                              </div>
+                            </div>
+                          ) : p.status === 'PENDING_APPROVAL' ? (
+                            <div>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '4px 8px',
+                                  borderRadius: 9999,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  backgroundColor: '#fffbeb',
+                                  color: '#b45309',
+                                  border: '1px solid #fde68a',
+                                }}
+                              >
+                                ⚠️ Cần Admin duyệt
+                              </span>
+                              <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600, marginTop: 3 }}>
+                                Nghi vấn thuốc / sức khỏe
+                              </div>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>
+                          )}
+                        </td>
+
+                        {/* Column 6: Date */}
                         <td style={{ padding: '14px 16px', color: '#64748b', fontSize: 12 }}>
                           {new Date(p.createdAt).toLocaleDateString('vi-VN')}
                         </td>

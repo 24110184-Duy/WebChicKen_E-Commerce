@@ -11,6 +11,7 @@ export const PATHS = {
   SHOP_DETAIL: (shopId: string) => `/shops/${shopId}`,
   VOUCHERS: '/vouchers',
   FLASH_SALES: '/flash-sales',
+  HELP_CENTER: '/help-center',
 
   // Auth
   LOGIN: '/login',
@@ -51,6 +52,7 @@ export const PATHS = {
     REPORTS: '/seller/reports',
     SETTINGS: '/seller/settings',
     FEEDBACK: '/seller/feedback',
+    CHAT: '/seller/chat',
   },
 
   // Admin Portal

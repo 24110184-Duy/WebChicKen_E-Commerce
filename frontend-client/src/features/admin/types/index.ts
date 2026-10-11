@@ -34,7 +34,7 @@ export type ApplicationFilterTab = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
 // Product Moderation Types (TASK-65)
 // ==========================================
 export type AdminProductStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK'
-export type ProductModerationFilterTab = 'ALL' | 'PENDING_APPROVAL' | 'ACTIVE' | 'INACTIVE'
+export type ProductModerationFilterTab = 'ALL' | 'PENDING_APPROVAL' | 'ACTIVE' | 'BOT_APPROVED' | 'ADMIN_APPROVED' | 'INACTIVE'
 
 export interface AdminProductVariant {
   id: string
@@ -53,6 +53,8 @@ export interface AdminProductItem {
   description?: string
   status: AdminProductStatus
   rejectionReason?: string
+  moderatedBy?: string
+  moderationNote?: string
   thumbnailUrl?: string
   imageUrls?: string[]
   minPriceMinor: number
@@ -70,6 +72,7 @@ export interface AdminProductItem {
 export interface ReviewProductRequest {
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL'
   rejectionReason?: string
+  moderationNote?: string
 }
 
 // ==========================================

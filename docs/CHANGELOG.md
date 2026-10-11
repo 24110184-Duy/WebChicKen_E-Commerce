@@ -7,7 +7,59 @@
 
 ## 📅 Bản cập nhật: 11/10/2026
 
-### 0. Hiển thị Trạng thái Đang tải (Loading States & Skeleton UI) khi chuyển đổi danh mục trên thanh sản phẩm
+### 0. Nâng cấp Thống kê Toàn diện trên Admin UI & Phân quyền Mở Shop / Tạo Sản Phẩm cho Admin
+- **Tệp nguồn sửa đổi:**
+  - `frontend-client/src/pages/admin/AdminDashboardPage.tsx`
+  - `frontend-client/src/pages/seller/SellerRegisterPage.tsx`
+  - `frontend-client/src/layouts/SellerLayout.tsx`
+  - `frontend-client/src/features/seller/components/ProductFormModal.tsx`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/dao/OrderDAO.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/service/impl/OrderServiceImpl.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/controller/SellerAnalyticsServlet.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/catalog/controller/SellerProductServlet.java`
+- **Nội dung đã triển khai:**
+  - **Thống kê chi tiết toàn diện Admin UI**:
+    - Bổ sung bộ lọc thời gian đa dạng: Hôm nay, 7 ngày qua, 30 ngày qua, Quý này, Cả năm.
+    - 6 thẻ chỉ số vĩ mô toàn sàn: Tổng doanh thu sàn (Gross GMV, Net Revenue, Phí sàn 5%), Tổng đơn hàng (+ Tỷ lệ giao thành công & AOV), Hệ sinh thái gian hàng (Mall & Tiêu chuẩn), Cơ sở người dùng & phân cấp Loyalty, Kho hàng SKU (Đang mở bán, Chờ duyệt), Lưu lượng truy cập & Tỷ lệ chuyển đổi.
+    - Biểu đồ cột tương tác trực quan hiển thị xu hướng doanh thu hàng ngày (triệu VNĐ) và số lượng đơn hàng qua từng mốc thời gian kèm tooltip chi tiết.
+    - Bảng phân bổ thị phần doanh thu theo 5 nhóm ngành hàng chủ lực (Điện tử, Thời trang, Gia dụng, Sức khỏe, Bách hóa).
+    - Biểu đồ phễu trạng thái đơn hàng sàn (Chờ thanh toán, Đã xác nhận, Đang giao, Đã giao, Hủy/Hoàn trả).
+    - Bảng Top 5 sản phẩm bán chạy nhất toàn sàn và Bảng các giao dịch đơn hàng lớn gần nhất.
+    - Bảng giám sát thời gian thực sức khỏe hạ tầng kỹ thuật (MySQL 8 InnoDB, HikariCP pool, Apache Tomcat 10.1, Stateless JWT, Cổng thanh toán VNPay/COD).
+  - **Quyền Mở Shop & Tạo Sản Phẩm cho Admin**:
+    - Không chặn Admin khi mở shop mới trong trang `/seller/register` (sửa cơ chế kiểm tra `alreadySeller`).
+    - Cho phép Admin bấm "Mở Gian Hàng Mới (Quyền Quản Trị)" để đăng ký mở gian hàng trực tiếp.
+    - Bổ sung nút "Mở Gian Hàng Mới" trong menu người dùng của Seller Center cho tài khoản Admin.
+    - Cập nhật backend `SellerAnalyticsServlet.java` & `OrderDAO.java` hỗ trợ tra cứu toàn bộ đơn hàng toàn sàn (`shopId=ALL`).
+    - Cập nhật `SellerProductServlet.java` dùng `user.isAdmin()` đồng nhất cho mọi role quản trị (SUPER_ADMIN, ADMIN, MODERATOR).
+- **Tệp nguồn bổ sung & sửa đổi:**
+  - `backend-servlet/src/main/resources/db/migration/V016__create_chat_messages.sql`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/model/entity/ChatMessageEntity.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/model/dto/request/CreateChatMessageRequest.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/model/dto/response/ChatMessageResponse.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/model/dto/response/ChatConversationResponse.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/dao/ChatMessageDAO.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/service/ChatService.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/service/impl/ChatServiceImpl.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/shop/controller/ChatServlet.java`
+  - `backend-servlet/src/test/java/com/example/webchicken/modules/shop/service/ChatServiceTest.java` (9 unit tests 100% pass)
+  - `frontend-client/src/features/shop/types/chatTypes.ts`
+  - `frontend-client/src/features/shop/api/chatApi.ts`
+  - `frontend-client/src/app/store/chatStore.ts`
+  - `frontend-client/src/features/shop/components/CustomerFloatingChat.tsx`
+  - `frontend-client/src/features/shop/components/ProductShopCard.tsx`
+  - `frontend-client/src/layouts/StorefrontLayout.tsx`
+  - `frontend-client/src/pages/seller/SellerChatPage.tsx`
+  - `frontend-client/src/layouts/SellerLayout.tsx`
+  - `frontend-client/src/app/router/paths.ts` & `frontend-client/src/app/router/index.tsx`
+- **Nội dung đã triển khai:**
+  - **Cơ sở dữ liệu & Migration**: Bổ sung bảng `chat_messages` lưu trữ id, `store_id`, `customer_id`, `sender_type`, `sender_id`, `content`, đính kèm thông tin sản phẩm (`product_id`, `product_name`, `product_image`, `product_price_minor`), `is_read`, `created_at` kèm các chỉ mục tốc độ cao.
+  - **Backend REST API**: Cung cấp các endpoint `/api/v1/chat/messages` (lấy và gửi tin nhắn), `/api/v1/chat/conversations` (danh bạ hội thoại theo vai trò), `/api/v1/chat/read` (đánh dấu đã đọc) và `/api/v1/chat/unread-count`.
+  - **Frontend Customer Chat Widget**: Nút Chat nổi cố định ở góc dưới phải màn hình mọi trang Storefront; mở popup cửa sổ chat thu nhỏ chuẩn Shopee/Lazada với danh bạ các shop đã liên hệ, cửa sổ nhắn tin hai chiều, tự động đính kèm card sản phẩm đang xem, đồng bộ số tin chưa đọc và tự động polling cập nhật tin nhắn mới mỗi 3 giây.
+  - **Kênh Người Bán (Seller Center Chat)**: Trang chuyên dụng `/seller/chat` trong Seller Center (`SellerChatPage.tsx`) cho phép Người bán quản lý toàn bộ danh sách khách nhắn tin đến gian hàng, tìm kiếm khách hàng, xem thẻ sản phẩm khách đang hỏi, sử dụng các mẫu trả lời nhanh (Quick replies), và gửi phản hồi ngay lập tức.
+  - **Tích hợp Nút "Chat Ngay"**: Kết nối trực tiếp nút "Chat Ngay" trên thẻ gian hàng trang Chi tiết sản phẩm (`ProductShopCard.tsx`) với hệ thống chat thật, tự động nạp thông tin gian hàng và sản phẩm đang xem vào khung chat.
+
+### 1. Hiển thị Trạng thái Đang tải (Loading States & Skeleton UI) khi chuyển đổi danh mục trên thanh sản phẩm
 - **Tệp nguồn sửa đổi:**
   - [`frontend-client/src/pages/public/ProductListingPage.tsx`](file:///d:/Learn/College/Lap%20trinh%20web/WebChicKen_E-Commerce/frontend-client/src/pages/public/ProductListingPage.tsx)
   - [`frontend-client/src/styles/product.css`](file:///d:/Learn/College/Lap%20trinh%20web/WebChicKen_E-Commerce/frontend-client/src/styles/product.css)

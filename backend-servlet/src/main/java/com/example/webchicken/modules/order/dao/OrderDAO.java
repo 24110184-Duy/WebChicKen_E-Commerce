@@ -201,6 +201,44 @@ public class OrderDAO extends BaseDAO {
     }
 
     /**
+     * Lấy toàn bộ đơn hàng toàn sàn (phục vụ thống kê hệ sinh thái cho Admin)
+     */
+    public List<OrderEntity> findAllOrders(OrderStatus status, int offset, int limit) {
+        return executeQuery(em -> {
+            String jpql = "SELECT o FROM OrderEntity o ";
+            if (status != null) {
+                jpql += "WHERE o.status = :status ";
+            }
+            jpql += "ORDER BY o.orderDate DESC";
+
+            TypedQuery<OrderEntity> query = em.createQuery(jpql, OrderEntity.class);
+            if (status != null) {
+                query.setParameter("status", status);
+            }
+            query.setFirstResult(Math.max(0, offset));
+            query.setMaxResults(Math.min(500, Math.max(1, limit)));
+            return query.getResultList();
+        });
+    }
+
+    /**
+     * Đếm tổng số đơn hàng toàn sàn (hỗ trợ Admin phân trang)
+     */
+    public long countAllOrders(OrderStatus status) {
+        return executeQuery(em -> {
+            String jpql = "SELECT COUNT(o) FROM OrderEntity o ";
+            if (status != null) {
+                jpql += "WHERE o.status = :status";
+            }
+            TypedQuery<Long> query = em.createQuery(jpql, Long.class);
+            if (status != null) {
+                query.setParameter("status", status);
+            }
+            return query.getSingleResult();
+        });
+    }
+
+    /**
      * Đảm bảo bản ghi hồ sơ khách hàng tồn tại trong bảng customers.
      * Tránh lỗi vi phạm khóa ngoại fk_orders_customers khi Seller hoặc Admin thao tác mua hàng.
      */
