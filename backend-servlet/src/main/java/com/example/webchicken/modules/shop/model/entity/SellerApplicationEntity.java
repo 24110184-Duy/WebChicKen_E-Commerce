@@ -39,6 +39,36 @@ public class SellerApplicationEntity {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
+    @Column(name = "owner_name", length = 100)
+    private String ownerName;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "farm_location", length = 500)
+    private String farmLocation;
+
+    @Column(name = "farm_type", length = 100)
+    private String farmType;
+
+    @Column(name = "tax_code", length = 50)
+    private String taxCode;
+
+    @Column(name = "certificate_type", length = 100)
+    private String certificateType;
+
+    @Column(name = "certificate_number", length = 100)
+    private String certificateNumber;
+
+    @Column(name = "certificate_expiry", length = 50)
+    private String certificateExpiry;
+
+    @Column(name = "daily_capacity", length = 100)
+    private String dailyCapacity;
+
     public SellerApplicationEntity() {}
 
     // ── Getters / Setters ────────────────────────────────────────────────────
@@ -68,4 +98,34 @@ public class SellerApplicationEntity {
 
     public LocalDateTime getReviewedAt() { return reviewedAt; }
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+
+    public String getOwnerName() { return ownerName; }
+    public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getFarmLocation() { return farmLocation; }
+    public void setFarmLocation(String farmLocation) { this.farmLocation = farmLocation; }
+
+    public String getFarmType() { return farmType; }
+    public void setFarmType(String farmType) { this.farmType = farmType; }
+
+    public String getTaxCode() { return taxCode; }
+    public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
+
+    public String getCertificateType() { return certificateType; }
+    public void setCertificateType(String certificateType) { this.certificateType = certificateType; }
+
+    public String getCertificateNumber() { return certificateNumber; }
+    public void setCertificateNumber(String certificateNumber) { this.certificateNumber = certificateNumber; }
+
+    public String getCertificateExpiry() { return certificateExpiry; }
+    public void setCertificateExpiry(String certificateExpiry) { this.certificateExpiry = certificateExpiry; }
+
+    public String getDailyCapacity() { return dailyCapacity; }
+    public void setDailyCapacity(String dailyCapacity) { this.dailyCapacity = dailyCapacity; }
 }

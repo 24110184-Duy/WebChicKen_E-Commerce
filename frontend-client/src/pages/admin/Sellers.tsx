@@ -45,6 +45,10 @@ export const SellersPage: React.FC = () => {
     try {
       const data = await adminShopApi.getApplications()
       setApplications(data)
+      const pendingCount = data.filter((a) => a.status === 'PENDING').length
+      window.dispatchEvent(
+        new CustomEvent('admin:pending-shops-updated', { detail: { count: pendingCount } })
+      )
     } catch (err) {
       console.error('Failed to load seller applications:', err)
       showToast('Không thể tải danh sách hồ sơ đăng ký.', 'error')

@@ -43,6 +43,9 @@ public class VoucherEntity {
     @Column(name = "store_id", length = 36)
     private String storeId;
 
+    @Column(name = "category_id", length = 36)
+    private String categoryId;
+
     @Column(name = "usage_limit", nullable = false)
     private int usageLimit = 1000;
 
@@ -156,6 +159,14 @@ public class VoucherEntity {
 
     public void setStoreId(String storeId) {
         this.storeId = storeId;
+    }
+
+    public String getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
     }
 
     public int getUsageLimit() {

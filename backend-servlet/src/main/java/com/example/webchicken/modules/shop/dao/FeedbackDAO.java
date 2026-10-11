@@ -92,7 +92,9 @@ public class FeedbackDAO extends BaseDAO {
                 params.put("search", "%" + search.trim().toLowerCase() + "%");
             }
 
-            jpql.append("ORDER BY f.createdAt DESC");
+            jpql.append("ORDER BY (CASE WHEN f.status = 'PENDING' THEN 0 ELSE 1 END) ASC, ")
+                .append("(CASE WHEN f.status = 'PENDING' THEN f.createdAt ELSE null END) ASC, ")
+                .append("f.createdAt DESC");
 
             TypedQuery<FeedbackEntity> query = em.createQuery(jpql.toString(), FeedbackEntity.class);
             params.forEach(query::setParameter);

@@ -147,6 +147,11 @@ public class FeedbackServiceImpl implements FeedbackService {
         FeedbackEntity entity = feedbackDAO.findById(id.trim())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phản hồi với mã: " + id));
 
+        // Quy tắc: Phiếu phản hồi chỉ được xử lý đúng 1 lần duy nhất, không thể chỉnh sửa hoặc xử lý lại khi đã xử lý
+        if (!"PENDING".equalsIgnoreCase(entity.getStatus()) || (entity.getAdminResponse() != null && !entity.getAdminResponse().isBlank())) {
+            throw new ValidationException("Phiếu phản hồi này đã được xử lý (" + entity.getStatus() + ") và không thể chỉnh sửa hoặc xử lý lại.");
+        }
+
         String newStatus = (request.status() != null && !request.status().trim().isBlank())
                 ? request.status().trim().toUpperCase()
                 : "RESOLVED";

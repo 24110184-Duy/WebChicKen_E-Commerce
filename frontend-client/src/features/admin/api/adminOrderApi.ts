@@ -112,5 +112,12 @@ export const adminOrderApi = {
       throw new Error(`Cập nhật trạng thái đơn ${orderCode} không thành công.`)
     }
     return response.data
-  }
+  },
+
+  /**
+   * Quản trị viên xóa vĩnh viễn đơn hàng khỏi hệ sinh thái (DELETE /api/v1/orders/{orderCode})
+   */
+  async deleteOrder(orderCode: string): Promise<void> {
+    await httpClient.delete(`/orders/${orderCode}`)
+  },
 }

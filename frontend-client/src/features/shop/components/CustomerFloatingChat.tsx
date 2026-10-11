@@ -27,6 +27,7 @@ export const CustomerFloatingChat: React.FC = () => {
     toggleChat,
     selectStore,
     clearActiveStore,
+    clearActiveProduct,
     setUnreadTotal,
   } = useChatStore()
 
@@ -154,6 +155,7 @@ export const CustomerFloatingChat: React.FC = () => {
 
       if (created) {
         setMessages((prev) => [...prev, created])
+        clearActiveProduct()
       }
     } catch (err) {
       console.error('Lỗi khi gửi thông tin sản phẩm:', err)
@@ -334,7 +336,7 @@ export const CustomerFloatingChat: React.FC = () => {
                         className="wck-chat-product-img"
                       />
                     ) : (
-                      <div style={{ width: 48, height: 48, borderRadius: 8, background: '#fde68a', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 8, background: '#fde68a', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <ShoppingBag size={20} />
                       </div>
                     )}
@@ -352,11 +354,19 @@ export const CustomerFloatingChat: React.FC = () => {
                     >
                       Hỏi Shop
                     </button>
+                    <button
+                      type="button"
+                      onClick={clearActiveProduct}
+                      className="wck-chat-banner-close-btn"
+                      title="Ẩn thông tin sản phẩm"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
                 )}
 
                 {/* Messages Stream */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                   <div style={{ textAlign: 'center', margin: '4px 0' }}>
                     <span style={{ fontSize: 10, background: '#e2e8f0', color: '#64748b', padding: '3px 10px', borderRadius: 9999, fontWeight: 600 }}>
                       Bảo mật tin nhắn chuẩn ChickyMart
@@ -383,19 +393,23 @@ export const CustomerFloatingChat: React.FC = () => {
                             {/* Khối card sản phẩm nhúng kèm tin nhắn */}
                             {m.productName && (
                               <div className="wck-msg-card">
-                                {m.productImage && (
+                                {m.productImage ? (
                                   <img
                                     src={m.productImage}
                                     alt={m.productName}
                                     className="wck-msg-card-img"
                                   />
+                                ) : (
+                                  <div style={{ width: 44, height: 44, borderRadius: 6, background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <ShoppingBag size={18} />
+                                  </div>
                                 )}
-                                <div style={{ minWidth: 0, flex: 1 }}>
-                                  <div style={{ fontWeight: 700, fontSize: 11, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div className="wck-msg-card-meta">
+                                  <div className="wck-msg-card-title" title={m.productName}>
                                     {m.productName}
                                   </div>
                                   {m.productPriceMinor !== undefined && (
-                                    <div style={{ fontWeight: 800, fontSize: 11, color: '#d97706', marginTop: 2 }}>
+                                    <div className="wck-msg-card-price">
                                       {formatMoney(m.productPriceMinor)}
                                     </div>
                                   )}
@@ -403,7 +417,7 @@ export const CustomerFloatingChat: React.FC = () => {
                               </div>
                             )}
 
-                            <div>{m.content}</div>
+                            <div className="wck-msg-content">{m.content}</div>
                           </div>
 
                           <div className="wck-msg-time">

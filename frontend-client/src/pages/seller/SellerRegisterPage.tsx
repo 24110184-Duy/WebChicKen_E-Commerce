@@ -516,9 +516,22 @@ export const SellerRegisterPage: React.FC = () => {
   const handleFinalSubmit = async () => {
     setSubmitting(true)
     try {
+      const locationText = pickupAddress
+        ? `${pickupAddress.detailAddress}, ${pickupAddress.ward}, ${pickupAddress.province}`
+        : taxAddress || 'TP. Hồ Chí Minh'
+
       const res = await sellerApi.applySeller({
         shopName: shopName.trim(),
         taxCode: taxCode.trim(),
+        ownerName: idName.trim() || user?.fullName || shopName.trim(),
+        phone: phone.trim() || user?.phone || '+84822743010',
+        email: email.trim() || user?.email || 'support@webchicken.vn',
+        farmLocation: locationText,
+        farmType: 'Thương mại điện tử & Bán lẻ',
+        certificateType: idType === 'PASSPORT' ? 'Hộ chiếu' : 'Căn cước công dân (CCCD)',
+        certificateNumber: idNumber.trim() || 'DKKD-2025-01',
+        certificateExpiry: 'Không thời hạn',
+        dailyCapacity: 'Cung ứng theo ngày',
       })
       setApplication(res)
       toast.success('Hồ sơ mở gian hàng đã được nộp thành công! Đang chờ Quản trị viên xét duyệt.')

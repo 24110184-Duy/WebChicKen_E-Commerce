@@ -16,6 +16,7 @@ public record VoucherResponse(
         LocalDateTime startDate,
         LocalDateTime endDate,
         String storeId,
+        String categoryId,
         int usageLimit,
         int usedCount,
         boolean isActive
@@ -34,6 +35,7 @@ public record VoucherResponse(
                 entity.getStartDate(),
                 entity.getEndDate(),
                 entity.getStoreId(),
+                entity.getCategoryId(),
                 entity.getUsageLimit(),
                 entity.getUsedCount(),
                 entity.isActive()

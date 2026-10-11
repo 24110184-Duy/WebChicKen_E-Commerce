@@ -888,4 +888,14 @@ public class OrderServiceImpl implements OrderService {
     public long countAllPlatformOrders(OrderStatus status) {
         return orderDAO.countAllOrders(status);
     }
+
+    @Override
+    public void deleteOrderAsAdmin(String orderCode) {
+        if (orderCode == null || orderCode.isBlank()) {
+            throw new ValidationException("Mã đơn hàng không được để trống");
+        }
+        OrderEntity order = orderDAO.findByOrderCode(orderCode)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng: " + orderCode));
+        orderDAO.deleteByOrderCode(orderCode);
+    }
 }

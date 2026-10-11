@@ -14,5 +14,49 @@ public record SellerApplicationResponse(
         String rejectionReason,
         String adminResponseId,
         LocalDateTime submittedAt,
-        LocalDateTime reviewedAt
-) {}
+        LocalDateTime reviewedAt,
+        String ownerName,
+        String phone,
+        String email,
+        String farmLocation,
+        String farmType,
+        String taxCode,
+        String certificateType,
+        String certificateNumber,
+        String certificateExpiry,
+        String dailyCapacity
+) {
+    public SellerApplicationResponse(
+            String id,
+            String userId,
+            String shopName,
+            String documentUrl,
+            String status,
+            String rejectionReason,
+            String adminResponseId,
+            LocalDateTime submittedAt,
+            LocalDateTime reviewedAt
+    ) {
+        this(
+                id,
+                userId,
+                shopName,
+                documentUrl,
+                status,
+                rejectionReason,
+                adminResponseId,
+                submittedAt,
+                reviewedAt,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+}

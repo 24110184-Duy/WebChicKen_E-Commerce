@@ -1,17 +1,32 @@
 import { httpClient } from '../../../shared/api/httpClient'
-import type { AdminVoucherItem, VoucherExpiryJobResult } from '../types/voucherTypes'
+import type { AdminVoucherItem, CreateVoucherPayload, VoucherExpiryJobResult } from '../types/voucherTypes'
 
 /**
  * Lấy toàn bộ danh sách voucher dành cho trang quản trị từ CSDL
  */
 export async function fetchAdminVouchers(): Promise<AdminVoucherItem[]> {
   try {
-    const resp = await httpClient.get<AdminVoucherItem[]>('/vouchers')
+    const resp = await httpClient.get<AdminVoucherItem[]>('/vouchers?all=true')
     if (resp.data && Array.isArray(resp.data)) return resp.data
   } catch (err) {
     console.warn('Lỗi tải danh sách voucher từ máy chủ:', err)
   }
   return []
+}
+
+/**
+ * Tạo mới voucher toàn sàn hoặc theo danh mục
+ */
+export async function createVoucher(payload: CreateVoucherPayload): Promise<AdminVoucherItem> {
+  const resp = await httpClient.post<AdminVoucherItem>('/vouchers', payload)
+  return resp.data
+}
+
+/**
+ * Xóa một voucher
+ */
+export async function deleteVoucher(id: string): Promise<void> {
+  await httpClient.delete(`/vouchers/${id}`)
 }
 
 /**
@@ -37,6 +52,6 @@ export async function triggerVoucherExpiryJob(includeUsageLimit: boolean = true)
  * Bật/tắt trạng thái hoạt động của voucher
  */
 export async function toggleVoucherStatus(id: string): Promise<AdminVoucherItem> {
-  const resp = await httpClient.patch<AdminVoucherItem>(`/vouchers/${id}/toggle`)
+  const resp = await httpClient.post<AdminVoucherItem>(`/vouchers/${id}/toggle`)
   return resp.data
 }

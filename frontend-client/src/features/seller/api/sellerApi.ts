@@ -6,6 +6,15 @@ export interface ApplySellerRequest {
   shopName: string
   documentUrl?: string
   taxCode?: string
+  ownerName?: string
+  phone?: string
+  email?: string
+  farmLocation?: string
+  farmType?: string
+  certificateType?: string
+  certificateNumber?: string
+  certificateExpiry?: string
+  dailyCapacity?: string
 }
 
 export interface SellerApplicationResponse {
@@ -18,6 +27,16 @@ export interface SellerApplicationResponse {
   adminResponseId?: string
   submittedAt: string
   reviewedAt?: string
+  ownerName?: string
+  phone?: string
+  email?: string
+  farmLocation?: string
+  farmType?: string
+  taxCode?: string
+  certificateType?: string
+  certificateNumber?: string
+  certificateExpiry?: string
+  dailyCapacity?: string
 }
 
 export interface StoreResponse {

@@ -48,6 +48,7 @@ export const PATHS = {
     ORDERS: '/seller/orders',
     ORDER_DETAIL: (id: string) => `/seller/orders/${id}`,
     PROMOTIONS: '/seller/promotions',
+    VOUCHERS: '/seller/vouchers',
     REVIEWS: '/seller/reviews',
     REPORTS: '/seller/reports',
     SETTINGS: '/seller/settings',

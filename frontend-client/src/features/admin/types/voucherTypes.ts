@@ -13,9 +13,26 @@ export interface AdminVoucherItem {
   endDate: string
   storeId?: string | null
   storeName?: string | null
+  categoryId?: string | null
+  categoryName?: string | null
   usageLimit: number
   usedCount: number
   isActive: boolean
+}
+
+export interface CreateVoucherPayload {
+  code: string
+  title: string
+  description?: string
+  type: VoucherType
+  discountValueMinor: number
+  minOrderValueMinor: number
+  maxDiscountAmountMinor: number
+  startDate: string
+  endDate: string
+  storeId?: string | null
+  categoryId?: string | null
+  usageLimit?: number
 }
 
 export interface VoucherExpiryJobResult {

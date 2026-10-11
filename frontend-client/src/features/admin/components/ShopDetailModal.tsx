@@ -169,11 +169,11 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
             </div>
           )}
 
-          {/* Section 1: Thông tin chủ sở hữu & Trại chăn nuôi */}
+          {/* Section 1: Thông tin chủ sở hữu & Cơ sở kinh doanh */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '18px 20px' }}>
             <h4 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Store style={{ width: 16, height: 16, color: '#3b82f6' }} />
-              Thông Tin Chủ Hộ & Cơ Sở Chăn Nuôi
+              Thông Tin Chủ Sở Hữu & Cơ Sở Kinh Doanh
             </h4>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
@@ -188,7 +188,7 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
                 <span style={{ fontSize: 12, color: '#64748b' }}>Số điện thoại liên hệ:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Phone style={{ width: 14, height: 14, color: '#10b981' }} />
-                  {application.phone || '098x xxx xxx'}
+                  {application.phone || 'Chưa cập nhật'}
                 </p>
               </div>
 
@@ -196,7 +196,7 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
                 <span style={{ fontSize: 12, color: '#64748b' }}>Email giao dịch:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Mail style={{ width: 14, height: 14, color: '#6366f1' }} />
-                  {application.email || 'support@webchicken.vn'}
+                  {application.email || 'Chưa cập nhật'}
                 </p>
               </div>
 
@@ -204,7 +204,7 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
                 <span style={{ fontSize: 12, color: '#64748b' }}>Địa chỉ kho / trụ sở doanh nghiệp:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <MapPin style={{ width: 14, height: 14, color: '#ef4444' }} />
-                  {application.farmLocation || 'Đang cập nhật'}
+                  {application.farmLocation || 'Chưa cập nhật'}
                 </p>
               </div>
 
@@ -252,7 +252,7 @@ export const ShopDetailModal: React.FC<ShopDetailModalProps> = ({
               <div>
                 <span style={{ fontSize: 12, color: '#64748b' }}>Số hiệu văn bản chứng nhận:</span>
                 <p style={{ margin: '3px 0 0', fontSize: 13.5, fontWeight: 600, color: '#0f172a' }}>
-                  {application.certificateNumber || 'DKKD-2025-01'}
+                  {application.certificateNumber || 'Chưa cung cấp'}
                 </p>
               </div>
 

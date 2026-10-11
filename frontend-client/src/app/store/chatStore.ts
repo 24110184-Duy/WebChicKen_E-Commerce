@@ -62,6 +62,14 @@ export const chatStore = {
     emit()
   },
 
+  clearActiveProduct: () => {
+    state = {
+      ...state,
+      activeProduct: null,
+    }
+    emit()
+  },
+
   close: () => {
     state = { ...state, isOpen: false }
     emit()
@@ -96,6 +104,7 @@ export function useChatStore() {
     openChat: chatStore.open,
     selectStore: chatStore.selectStore,
     clearActiveStore: chatStore.clearActiveStore,
+    clearActiveProduct: chatStore.clearActiveProduct,
     closeChat: chatStore.close,
     toggleChat: chatStore.toggle,
     setUnreadTotal: chatStore.setUnreadTotal,

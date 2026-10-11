@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { ImageUploader } from '../../../components/molecules/ImageUploader'
 import { sellerApi, type SellerApplicationResponse } from '../api/sellerApi'
+import { useAuthStore } from '../../../app/store/authStore'
 
 export interface SellerRegisterModalProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ export const SellerRegisterModal: React.FC<SellerRegisterModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { user } = useAuthStore()
   const [shopName, setShopName] = useState('')
   const [documentUrl, setDocumentUrl] = useState('')
   const [taxCode, setTaxCode] = useState('')
@@ -37,6 +39,11 @@ export const SellerRegisterModal: React.FC<SellerRegisterModalProps> = ({
         shopName: shopName.trim(),
         documentUrl: documentUrl || undefined,
         taxCode: taxCode.trim() || undefined,
+        ownerName: user?.fullName || user?.username || shopName.trim(),
+        phone: user?.phone || '+84822743010',
+        email: user?.email || 'support@webchicken.vn',
+        farmLocation: 'TP. Hồ Chí Minh',
+        farmType: 'Thương mại điện tử & Bán lẻ',
       })
       setIsSuccess(true)
       onSuccess?.(res)

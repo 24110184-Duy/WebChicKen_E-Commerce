@@ -40,11 +40,8 @@ export const SellerProductListPage: React.FC = () => {
     tabParam === 'VIOLATION' ? 'VIOLATION' : 'ALL'
   )
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
-  const [stockMin, setStockMin] = useState<string>('')
-  const [stockMax, setStockMax] = useState<string>('')
-  const [salesMin, setSalesMin] = useState<string>('')
-  const [salesMax, setSalesMax] = useState<string>('')
 
   // View mode
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
@@ -117,7 +114,7 @@ export const SellerProductListPage: React.FC = () => {
       }
 
       if (currentShopId) {
-        const res = await sellerApi.getStoreProducts(currentShopId)
+        const res = await sellerApi.getStoreProducts(currentShopId, { size: 100 })
         setAllProducts(res.items || [])
       } else {
         setAllProducts([])
@@ -141,8 +138,19 @@ export const SellerProductListPage: React.FC = () => {
     loadProducts()
   }, [loadProducts])
 
-  // Filter logic an toàn tuyệt đối, không crash khi thiếu trường
+  // Helper chuẩn hóa chữ tiếng Việt bỏ dấu để tìm kiếm siêu mượt
+  const normalizeText = (text: string) =>
+    (text || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+
+  // Filter logic an toàn tuyệt đối, tìm kiếm theo tên, mô tả hoặc SKU
   const displayedProducts = useMemo(() => {
+    const rawQuery = (appliedSearchQuery || searchQuery).trim()
+    const normalizedQ = normalizeText(rawQuery)
+
     return allProducts.filter((p) => {
       // Tab filter
       if (activeTab === 'LIVE') {
@@ -159,21 +167,32 @@ export const SellerProductListPage: React.FC = () => {
       // Category filter
       if (selectedCategory !== 'ALL' && p.categoryId !== selectedCategory) return false
 
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim()
-        const matchesName = (p.name || '').toLowerCase().includes(q)
-        const matchesDesc = (p.description || '').toLowerCase().includes(q)
-        if (!matchesName && !matchesDesc) return false
-      }
+      // Search query: tìm theo tên, mô tả, SKU hoặc ID (hỗ trợ cả gõ có dấu lẫn không dấu)
+      if (normalizedQ) {
+        const rawLower = rawQuery.toLowerCase()
+        const nameRaw = (p.name || '').toLowerCase()
+        const descRaw = (p.description || '').toLowerCase()
+        const nameNorm = normalizeText(p.name || '')
+        const descNorm = normalizeText(p.description || '')
+        const skuMatch = ((p as any).sku || (p as any).id || '').toLowerCase().includes(rawLower)
 
-      // Stock filter
-      if (stockMin && p.totalStock < parseInt(stockMin, 10)) return false
-      if (stockMax && p.totalStock > parseInt(stockMax, 10)) return false
+        const matches =
+          nameRaw.includes(rawLower) ||
+          descRaw.includes(rawLower) ||
+          nameNorm.includes(normalizedQ) ||
+          descNorm.includes(normalizedQ) ||
+          skuMatch
+
+        if (!matches) return false
+      }
 
       return true
     })
-  }, [allProducts, activeTab, selectedCategory, searchQuery, stockMin, stockMax])
+  }, [allProducts, activeTab, selectedCategory, appliedSearchQuery, searchQuery])
+
+  const handleSearch = () => {
+    setAppliedSearchQuery(searchQuery.trim())
+  }
 
   const handleTabChange = (t: 'ALL' | 'LIVE' | 'SOLD_OUT' | 'VIOLATION' | 'DELISTED' | 'UNPUBLISHED') => {
     setActiveTab(t)
@@ -188,11 +207,8 @@ export const SellerProductListPage: React.FC = () => {
 
   const handleResetFilter = () => {
     setSearchQuery('')
+    setAppliedSearchQuery('')
     setSelectedCategory('ALL')
-    setStockMin('')
-    setStockMax('')
-    setSalesMin('')
-    setSalesMax('')
   }
 
   const handleOpenAddModal = () => {
@@ -389,16 +405,15 @@ export const SellerProductListPage: React.FC = () => {
         <div
           style={{
             backgroundColor: '#ffffff',
-            borderRadius: 4,
+            borderRadius: 6,
             border: '1px solid #e8e8e8',
-            padding: '20px 24px',
+            padding: '16px 20px',
             marginBottom: 16,
           }}
         >
-          {/* Row 1: Product Name & Category */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 16 }}>
-            {/* Product Name */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            {/* Product Name Search */}
+            <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 320px', minWidth: 260 }}>
               <div
                 style={{
                   padding: '7px 12px',
@@ -421,6 +436,11 @@ export const SellerProductListPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch()
+                  }
+                }}
                 placeholder="Input product name"
                 style={{
                   flex: 1,
@@ -433,8 +453,8 @@ export const SellerProductListPage: React.FC = () => {
               />
             </div>
 
-            {/* Category */}
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            {/* Category Filter */}
+            <div style={{ display: 'flex', alignItems: 'center', flex: '0 1 280px', minWidth: 220 }}>
               <div
                 style={{
                   padding: '7px 12px',
@@ -483,57 +503,12 @@ export const SellerProductListPage: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Row 2: Stock, Sales, Search & Reset */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-              {/* Stock Input */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, color: '#595959', width: 44 }}>Stock</span>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={stockMin}
-                  onChange={(e) => setStockMin(e.target.value)}
-                  style={{ width: 80, padding: '6px 8px', border: '1px solid #d9d9d9', borderRadius: 4, fontSize: 13 }}
-                />
-                <span style={{ color: '#8c8c8c' }}>-</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={stockMax}
-                  onChange={(e) => setStockMax(e.target.value)}
-                  style={{ width: 80, padding: '6px 8px', border: '1px solid #d9d9d9', borderRadius: 4, fontSize: 13 }}
-                />
-              </div>
-
-              {/* Sales Input */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, color: '#595959', width: 44 }}>Sales</span>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={salesMin}
-                  onChange={(e) => setSalesMin(e.target.value)}
-                  style={{ width: 80, padding: '6px 8px', border: '1px solid #d9d9d9', borderRadius: 4, fontSize: 13 }}
-                />
-                <span style={{ color: '#8c8c8c' }}>-</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={salesMax}
-                  onChange={(e) => setSalesMax(e.target.value)}
-                  style={{ width: 80, padding: '6px 8px', border: '1px solid #d9d9d9', borderRadius: 4, fontSize: 13 }}
-                />
-              </div>
-            </div>
 
             {/* Search & Reset Buttons */}
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
               <button
                 type="button"
-                onClick={loadProducts}
+                onClick={handleSearch}
                 style={{
                   backgroundColor: '#facc15',
                   border: 'none',
@@ -543,6 +518,7 @@ export const SellerProductListPage: React.FC = () => {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: 'pointer',
+                  transition: 'opacity 0.15s ease',
                 }}
               >
                 Search

@@ -6,5 +6,14 @@ package com.example.webchicken.modules.shop.model.dto.request;
 public record ApplySellerRequest(
         String shopName,
         String documentUrl,
-        String taxCode
+        String taxCode,
+        String ownerName,
+        String phone,
+        String email,
+        String farmLocation,
+        String farmType,
+        String certificateType,
+        String certificateNumber,
+        String certificateExpiry,
+        String dailyCapacity
 ) {}

@@ -3,7 +3,6 @@ import { AccountLayout } from '../../../layouts/AccountLayout'
 import { useAuthStore } from '../../../app/store/authStore'
 import { customerApi, type UpdateProfileRequest } from '../../../features/auth/api/customerApi'
 import { httpClient } from '../../../shared/api/httpClient'
-import { SellerRegisterModal } from '../../../features/seller/components/SellerRegisterModal'
 
 interface ProfileForm {
   username: string
@@ -43,7 +42,6 @@ export const ProfilePage: React.FC = () => {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
-  const [isSellerModalOpen, setIsSellerModalOpen] = useState(false)
 
   // Phone modal state
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false)
@@ -278,23 +276,6 @@ export const ProfilePage: React.FC = () => {
             <h1 className="shopee-card-title">My Profile</h1>
             <p className="shopee-card-subtitle">Manage and protect your account</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsSellerModalOpen(true)}
-            style={{
-              padding: '7px 16px',
-              borderRadius: 2,
-              background: '#fefce8',
-              color: '#92400e',
-              border: '1px solid #fde68a',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            Register as Seller
-          </button>
         </div>
 
         {/* Card Body: Form + Avatar */}
@@ -770,15 +751,6 @@ export const ProfilePage: React.FC = () => {
           {toast.message}
         </div>
       )}
-
-      {/* Seller Register Modal */}
-      <SellerRegisterModal
-        isOpen={isSellerModalOpen}
-        onClose={() => setIsSellerModalOpen(false)}
-        onSuccess={() => {
-          showToast('Seller application submitted successfully!', 'success')
-        }}
-      />
     </AccountLayout>
   )
 }

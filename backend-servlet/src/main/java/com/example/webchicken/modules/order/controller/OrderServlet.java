@@ -164,4 +164,28 @@ public class OrderServlet extends BaseApiServlet {
             badRequest(resp, "OPERATION_FAILED", e.getMessage());
         }
     }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        if (!isAdmin(req)) {
+            forbidden(resp, "Chỉ Quản trị viên mới có quyền xóa đơn hàng.");
+            return;
+        }
+
+        String pathInfo = req.getPathInfo();
+        if (pathInfo == null || pathInfo.length() <= 1) {
+            badRequest(resp, "MISSING_CODE", "Mã đơn hàng không được để trống.");
+            return;
+        }
+
+        String orderCode = pathInfo.replaceFirst("^/", "").trim();
+        try {
+            orderService().deleteOrderAsAdmin(orderCode);
+            ok(resp, java.util.Map.of("deleted", true, "orderCode", orderCode));
+        } catch (AppException e) {
+            writeJson(resp, e.getHttpStatus(), ApiResponse.fail(com.example.webchicken.common.model.ApiError.of(e.getErrorCode(), e.getMessage())));
+        } catch (Exception e) {
+            badRequest(resp, "OPERATION_FAILED", e.getMessage());
+        }
+    }
 }

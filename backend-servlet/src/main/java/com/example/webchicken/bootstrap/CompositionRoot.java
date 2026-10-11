@@ -152,7 +152,7 @@ public class CompositionRoot {
         );
 
         // Promotion
-        VoucherService voucherService = new VoucherServiceImpl(voucherDAO);
+        VoucherService voucherService = new VoucherServiceImpl(voucherDAO, storeDAO);
 
         // Payment
         com.example.webchicken.infrastructure.payment.VNPayGateway vnPayGateway = new com.example.webchicken.infrastructure.payment.VNPayGateway();

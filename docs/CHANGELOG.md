@@ -267,3 +267,41 @@
     - Hỗ trợ tải ảnh minh chứng từ máy tính thông qua `sellerApi.uploadProductImage` hoặc dán link URL, có thumbnail xem trước kèm nút xóa ảnh tiện lợi.
     - Tab Lịch sử có đầy đủ bộ lọc tìm kiếm theo từ khóa, lọc theo trạng thái và phân loại, kèm bảng chi tiết và popup Modal xem phản hồi chính thức từ Admin.
 
+---
+
+### 7. Tối ưu Hệ thống Voucher Đa cấp, Xử lý User Feedback, Box Chat & Menu Quản trị
+- **Tệp nguồn sửa đổi:**
+  - `backend-servlet/src/main/resources/db/migration/V018__add_category_id_to_vouchers.sql`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/promotion/model/dto/request/CreateVoucherRequest.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/promotion/model/entity/VoucherEntity.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/promotion/dao/VoucherDAO.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/promotion/service/VoucherService.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/promotion/service/impl/VoucherServiceImpl.java`
+  - `frontend-client/src/pages/seller/SellerVouchersPage.tsx`
+  - `frontend-client/src/pages/admin/AdminVouchersPage.tsx`
+  - `frontend-client/src/pages/admin/AdminFeedbacksPage.tsx`
+  - `frontend-client/src/styles/chat.css`
+  - `frontend-client/src/pages/seller/SellerProductListPage.tsx`
+  - `frontend-client/src/pages/buyer/account/ProfilePage.tsx`
+  - `frontend-client/src/layouts/AdminLayout.tsx`
+- **Nội dung đã khắc phục & bổ sung:**
+  1. **Phân hệ Voucher Đa cấp (Seller & Admin)**:
+     - Cho phép Người bán (Seller) tạo voucher riêng cho gian hàng (`scope = 'SHOP'`) hoặc theo 1 ngành hàng cụ thể của gian hàng.
+     - Cho phép Quản trị viên (Admin) tạo voucher toàn sàn (`scope = 'GLOBAL'`) hoặc cho 1 ngành hàng cụ thể trên toàn sàn (`scope = 'CATEGORY'`).
+     - Bổ sung migration `V018__add_category_id_to_vouchers.sql`, mở rộng DTO, Entity, DAO và chặn chặt chẽ quyền tạo theo vai trò người dùng trong Service.
+  2. **Tối ưu Xử lý Ý kiến Người dùng (User Feedback)**:
+     - Ưu tiên đưa các phản hồi đang ở trạng thái Chờ xử lý (`PENDING`) lên đầu danh sách.
+     - Sắp xếp theo ngày tạo cũ nhất trước (FIFO) để giải quyết các trường hợp tồn đọng.
+     - Khóa cứng hành động xử lý: Một phản hồi sau khi Admin giải quyết/từ chối chỉ được xử lý đúng 1 lần duy nhất, ngăn chặn chỉnh sửa hoặc ghi đè nhiều lần.
+  3. **Khắc phục lỗi Giao diện Box Chat bị đè**:
+     - Điều chỉnh tọa độ, kích thước và `z-index` trong `chat.css` tránh xung đột đè lên các thành phần khác của trang.
+  4. **Tối ưu Bảng Quản lý Sản phẩm Kênh Người bán (`SellerProductListPage.tsx`)**:
+     - Sửa lỗi tìm kiếm không nhận theo tên sản phẩm.
+     - Loại bỏ 2 cột Stock và Sales dư thừa, tối ưu hóa không gian hiển thị bảng danh sách sản phẩm.
+  5. **Xóa nút Đăng ký bán hàng dư thừa trong Trang cá nhân (`ProfilePage.tsx`)**:
+     - Loại bỏ nút đăng ký và modal thừa ở trang `/account/profile`, giữ luồng đăng ký tập trung và sạch sẽ.
+  6. **Chuẩn hóa Menu Điều hướng Sidebar Quản trị viên (`AdminLayout.tsx`)**:
+     - Tái cấu trúc 8 nhóm menu nghiệp vụ rõ ràng (Overview, Order, Product & Catalog, Shop Management, Marketing Centre, Customer Service, Accounts & Security, System Settings).
+     - Khắc phục lỗi bấm chuyển menu bị loạn: Viết lại logic nhận diện route chính xác từng trang và các đường dẫn alias, đảm bảo chỉ highlight đúng mục đang chọn.
+
+

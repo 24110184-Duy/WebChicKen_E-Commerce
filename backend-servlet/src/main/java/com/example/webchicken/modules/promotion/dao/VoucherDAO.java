@@ -121,6 +121,41 @@ public class VoucherDAO extends BaseDAO {
                 .getSingleResult());
     }
 
+    public List<VoucherEntity> findVouchers(String storeId, Boolean activeOnly, int page, int size) {
+        int safePage = Math.max(1, page);
+        int safeSize = Math.min(100, Math.max(1, size));
+        return executeQuery(em -> {
+            StringBuilder sb = new StringBuilder("SELECT v FROM VoucherEntity v WHERE 1=1 ");
+            if ("__PLATFORM__".equals(storeId)) {
+                sb.append("AND v.storeId IS NULL ");
+            } else if (storeId != null && !storeId.isBlank()) {
+                sb.append("AND v.storeId = :storeId ");
+            }
+            if (Boolean.TRUE.equals(activeOnly)) {
+                sb.append("AND v.isActive = true ");
+            }
+            sb.append("ORDER BY v.startDate DESC");
+
+            var query = em.createQuery(sb.toString(), VoucherEntity.class);
+            if (storeId != null && !storeId.isBlank() && !"__PLATFORM__".equals(storeId)) {
+                query.setParameter("storeId", storeId);
+            }
+            return query.setFirstResult((safePage - 1) * safeSize)
+                    .setMaxResults(safeSize)
+                    .getResultList();
+        });
+    }
+
+    public void delete(String id) {
+        if (id == null || id.isBlank()) return;
+        executeInTransaction(em -> {
+            VoucherEntity v = em.find(VoucherEntity.class, id);
+            if (v != null) {
+                em.remove(v);
+            }
+        });
+    }
+
     public void save(VoucherEntity voucher) {
         executeInTransaction(em -> {
             VoucherEntity existing = em.find(VoucherEntity.class, voucher.getId());

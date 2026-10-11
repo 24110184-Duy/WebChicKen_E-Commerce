@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ShoppingBag,
   Search,
@@ -15,7 +15,12 @@ import {
   DollarSign,
   Calendar,
   Layers,
-  MapPin
+  MapPin,
+  Trash2,
+  FolderTree,
+  AlertTriangle,
+  X,
+  User
 } from 'lucide-react'
 import { AdminLayout } from '../../layouts/AdminLayout'
 import {
@@ -23,13 +28,21 @@ import {
   type AdminOrder,
   type OrderStatusHistoryItem
 } from '../../features/admin/api/adminOrderApi'
+import { adminCategoryApi, type CategoryItem } from '../../features/admin/api/adminCategoryApi'
+import { adminProductApi } from '../../features/admin/api/adminProductApi'
 
 export const AdminOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<AdminOrder[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [shopFilter, setShopFilter] = useState<string>('ALL')
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // External data for filters
+  const [categories, setCategories] = useState<CategoryItem[]>([])
+  const [productCategoryMap, setProductCategoryMap] = useState<Record<string, { categoryId: string; categoryName: string }>>({})
 
   // Order Detail Modal
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null)
@@ -40,6 +53,10 @@ export const AdminOrdersPage: React.FC = () => {
   const [cancellingOrder, setCancellingOrder] = useState<AdminOrder | null>(null)
   const [cancelReason, setCancelReason] = useState<string>('')
   const [submittingCancel, setSubmittingCancel] = useState<boolean>(false)
+
+  // Delete Order Modal
+  const [deletingOrder, setDeletingOrder] = useState<AdminOrder | null>(null)
+  const [submittingDelete, setSubmittingDelete] = useState<boolean>(false)
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type })
@@ -58,6 +75,39 @@ export const AdminOrdersPage: React.FC = () => {
       setLoading(false)
     }
   }, [statusFilter])
+
+  // Load auxiliary data for Category & Shop filters
+  useEffect(() => {
+    const loadFilterData = async () => {
+      try {
+        const [cats, prods] = await Promise.allSettled([
+          adminCategoryApi.getCategories(),
+          adminProductApi.getProducts({ size: 100 })
+        ])
+
+        if (cats.status === 'fulfilled') {
+          setCategories(cats.value)
+        }
+
+        if (prods.status === 'fulfilled' && prods.value.items) {
+          const map: Record<string, { categoryId: string; categoryName: string }> = {}
+          prods.value.items.forEach((p) => {
+            if (p.id) {
+              map[p.id] = {
+                categoryId: p.categoryId || '',
+                categoryName: p.categoryName || ''
+              }
+            }
+          })
+          setProductCategoryMap(map)
+        }
+      } catch (err) {
+        console.warn('Lỗi khi tải danh mục và sản phẩm cho bộ lọc:', err)
+      }
+    }
+
+    loadFilterData()
+  }, [])
 
   useEffect(() => {
     loadOrders()
@@ -96,6 +146,25 @@ export const AdminOrdersPage: React.FC = () => {
       showToast('Lỗi khi hủy đơn hàng: ' + (err?.message || 'Không thành công'), 'error')
     } finally {
       setSubmittingCancel(false)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingOrder) return
+
+    try {
+      setSubmittingDelete(true)
+      await adminOrderApi.deleteOrder(deletingOrder.orderCode)
+      setOrders((prev) => prev.filter((o) => o.orderCode !== deletingOrder.orderCode))
+      if (selectedOrder?.orderCode === deletingOrder.orderCode) {
+        setSelectedOrder(null)
+      }
+      showToast(`Đã xóa vĩnh viễn đơn hàng [${deletingOrder.orderCode}] khỏi hệ thống.`, 'success')
+      setDeletingOrder(null)
+    } catch (err: any) {
+      showToast('Lỗi khi xóa đơn hàng: ' + (err?.message || 'Không thành công'), 'error')
+    } finally {
+      setSubmittingDelete(false)
     }
   }
 
@@ -150,17 +219,65 @@ export const AdminOrdersPage: React.FC = () => {
     }
   }
 
-  // Filtered orders
-  const filteredOrders = orders.filter((o) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      o.orderCode.toLowerCase().includes(q) ||
-      (o.storeName && o.storeName.toLowerCase().includes(q)) ||
-      (o.shippingAddress && o.shippingAddress.toLowerCase().includes(q)) ||
-      (o.customerId && o.customerId.toLowerCase().includes(q))
-    )
-  })
+  // Danh sách các shop duy nhất từ các đơn hàng hiện có
+  const uniqueShops = useMemo(() => {
+    const map = new Map<string, string>()
+    orders.forEach((o) => {
+      const sName = o.storeName || 'ChickyMart Shop'
+      const sId = o.storeId || sName
+      map.set(sId, sName)
+    })
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
+  }, [orders])
+
+  // Lọc đa tiêu chí: Trạng thái, Shop, Danh mục, Từ khóa tìm kiếm
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      // 1. Trạng thái
+      if (statusFilter !== 'ALL' && o.status !== statusFilter) {
+        return false
+      }
+
+      // 2. Lọc theo Gian hàng / Shop
+      if (shopFilter !== 'ALL') {
+        const orderShop = o.storeName || 'ChickyMart Shop'
+        const orderShopId = o.storeId || ''
+        if (orderShop !== shopFilter && orderShopId !== shopFilter) {
+          return false
+        }
+      }
+
+      // 3. Lọc theo Danh mục sản phẩm (Category)
+      if (categoryFilter !== 'ALL') {
+        const matchesCategory = o.items?.some((item) => {
+          const productInfo = productCategoryMap[item.productId]
+          if (productInfo) {
+            return (
+              productInfo.categoryId === categoryFilter ||
+              productInfo.categoryName.toLowerCase() === categoryFilter.toLowerCase()
+            )
+          }
+          return false
+        })
+        if (!matchesCategory) {
+          return false
+        }
+      }
+
+      // 4. Tìm kiếm từ khóa
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim()
+        const matchCode = o.orderCode.toLowerCase().includes(q)
+        const matchStore = (o.storeName || '').toLowerCase().includes(q)
+        const matchAddress = (o.shippingAddress || '').toLowerCase().includes(q)
+        const matchCustomer = (o.customerId || '').toLowerCase().includes(q)
+        const matchItems = o.items?.some((i) => i.productName.toLowerCase().includes(q))
+        return matchCode || matchStore || matchAddress || matchCustomer || matchItems
+      }
+
+      return true
+    })
+  }, [orders, statusFilter, shopFilter, categoryFilter, searchQuery, productCategoryMap])
 
   // Thống kê nhanh
   const totalCount = orders.length
@@ -170,6 +287,15 @@ export const AdminOrdersPage: React.FC = () => {
   const totalRevenue = orders
     .filter((o) => o.status !== 'CANCELLED')
     .reduce((sum, o) => sum + (o.grandTotalMinor || 0), 0)
+
+  const isFilterActive = shopFilter !== 'ALL' || categoryFilter !== 'ALL' || searchQuery.trim() !== ''
+
+  const handleResetFilters = () => {
+    setShopFilter('ALL')
+    setCategoryFilter('ALL')
+    setSearchQuery('')
+    setStatusFilter('ALL')
+  }
 
   return (
     <AdminLayout>
@@ -181,7 +307,7 @@ export const AdminOrdersPage: React.FC = () => {
               position: 'fixed',
               top: 24,
               right: 24,
-              zIndex: 9999,
+              zIndex: 99999,
               padding: '12px 20px',
               borderRadius: 10,
               boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
@@ -288,8 +414,9 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Tabs & Search Bar */}
+        {/* Filter Tabs & Advanced Filter Toolbar */}
         <div className="admin-ord-toolbar-card">
+          {/* Row 1: Status Filter Tabs */}
           <div className="admin-ord-tabs-row">
             {[
               { key: 'ALL', label: 'Tất cả' },
@@ -310,33 +437,179 @@ export const AdminOrdersPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="admin-ord-search-box">
-            <Search size={18} className="admin-ord-search-icon" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo mã đơn hàng (ORD-...), tên gian hàng, địa chỉ nhận hàng..."
-              className="admin-ord-search-input"
-            />
+          {/* Row 2: Search & Dropdown Filters (Category & Shop) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+            {/* Search Input */}
+            <div className="admin-ord-search-box" style={{ flex: '1 1 300px' }}>
+              <Search size={18} className="admin-ord-search-icon" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm theo mã đơn hàng (ORD-...), tên gian hàng, địa chỉ, người nhận..."
+                className="admin-ord-search-input"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: '0 8px',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  title="Xóa tìm kiếm"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Shop Filter Dropdown */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                padding: '0 12px',
+                height: 42,
+                minWidth: 200,
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+              }}
+            >
+              <Store size={16} style={{ color: '#6366f1', flexShrink: 0 }} />
+              <select
+                value={shopFilter}
+                onChange={(e) => setShopFilter(e.target.value)}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#334155',
+                  width: '100%',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="ALL">Tất cả gian hàng ({uniqueShops.length})</option>
+                {uniqueShops.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Category Filter Dropdown */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                padding: '0 12px',
+                height: 42,
+                minWidth: 200,
+                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+              }}
+            >
+              <FolderTree size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#334155',
+                  width: '100%',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="ALL">Tất cả danh mục ({categories.length})</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Reset Filter Button */}
+            {isFilterActive && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 42,
+                  padding: '0 14px',
+                  backgroundColor: '#f1f5f9',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#475569',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Khôi phục tất cả bộ lọc về mặc định"
+              >
+                <RotateCcw size={14} />
+                <span>Đặt lại</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Orders Table */}
         <div className="admin-ord-table-card">
           {loading ? (
-            <div className="py-20 text-center">
-              <RefreshCw style={{ width: 32, height: 32, color: '#6366f1', margin: '0 auto' }} className="animate-spin mb-3" />
-              <p className="text-sm text-gray-500">Đang tải danh sách đơn hàng toàn sàn...</p>
+            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+              <RefreshCw style={{ width: 32, height: 32, color: '#6366f1', margin: '0 auto 12px' }} className="animate-spin" />
+              <p style={{ fontSize: 14, color: '#64748b' }}>Đang tải danh sách đơn hàng toàn sàn...</p>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="py-20 text-center">
-              <ShoppingBag style={{ width: 40, height: 40, color: '#9ca3af', margin: '0 auto 12px' }} />
-              <p className="text-base font-semibold text-gray-700">Không có đơn hàng nào khớp điều kiện</p>
-              <p className="text-sm text-gray-500 mt-1">Vui lòng thử chọn trạng thái khác hoặc xóa tìm kiếm.</p>
+            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+              <ShoppingBag style={{ width: 44, height: 44, color: '#94a3b8', margin: '0 auto 12px' }} />
+              <p style={{ fontSize: 16, fontWeight: 700, color: '#334155' }}>Không có đơn hàng nào khớp điều kiện</p>
+              <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Vui lòng thử chọn trạng thái khác hoặc xóa tìm kiếm.</p>
+              {isFilterActive && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  style={{
+                    marginTop: 14,
+                    padding: '8px 16px',
+                    backgroundColor: '#6366f1',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Xóa toàn bộ bộ lọc
+                </button>
+              )}
             </div>
           ) : (
-            <div style={{ width: '100%', overflowX: 'hidden' }}>
+            <div style={{ width: '100%', overflowX: 'auto' }}>
               <table className="admin-ord-table">
                 <thead>
                   <tr>
@@ -353,25 +626,36 @@ export const AdminOrdersPage: React.FC = () => {
                   {filteredOrders.map((order) => (
                     <tr key={order.id}>
                       <td>
-                        <span className="admin-ord-code-badge">
+                        <button
+                          type="button"
+                          onClick={() => openOrderDetail(order)}
+                          className="admin-ord-code-badge"
+                          style={{
+                            border: 'none',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            display: 'inline-block'
+                          }}
+                          title="Bấm để xem chi tiết đơn hàng"
+                        >
                           {order.orderCode}
-                        </span>
+                        </button>
                         <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
                           {order.items?.length || 0} sản phẩm
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 font-medium text-gray-800">
-                          <Store style={{ width: 14, height: 14, color: '#6366f1' }} />
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#1e293b' }}>
+                          <Store style={{ width: 14, height: 14, color: '#6366f1', flexShrink: 0 }} />
                           <span>{order.storeName || 'ChickyMart Shop'}</span>
                         </div>
-                        <span className="text-xs text-gray-400 block truncate max-w-xs">
+                        <span style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginTop: 2, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {order.shippingAddress || 'Địa chỉ tiêu chuẩn'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Calendar style={{ width: 13, height: 13, color: '#9ca3af' }} />
+                      <td style={{ padding: '14px 16px', fontSize: 12, color: '#64748b' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Calendar style={{ width: 13, height: 13, color: '#94a3b8' }} />
                           <span>
                             {order.orderDate
                               ? new Date(order.orderDate).toLocaleString('vi-VN')
@@ -379,48 +663,105 @@ export const AdminOrdersPage: React.FC = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-700">
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#334155' }}>
                           <CreditCard style={{ width: 13, height: 13, color: '#6b7280' }} />
-                          <span className="font-semibold">{order.paymentMethod}</span>
+                          <span style={{ fontWeight: 600 }}>{order.paymentMethod}</span>
                         </div>
                         <span
-                          className={`text-2xs font-semibold px-1.5 py-0.5 rounded mt-0.5 inline-block ${
-                            order.paymentStatus === 'PAID'
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-amber-50 text-amber-700'
-                          }`}
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            marginTop: 4,
+                            display: 'inline-block',
+                            backgroundColor: order.paymentStatus === 'PAID' ? '#ecfdf5' : '#fffbeb',
+                            color: order.paymentStatus === 'PAID' ? '#047857' : '#b45309',
+                            border: order.paymentStatus === 'PAID' ? '1px solid #a7f3d0' : '1px solid #fde68a'
+                          }}
                         >
                           {order.paymentStatus === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4">{getStatusBadge(order.status)}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-gray-900 text-sm">
+                      <td style={{ padding: '14px 16px' }}>{getStatusBadge(order.status)}</td>
+                      <td style={{ padding: '14px 16px' }}>
+                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 14 }}>
                           {formatVnd(order.grandTotalMinor)}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                          {/* Nút Xem chi tiết đơn hàng */}
                           <button
+                            type="button"
                             onClick={() => openOrderDetail(order)}
-                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 8,
+                              border: '1px solid #e0e7ff',
+                              backgroundColor: '#eef2ff',
+                              color: '#4f46e5',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
                             title="Xem chi tiết đơn hàng"
                           >
                             <Eye style={{ width: 16, height: 16 }} />
                           </button>
+
+                          {/* Nút Can thiệp hủy đơn (nếu chưa hủy / giao xong) */}
                           {order.status !== 'CANCELLED' && order.status !== 'DELIVERED' && (
                             <button
+                              type="button"
                               onClick={() => {
                                 setCancellingOrder(order)
                                 setCancelReason('')
                               }}
-                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                border: '1px solid #fed7aa',
+                                backgroundColor: '#fff7ed',
+                                color: '#ea580c',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
                               title="Can thiệp hủy đơn hàng"
                             >
                               <XCircle style={{ width: 16, height: 16 }} />
                             </button>
                           )}
+
+                          {/* Nút Xóa đơn hàng (Admin Delete) */}
+                          <button
+                            type="button"
+                            onClick={() => setDeletingOrder(order)}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 8,
+                              border: '1px solid #fecaca',
+                              backgroundColor: '#fef2f2',
+                              color: '#dc2626',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            title="Xóa đơn hàng này khỏi hệ thống"
+                          >
+                            <Trash2 style={{ width: 16, height: 16 }} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -431,131 +772,356 @@ export const AdminOrdersPage: React.FC = () => {
           )}
         </div>
 
-        {/* Order Detail Modal */}
+        {/* ── 1. MODAL XEM CHI TIẾT ĐƠN HÀNG (ORDER DETAIL MODAL) ── */}
         {selectedOrder && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/70">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded">
-                    {selectedOrder.orderCode}
-                  </span>
-                  {getStatusBadge(selectedOrder.status)}
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16
+            }}
+            onClick={() => setSelectedOrder(null)}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 16,
+                maxWidth: 840,
+                width: '100%',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div
+                style={{
+                  padding: '18px 24px',
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid #1e293b'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      backgroundColor: '#4f46e5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <ShoppingBag size={20} color="#ffffff" />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 16, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.03em' }}>
+                        {selectedOrder.orderCode}
+                      </span>
+                      {getStatusBadge(selectedOrder.status)}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                      Đặt lúc: {selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleString('vi-VN') : 'Gần đây'}
+                    </div>
+                  </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedOrder(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: 'none',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#cbd5e1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  title="Đóng cửa sổ"
                 >
-                  ✕
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto space-y-6">
-                {/* Store & Shipping Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl text-xs">
+              {/* Modal Body */}
+              <div style={{ padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* 2-Column Info Grid: Gian Hàng & Giao Nhận */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: 16,
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    padding: 16
+                  }}
+                >
+                  {/* Shop Info */}
                   <div>
-                    <span className="font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Gian Hàng Cung Cấp
                     </span>
-                    <p className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                      <Store style={{ width: 15, height: 15, color: '#4f46e5' }} />
-                      {selectedOrder.storeName || 'ChickyMart Official'}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                      <Store size={18} color="#4f46e5" />
+                      <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                        {selectedOrder.storeName || 'ChickyMart Official'}
+                      </span>
+                    </div>
+                    {selectedOrder.storeId && (
+                      <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>
+                        Store ID: {selectedOrder.storeId}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Shipping & Recipient Info */}
                   <div>
-                    <span className="font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                      Địa Chỉ Nhận Hàng
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Thông Tin Nhận Hàng
                     </span>
-                    <p className="text-gray-800 flex items-start gap-1">
-                      <MapPin style={{ width: 14, height: 14, color: '#ef4444', flexShrink: 0, marginTop: 2 }} />
-                      <span>{selectedOrder.shippingAddress || 'Không có địa chỉ cụ thể'}</span>
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 6 }}>
+                      <MapPin size={16} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.4 }}>
+                        {selectedOrder.shippingAddress || 'Địa chỉ tiêu chuẩn hệ sinh thái'}
+                      </div>
+                    </div>
+                    {selectedOrder.customerId && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: '#64748b' }}>
+                        <User size={13} />
+                        <span>Mã người mua: {selectedOrder.customerId}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Items List */}
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm mb-3">Sản phẩm trong đơn hàng</h4>
-                  <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
-                    {selectedOrder.items?.map((item) => (
-                      <div key={item.id} className="p-3 flex items-center justify-between gap-3 text-sm">
-                        <div className="flex items-center gap-3">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.productName}
-                              className="w-11 h-11 rounded-lg object-cover bg-gray-100 border border-gray-200"
-                            />
-                          ) : (
-                            <div className="w-11 h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
-                              {item.productName.charAt(0)}
-                            </div>
-                          )}
-                          <div>
-                            <span className="font-medium text-gray-900 block">{item.productName}</span>
-                            {item.variantName && (
-                              <span className="text-xs text-gray-500">Phân loại: {item.variantName}</span>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 12px 0' }}>
+                    Sản phẩm trong đơn hàng ({selectedOrder.items?.length || 0})
+                  </h4>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                    {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                      selectedOrder.items.map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          style={{
+                            padding: '12px 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 16,
+                            borderBottom: idx < (selectedOrder.items?.length || 0) - 1 ? '1px solid #f1f5f9' : 'none',
+                            backgroundColor: '#ffffff'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.productName}
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: 8,
+                                  objectFit: 'cover',
+                                  border: '1px solid #e2e8f0',
+                                  backgroundColor: '#f8fafc'
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: 8,
+                                  backgroundColor: '#eef2ff',
+                                  color: '#4f46e5',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 700,
+                                  fontSize: 16
+                                }}
+                              >
+                                {item.productName ? item.productName.charAt(0).toUpperCase() : 'P'}
+                              </div>
                             )}
-                            <span className="text-xs text-gray-400 block">Số lượng: x{item.quantity}</span>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>
+                                {item.productName}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontSize: 12, color: '#64748b' }}>
+                                {item.variantName && <span>Phân loại: <b>{item.variantName}</b></span>}
+                                <span>Số lượng: <b>x{item.quantity}</b></span>
+                                {productCategoryMap[item.productId]?.categoryName && (
+                                  <span style={{ backgroundColor: '#ecfdf5', color: '#059669', padding: '1px 6px', borderRadius: 4, fontSize: 11 }}>
+                                    {productCategoryMap[item.productId].categoryName}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                              {formatVnd(item.subtotalMinor || item.unitPriceMinor * item.quantity)}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
+                              {formatVnd(item.unitPriceMinor)} / sp
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-bold text-gray-900 block">
-                            {formatVnd(item.unitPriceMinor * item.quantity)}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {formatVnd(item.unitPriceMinor)} / sp
-                          </span>
-                        </div>
+                      ))
+                    ) : (
+                      <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                        Không có chi tiết mặt hàng
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
-                {/* Financial Summary */}
-                <div className="border-t border-gray-100 pt-4 space-y-2 text-xs">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Tổng tiền hàng:</span>
-                    <span>{formatVnd(selectedOrder.totalAmountMinor)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Phí giao vận:</span>
-                    <span>+{formatVnd(selectedOrder.shippingFeeMinor)}</span>
-                  </div>
-                  {selectedOrder.discountAmountMinor > 0 && (
-                    <div className="flex justify-between text-emerald-600 font-semibold">
-                      <span>Voucher giảm giá sàn/shop:</span>
-                      <span>-{formatVnd(selectedOrder.discountAmountMinor)}</span>
+                {/* Financial Summary & Payment */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                    gap: 16,
+                    padding: 16,
+                    backgroundColor: '#f8fafc',
+                    borderRadius: 12,
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
+                  {/* Payment Details */}
+                  <div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Phương Thức Thanh Toán
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 14, fontWeight: 600, color: '#1e293b' }}>
+                      <CreditCard size={18} color="#6366f1" />
+                      <span>{selectedOrder.paymentMethod || 'COD'}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-100 pt-2">
-                    <span>Tổng thanh toán:</span>
-                    <span className="text-indigo-600">{formatVnd(selectedOrder.grandTotalMinor)}</span>
+                    <div style={{ marginTop: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          backgroundColor: selectedOrder.paymentStatus === 'PAID' ? '#ecfdf5' : '#fffbeb',
+                          color: selectedOrder.paymentStatus === 'PAID' ? '#047857' : '#b45309',
+                          border: selectedOrder.paymentStatus === 'PAID' ? '1px solid #a7f3d0' : '1px solid #fde68a'
+                        }}
+                      >
+                        {selectedOrder.paymentStatus === 'PAID' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Calculations */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                      <span>Tổng tiền hàng:</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatVnd(selectedOrder.totalAmountMinor)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                      <span>Phí vận chuyển:</span>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>+{formatVnd(selectedOrder.shippingFeeMinor)}</span>
+                    </div>
+                    {selectedOrder.discountAmountMinor > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669', fontWeight: 600 }}>
+                        <span>Giảm giá Voucher:</span>
+                        <span>-{formatVnd(selectedOrder.discountAmountMinor)}</span>
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        borderTop: '1px solid #e2e8f0',
+                        paddingTop: 8,
+                        marginTop: 4,
+                        fontSize: 15,
+                        fontWeight: 800,
+                        color: '#0f172a'
+                      }}
+                    >
+                      <span>Tổng thanh toán:</span>
+                      <span style={{ color: '#4f46e5' }}>{formatVnd(selectedOrder.grandTotalMinor)}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Status Timeline History */}
                 <div>
-                  <h4 className="font-bold text-gray-900 text-sm mb-3">Lịch sử chuyển đổi trạng thái</h4>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 12px 0' }}>
+                    Lịch sử hành trình trạng thái (Audit Trail)
+                  </h4>
                   {loadingHistory ? (
-                    <p className="text-xs text-gray-400">Đang tải lịch sử hành trình...</p>
+                    <div style={{ padding: 16, fontSize: 13, color: '#94a3b8' }}>
+                      Đang tải lịch sử hành trình...
+                    </div>
                   ) : orderHistory.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic">Chưa có bản ghi lịch sử bổ sung.</p>
+                    <div style={{ padding: 14, fontSize: 13, color: '#94a3b8', fontStyle: 'italic', backgroundColor: '#f8fafc', borderRadius: 8 }}>
+                      Đơn hàng chưa có thêm mốc chuyển đổi trạng thái nào khác.
+                    </div>
                   ) : (
-                    <div className="space-y-3 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200">
+                    <div
+                      style={{
+                        borderLeft: '2px solid #e2e8f0',
+                        marginLeft: 10,
+                        paddingLeft: 18,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 14
+                      }}
+                    >
                       {orderHistory.map((h) => (
-                        <div key={h.id} className="relative flex items-start gap-3 pl-6 text-xs">
-                          <span className="absolute left-1 top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 ring-4 ring-white" />
-                          <div>
-                            <span className="font-semibold text-gray-900">
-                              {h.fromStatus ? `${h.fromStatus} → ` : ''}
-                              {h.toStatus}
-                            </span>
-                            <span className="text-gray-400 text-2xs block">
-                              Bởi {h.actorType} • {new Date(h.createdAt).toLocaleString('vi-VN')}
-                            </span>
-                            {h.reason && <span className="text-gray-600 block mt-0.5 italic">"{h.reason}"</span>}
+                        <div key={h.id} style={{ position: 'relative' }}>
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: -24,
+                              top: 2,
+                              width: 10,
+                              height: 10,
+                              borderRadius: '50%',
+                              backgroundColor: '#4f46e5',
+                              border: '2px solid #ffffff'
+                            }}
+                          />
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                            {h.fromStatus ? `${h.fromStatus} → ` : ''}
+                            {h.toStatus}
                           </div>
+                          <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
+                            Bởi {h.actorType} {h.actorId ? `(${h.actorId})` : ''} •{' '}
+                            {new Date(h.createdAt).toLocaleString('vi-VN')}
+                          </div>
+                          {h.reason && (
+                            <div style={{ fontSize: 12, color: '#475569', fontStyle: 'italic', marginTop: 3 }}>
+                              "{h.reason}"
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -563,10 +1129,84 @@ export const AdminOrdersPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50">
+              {/* Modal Footer */}
+              <div
+                style={{
+                  padding: '16px 24px',
+                  backgroundColor: '#f8fafc',
+                  borderTop: '1px solid #e2e8f0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {/* Nút Xóa Đơn Hàng trong Modal */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeletingOrder(selectedOrder)
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '8px 14px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#dc2626',
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: 8,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Trash2 size={15} />
+                    <span>Xóa đơn hàng</span>
+                  </button>
+
+                  {/* Nút Can thiệp Hủy Đơn */}
+                  {selectedOrder.status !== 'CANCELLED' && selectedOrder.status !== 'DELIVERED' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCancellingOrder(selectedOrder)
+                        setCancelReason('')
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 14px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#ea580c',
+                        backgroundColor: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        borderRadius: 8,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <XCircle size={15} />
+                      <span>Can thiệp hủy đơn</span>
+                    </button>
+                  )}
+                </div>
+
                 <button
+                  type="button"
                   onClick={() => setSelectedOrder(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  style={{
+                    padding: '8px 20px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#334155',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 8,
+                    cursor: 'pointer'
+                  }}
                 >
                   Đóng
                 </button>
@@ -575,56 +1215,229 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
         )}
 
-        {/* Admin Cancel Order Modal */}
+        {/* ── 2. MODAL CAN THIỆP HỦY ĐƠN HÀNG (CANCEL ORDER MODAL) ── */}
         {cancellingOrder && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-              <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center mx-auto">
-                <XCircle style={{ width: 24, height: 24 }} />
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16
+            }}
+            onClick={() => setCancellingOrder(null)}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 16,
+                maxWidth: 480,
+                width: '100%',
+                padding: 24,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto'
+                }}
+              >
+                <XCircle size={26} />
               </div>
-              <div className="text-center">
-                <h3 className="font-bold text-gray-900 text-lg">Can thiệp hủy đơn hàng</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Đơn hàng: <span className="font-mono font-bold text-indigo-600">{cancellingOrder.orderCode}</span>
+
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: '0 0 6px 0' }}>
+                  Can thiệp hủy đơn hàng
+                </h3>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+                  Đơn hàng: <b style={{ fontFamily: 'monospace', color: '#4f46e5' }}>{cancellingOrder.orderCode}</b>
                 </p>
-                <p className="text-xs text-red-600 mt-1">
-                  Thao tác này sẽ hoàn trả số lượng tồn kho và ghi nhận quyền can thiệp của Quản Trị Viên vào Audit Trail.
+                <p style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>
+                  Hành động này sẽ giải phóng tồn kho đã giữ và ghi nhận lịch sử can thiệp vào Audit Trail.
                 </p>
               </div>
 
-              <form onSubmit={handleAdminCancel} className="space-y-4">
+              <form onSubmit={handleAdminCancel} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Lý do can thiệp hủy đơn <span className="text-red-500">*</span>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Lý do can thiệp hủy đơn <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <textarea
                     rows={3}
                     value={cancelReason}
                     onChange={(e) => setCancelReason(e.target.value)}
                     placeholder="Ví dụ: Người mua khiếu nại gian hàng gian lận, không đóng gói theo cam kết..."
-                    className="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #cbd5e1',
+                      fontSize: 13,
+                      outline: 'none',
+                      resize: 'vertical'
+                    }}
                     required
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
                   <button
                     type="button"
                     onClick={() => setCancellingOrder(null)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#f1f5f9',
+                      color: '#475569',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
                   >
                     Bỏ qua
                   </button>
                   <button
                     type="submit"
                     disabled={submittingCancel}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '8px 18px',
+                      borderRadius: 8,
+                      border: 'none',
+                      backgroundColor: '#dc2626',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: submittingCancel ? 'not-allowed' : 'pointer'
+                    }}
                   >
-                    {submittingCancel && <RefreshCw style={{ width: 14, height: 14 }} className="animate-spin" />}
+                    {submittingCancel && <RefreshCw size={14} className="animate-spin" />}
                     <span>Xác Nhận Hủy Đơn</span>
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── 3. MODAL XÁC NHẬN XÓA ĐƠN HÀNG (DELETE ORDER MODAL) ── */}
+        {deletingOrder && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16
+            }}
+            onClick={() => setDeletingOrder(null)}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 16,
+                maxWidth: 440,
+                width: '100%',
+                padding: 24,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 14,
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto'
+                }}
+              >
+                <AlertTriangle size={28} />
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: '0 0 6px 0' }}>
+                  Xác nhận xóa vĩnh viễn đơn hàng
+                </h3>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
+                  Bạn có chắc chắn muốn xóa đơn hàng{' '}
+                  <b style={{ fontFamily: 'monospace', color: '#dc2626' }}>{deletingOrder.orderCode}</b> khỏi hệ sinh thái?
+                </p>
+                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 10, lineHeight: 1.4 }}>
+                  Hành động này sẽ xóa dữ liệu đơn hàng và lịch sử liên quan khỏi cơ sở dữ liệu. Thao tác này không thể hoàn tác.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setDeletingOrder(null)}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#475569',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={submittingDelete}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    backgroundColor: '#dc2626',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: submittingDelete ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {submittingDelete && <RefreshCw size={14} className="animate-spin" />}
+                  <span>Xóa Đơn Hàng</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

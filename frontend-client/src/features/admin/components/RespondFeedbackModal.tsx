@@ -10,7 +10,8 @@ import {
   Sparkles,
   ExternalLink,
   ShieldCheck,
-  ZoomIn
+  ZoomIn,
+  Lock
 } from 'lucide-react'
 import type { FeedbackItem, FeedbackStatus } from '../../shop/types/feedbackTypes'
 import { ImageLightboxModal } from '../../../components/feedback/ImageLightboxModal'
@@ -34,6 +35,10 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false)
 
+  const isAlreadyHandled = Boolean(
+    feedback && (feedback.status !== 'PENDING' || Boolean(feedback.adminResponse))
+  )
+
   useEffect(() => {
     if (feedback) {
       setStatus(feedback.status === 'PENDING' ? 'RESOLVED' : feedback.status)
@@ -45,14 +50,19 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
   if (!isOpen || !feedback) return null
 
   const handleApplyTemplate = (text: string, newStatus: FeedbackStatus) => {
+    if (isAlreadyHandled) return
     setResponseContent(text)
     setStatus(newStatus)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isAlreadyHandled) {
+      onClose()
+      return
+    }
     if (!responseContent.trim()) {
-      setError('Vui lòng nhập nội dung phản hồi cho nhà bán.')
+      setError('Vui lòng nhập nội dung phản hồi cho người gửi.')
       return
     }
 
@@ -148,7 +158,7 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                  Xử Lý Phản Hồi Từ {feedback.senderRole === 'SELLER' || feedback.shopName ? 'Nhà Bán' : 'Khách Hàng'}
+                  {isAlreadyHandled ? 'Chi Tiết Phản Hồi Từ' : 'Xử Lý Phản Hồi Từ'} {feedback.senderRole === 'SELLER' || feedback.shopName ? 'Nhà Bán' : 'Khách Hàng'}
                 </h3>
                 <span
                   style={{
@@ -191,6 +201,31 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
 
         {/* Modal Body */}
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Handled Notice Banner */}
+          {isAlreadyHandled && (
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: feedback.status === 'RESOLVED' ? '#ecfdf5' : '#fef2f2',
+                border: `1px solid ${feedback.status === 'RESOLVED' ? '#a7f3d0' : '#fecaca'}`,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12
+              }}
+            >
+              <Lock size={18} color={feedback.status === 'RESOLVED' ? '#047857' : '#b91c1c'} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: feedback.status === 'RESOLVED' ? '#065f46' : '#991b1b' }}>
+                  Phiếu này đã được xử lý ({feedback.status === 'RESOLVED' ? 'Đã giải quyết' : 'Từ chối giải quyết'})
+                </div>
+                <div style={{ fontSize: 12, color: feedback.status === 'RESOLVED' ? '#047857' : '#b91c1c', marginTop: 2 }}>
+                  Theo quy định hệ thống, phiếu phản hồi chỉ được xử lý đúng 1 lần duy nhất và không thể chỉnh sửa lại.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Shop / User Info Bar */}
           <div
             style={{
@@ -388,79 +423,60 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
           )}
 
           {/* Quick Reply Suggestions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={15} color="#8b5cf6" />
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Mẫu Phản Hồi Nhanh Dành Cho Quản Trị Viên
-              </label>
+          {!isAlreadyHandled && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={15} color="#8b5cf6" />
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Mẫu Phản Hồi Nhanh Dành Cho Quản Trị Viên
+                </label>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleApplyTemplate(
+                      'Đội ngũ Kiểm duyệt Sàn đã rà soát và xử lý thành công yêu cầu của quý nông trại. Mọi quyền lợi và dữ liệu đã được cập nhật chính xác trên hệ thống WebChicKen.',
+                      'RESOLVED'
+                    )
+                  }
+                  style={{
+                    fontSize: 12,
+                    padding: '6px 12px',
+                    borderRadius: 20,
+                    border: '1px solid #a7f3d0',
+                    backgroundColor: '#ecfdf5',
+                    color: '#065f46',
+                    cursor: 'pointer',
+                    fontWeight: 500
+                  }}
+                >
+                  ✓ Đã xử lý & Duyệt yêu cầu
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleApplyTemplate(
+                      'Rất tiếc yêu cầu này không đáp ứng đủ quy chuẩn vận hành của WebChicKen. Xin vui lòng cung cấp thêm hồ sơ pháp lý / giấy kiểm dịch hợp lệ để được tái thẩm định.',
+                      'REJECTED'
+                    )
+                  }
+                  style={{
+                    fontSize: 12,
+                    padding: '6px 12px',
+                    borderRadius: 20,
+                    border: '1px solid #fecaca',
+                    backgroundColor: '#fef2f2',
+                    color: '#991b1b',
+                    cursor: 'pointer',
+                    fontWeight: 500
+                  }}
+                >
+                  ✕ Từ chối do thiếu hồ sơ hợp lệ
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() =>
-                  handleApplyTemplate(
-                    'Đội ngũ Kiểm duyệt Sàn đã rà soát và xử lý thành công yêu cầu của quý nông trại. Mọi quyền lợi và dữ liệu đã được cập nhật chính xác trên hệ thống WebChicKen.',
-                    'RESOLVED'
-                  )
-                }
-                style={{
-                  fontSize: 12,
-                  padding: '6px 12px',
-                  borderRadius: 20,
-                  border: '1px solid #a7f3d0',
-                  backgroundColor: '#ecfdf5',
-                  color: '#065f46',
-                  cursor: 'pointer',
-                  fontWeight: 500
-                }}
-              >
-                ✓ Đã xử lý & Duyệt yêu cầu
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleApplyTemplate(
-                    'Ban Quản trị đã chuyển tiếp nội dung khiếu nại tới Bộ phận Kỹ thuật & Vận hành sàn để đối soát sâu. Chúng tôi sẽ cập nhật kết quả trong vòng 24 giờ tới.',
-                    'IN_REVIEW'
-                  )
-                }
-                style={{
-                  fontSize: 12,
-                  padding: '6px 12px',
-                  borderRadius: 20,
-                  border: '1px solid #bfdbfe',
-                  backgroundColor: '#eff6ff',
-                  color: '#1e40af',
-                  cursor: 'pointer',
-                  fontWeight: 500
-                }}
-              >
-                ⏱ Chuyển bộ phận chuyên trách thẩm tra
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleApplyTemplate(
-                    'Rất tiếc yêu cầu này không đáp ứng đủ quy chuẩn vận hành của WebChicKen. Xin vui lòng cung cấp thêm hồ sơ pháp lý / giấy kiểm dịch hợp lệ để được tái thẩm định.',
-                    'REJECTED'
-                  )
-                }
-                style={{
-                  fontSize: 12,
-                  padding: '6px 12px',
-                  borderRadius: 20,
-                  border: '1px solid #fecaca',
-                  backgroundColor: '#fef2f2',
-                  color: '#991b1b',
-                  cursor: 'pointer',
-                  fontWeight: 500
-                }}
-              >
-                ✕ Từ chối do thiếu hồ sơ hợp lệ
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Form Controls */}
           <form id="respond-feedback-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -486,99 +502,135 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
             {/* Status Select */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
-                Trạng thái sau phản hồi:
+                {isAlreadyHandled ? 'Kết quả xử lý (Đã chốt):' : 'Chọn quyết định xử lý (Chỉ xử lý 1 lần duy nhất):'}
               </label>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    border: `1.5px solid ${status === 'RESOLVED' ? '#10b981' : '#e2e8f0'}`,
-                    backgroundColor: status === 'RESOLVED' ? '#ecfdf5' : '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: status === 'RESOLVED' ? '#047857' : '#475569'
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="status"
-                    value="RESOLVED"
-                    checked={status === 'RESOLVED'}
-                    onChange={() => setStatus('RESOLVED')}
-                    style={{ accentColor: '#10b981' }}
-                  />
-                  <span>Đã giải quyết (Resolved)</span>
-                </label>
+              {isAlreadyHandled ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {feedback.status === 'RESOLVED' ? (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        backgroundColor: '#ecfdf5',
+                        color: '#047857',
+                        border: '1px solid #a7f3d0',
+                        fontWeight: 700,
+                        fontSize: 13
+                      }}
+                    >
+                      ✓ Đã giải quyết (Resolved)
+                    </span>
+                  ) : feedback.status === 'REJECTED' ? (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        backgroundColor: '#fef2f2',
+                        color: '#b91c1c',
+                        border: '1px solid #fecaca',
+                        fontWeight: 700,
+                        fontSize: 13
+                      }}
+                    >
+                      ✕ Từ chối giải quyết (Rejected)
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        border: '1px solid #e2e8f0',
+                        fontWeight: 700,
+                        fontSize: 13
+                      }}
+                    >
+                      {feedback.status}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      border: `1.5px solid ${status === 'RESOLVED' ? '#10b981' : '#e2e8f0'}`,
+                      backgroundColor: status === 'RESOLVED' ? '#ecfdf5' : '#ffffff',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: status === 'RESOLVED' ? '#047857' : '#475569'
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="status"
+                      value="RESOLVED"
+                      checked={status === 'RESOLVED'}
+                      onChange={() => setStatus('RESOLVED')}
+                      style={{ accentColor: '#10b981' }}
+                    />
+                    <span>✓ Đã giải quyết (Resolved)</span>
+                  </label>
 
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    border: `1.5px solid ${status === 'IN_REVIEW' ? '#3b82f6' : '#e2e8f0'}`,
-                    backgroundColor: status === 'IN_REVIEW' ? '#eff6ff' : '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: status === 'IN_REVIEW' ? '#1d4ed8' : '#475569'
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="status"
-                    value="IN_REVIEW"
-                    checked={status === 'IN_REVIEW'}
-                    onChange={() => setStatus('IN_REVIEW')}
-                    style={{ accentColor: '#3b82f6' }}
-                  />
-                  <span>Đang xem xét (In Review)</span>
-                </label>
-
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    border: `1.5px solid ${status === 'REJECTED' ? '#ef4444' : '#e2e8f0'}`,
-                    backgroundColor: status === 'REJECTED' ? '#fef2f2' : '#ffffff',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: status === 'REJECTED' ? '#b91c1c' : '#475569'
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="status"
-                    value="REJECTED"
-                    checked={status === 'REJECTED'}
-                    onChange={() => setStatus('REJECTED')}
-                    style={{ accentColor: '#ef4444' }}
-                  />
-                  <span>Từ chối giải quyết (Rejected)</span>
-                </label>
-              </div>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      border: `1.5px solid ${status === 'REJECTED' ? '#ef4444' : '#e2e8f0'}`,
+                      backgroundColor: status === 'REJECTED' ? '#fef2f2' : '#ffffff',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: status === 'REJECTED' ? '#b91c1c' : '#475569'
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="status"
+                      value="REJECTED"
+                      checked={status === 'REJECTED'}
+                      onChange={() => setStatus('REJECTED')}
+                      style={{ accentColor: '#ef4444' }}
+                    />
+                    <span>✕ Từ chối giải quyết (Rejected)</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Response TextArea */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
-                Nội dung trả lời trực tiếp cho Nhà Bán: <span style={{ color: '#ef4444' }}>*</span>
+                {isAlreadyHandled
+                  ? 'Nội dung phản hồi từ Quản trị viên sàn:'
+                  : `Nội dung trả lời trực tiếp cho ${feedback.senderRole === 'SELLER' || feedback.shopName ? 'Nhà Bán' : 'Khách Hàng'}:`}
+                {!isAlreadyHandled && <span style={{ color: '#ef4444' }}> *</span>}
               </label>
               <textarea
                 rows={4}
                 value={responseContent}
-                onChange={(e) => setResponseContent(e.target.value)}
-                placeholder="Nhập thông tin hướng dẫn, giải thích quyết định hoặc cam kết tiến độ xử lý..."
+                onChange={(e) => !isAlreadyHandled && setResponseContent(e.target.value)}
+                readOnly={isAlreadyHandled}
+                disabled={isAlreadyHandled}
+                placeholder={isAlreadyHandled ? 'Không có nội dung phản hồi.' : 'Nhập thông tin hướng dẫn, giải thích quyết định hoặc cam kết tiến độ xử lý...'}
                 style={{
                   width: '100%',
                   padding: '12px 14px',
@@ -588,7 +640,10 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
                   lineHeight: 1.5,
                   outline: 'none',
                   boxSizing: 'border-box',
-                  fontFamily: 'inherit'
+                  fontFamily: 'inherit',
+                  backgroundColor: isAlreadyHandled ? '#f8fafc' : '#ffffff',
+                  color: isAlreadyHandled ? '#334155' : '#0f172a',
+                  cursor: isAlreadyHandled ? 'not-allowed' : 'text'
                 }}
               />
             </div>
@@ -611,52 +666,73 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
             <span>Thao tác sẽ tự động ghi sổ nhật ký kiểm toán hệ thống</span>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              style={{
-                padding: '9px 18px',
-                borderRadius: 8,
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#475569',
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Hủy Bỏ
-            </button>
-            <button
-              type="submit"
-              form="respond-feedback-form"
-              disabled={submitting}
-              style={{
-                padding: '9px 22px',
-                borderRadius: 8,
-                border: 'none',
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                opacity: submitting ? 0.7 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
-              }}
-            >
-              {submitting ? (
-                <span>Đang lưu...</span>
-              ) : (
-                <>
-                  <Send size={15} />
-                  <span>Lưu & Gửi Phản Hồi</span>
-                </>
-              )}
-            </button>
+            {isAlreadyHandled ? (
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: '9px 24px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#334155',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Đóng
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={submitting}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#475569',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  form="respond-feedback-form"
+                  disabled={submitting}
+                  style={{
+                    padding: '9px 22px',
+                    borderRadius: 8,
+                    border: 'none',
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    opacity: submitting ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+                  }}
+                >
+                  {submitting ? (
+                    <span>Đang lưu...</span>
+                  ) : (
+                    <>
+                      <Send size={15} />
+                      <span>Lưu & Gửi Phản Hồi</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

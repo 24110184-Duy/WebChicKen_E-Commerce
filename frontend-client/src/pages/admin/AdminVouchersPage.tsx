@@ -1,30 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Percent,
   Search,
   RefreshCw,
-  Clock,
   CheckCircle2,
   AlertCircle,
   Tag,
   Store,
-  Calendar,
   RotateCcw,
   Zap,
-  Power,
-  Flame,
-  ShieldCheck
+  Plus,
+  Trash2,
+  X,
+  AlertTriangle,
+  FolderTree,
+  Globe
 } from 'lucide-react'
 import { AdminLayout } from '../../layouts/AdminLayout'
-import type { AdminVoucherItem } from '../../features/admin/types/voucherTypes'
+import type { AdminVoucherItem, CreateVoucherPayload, VoucherType } from '../../features/admin/types/voucherTypes'
 import {
   fetchAdminVouchers,
   triggerVoucherExpiryJob,
-  toggleVoucherStatus
+  toggleVoucherStatus,
+  createVoucher,
+  deleteVoucher
 } from '../../features/admin/api/adminVoucherApi'
+import { adminCategoryApi, type CategoryItem } from '../../features/admin/api/adminCategoryApi'
+import { formatMoney } from '../../shared/lib/formatMoney'
 
 export const AdminVouchersPage: React.FC = () => {
   const [vouchers, setVouchers] = useState<AdminVoucherItem[]>([])
+  const [categories, setCategories] = useState<CategoryItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [triggeringJob, setTriggeringJob] = useState<boolean>(false)
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -33,6 +39,28 @@ export const AdminVouchersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL')
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'AMOUNT' | 'PERCENTAGE'>('ALL')
+  const [scopeFilter, setScopeFilter] = useState<'ALL' | 'PLATFORM' | 'CATEGORY' | 'STORE'>('ALL')
+
+  // Create Modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false)
+  const [creating, setCreating] = useState<boolean>(false)
+  const [formScope, setFormScope] = useState<'PLATFORM' | 'CATEGORY' | 'STORE'>('PLATFORM')
+  const [formCode, setFormCode] = useState<string>('')
+  const [formTitle, setFormTitle] = useState<string>('')
+  const [formDescription, setFormDescription] = useState<string>('')
+  const [formType, setFormType] = useState<VoucherType>('AMOUNT')
+  const [formDiscountValue, setFormDiscountValue] = useState<string>('30000')
+  const [formMinOrderValue, setFormMinOrderValue] = useState<string>('150000')
+  const [formMaxDiscount, setFormMaxDiscount] = useState<string>('100000')
+  const [formCategoryId, setFormCategoryId] = useState<string>('')
+  const [formStoreId, setFormStoreId] = useState<string>('')
+  const [formUsageLimit, setFormUsageLimit] = useState<string>('1000')
+  const [formStartDate, setFormStartDate] = useState<string>('')
+  const [formEndDate, setFormEndDate] = useState<string>('')
+
+  // Delete Modal
+  const [deletingVoucher, setDeletingVoucher] = useState<AdminVoucherItem | null>(null)
+  const [submittingDelete, setSubmittingDelete] = useState<boolean>(false)
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type })
@@ -54,7 +82,17 @@ export const AdminVouchersPage: React.FC = () => {
 
   useEffect(() => {
     loadVouchers()
+    adminCategoryApi.getCategories().then(setCategories).catch(() => {})
   }, [loadVouchers])
+
+  // Category map helper
+  const categoryMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    categories.forEach((c) => {
+      map[c.id] = c.name
+    })
+    return map
+  }, [categories])
 
   // Chạy Background Worker quét voucher hết hạn (TASK-70)
   const handleTriggerExpiryWorker = async () => {
@@ -90,6 +128,100 @@ export const AdminVouchersPage: React.FC = () => {
     }
   }
 
+  const handleConfirmDelete = async () => {
+    if (!deletingVoucher) return
+    try {
+      setSubmittingDelete(true)
+      await deleteVoucher(deletingVoucher.id)
+      setVouchers((prev) => prev.filter((v) => v.id !== deletingVoucher.id))
+      showToast(`Đã xóa vĩnh viễn voucher [${deletingVoucher.code}] thành công.`, 'success')
+      setDeletingVoucher(null)
+    } catch (err: any) {
+      showToast('Lỗi khi xóa voucher: ' + (err?.message || 'Không thể xóa'), 'error')
+    } finally {
+      setSubmittingDelete(false)
+    }
+  }
+
+  const generateRandomCode = () => {
+    const prefix = formScope === 'PLATFORM' ? 'CHICKY' : formScope === 'CATEGORY' ? 'CAT' : 'STORE'
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase()
+    setFormCode(`${prefix}${rand}`)
+  }
+
+  const openCreateModal = () => {
+    const now = new Date()
+    const nowStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const endStr = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+
+    setFormStartDate(nowStr)
+    setFormEndDate(endStr)
+    setFormScope('PLATFORM')
+    setFormCategoryId(categories[0]?.id || '')
+    setFormStoreId('')
+    generateRandomCode()
+    setIsCreateModalOpen(true)
+  }
+
+  const handleCreateVoucher = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formCode.trim()) {
+      showToast('Vui lòng nhập mã voucher.', 'error')
+      return
+    }
+    if (!formTitle.trim()) {
+      showToast('Vui lòng nhập tên chương trình voucher.', 'error')
+      return
+    }
+
+    const discountVal = parseInt(formDiscountValue, 10) || 0
+    if (discountVal <= 0) {
+      showToast('Mức giảm giá phải lớn hơn 0.', 'error')
+      return
+    }
+    if (formType === 'PERCENTAGE' && (discountVal < 1 || discountVal > 100)) {
+      showToast('Giảm theo phần trăm phải từ 1% đến 100%.', 'error')
+      return
+    }
+
+    if (!formStartDate || !formEndDate) {
+      showToast('Vui lòng chọn thời gian bắt đầu và kết thúc.', 'error')
+      return
+    }
+    if (new Date(formEndDate) <= new Date(formStartDate)) {
+      showToast('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.', 'error')
+      return
+    }
+
+    const payload: CreateVoucherPayload = {
+      code: formCode.trim().toUpperCase(),
+      title: formTitle.trim(),
+      description: formDescription.trim() || undefined,
+      type: formType,
+      discountValueMinor: discountVal,
+      minOrderValueMinor: parseInt(formMinOrderValue, 10) || 0,
+      maxDiscountAmountMinor: formType === 'PERCENTAGE' ? parseInt(formMaxDiscount, 10) || 0 : discountVal,
+      startDate: new Date(formStartDate).toISOString(),
+      endDate: new Date(formEndDate).toISOString(),
+      storeId: formScope === 'STORE' ? formStoreId.trim() || null : null,
+      categoryId: formScope === 'CATEGORY' ? formCategoryId || null : null,
+      usageLimit: parseInt(formUsageLimit, 10) || 1000
+    }
+
+    try {
+      setCreating(true)
+      const created = await createVoucher(payload)
+      setVouchers((prev) => [created, ...prev])
+      showToast(`Đã tạo mã giảm giá sàn [${created.code}] thành công!`, 'success')
+      setIsCreateModalOpen(false)
+    } catch (err: any) {
+      showToast('Lỗi khi tạo voucher: ' + (err?.message || 'Không thành công'), 'error')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const nowTime = new Date().getTime()
 
   // Filtered list
@@ -97,12 +229,24 @@ export const AdminVouchersPage: React.FC = () => {
     if (statusFilter === 'ACTIVE' && !v.isActive) return false
     if (statusFilter === 'INACTIVE' && v.isActive) return false
     if (typeFilter !== 'ALL' && v.type !== typeFilter) return false
+
+    // Scope filter
+    if (scopeFilter === 'PLATFORM') {
+      if (v.storeId || v.categoryId) return false
+    } else if (scopeFilter === 'CATEGORY') {
+      if (!v.categoryId) return false
+    } else if (scopeFilter === 'STORE') {
+      if (!v.storeId) return false
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
       const matchCode = v.code.toLowerCase().includes(q)
       const matchTitle = v.title.toLowerCase().includes(q)
       const matchStore = (v.storeName || '').toLowerCase().includes(q)
-      if (!matchCode && !matchTitle && !matchStore) return false
+      const catName = (v.categoryId && categoryMap[v.categoryId]) ? categoryMap[v.categoryId].toLowerCase() : ''
+      const matchCat = catName.includes(q)
+      if (!matchCode && !matchTitle && !matchStore && !matchCat) return false
     }
     return true
   })
@@ -110,8 +254,8 @@ export const AdminVouchersPage: React.FC = () => {
   // Bento stats
   const totalCount = vouchers.length
   const activeCount = vouchers.filter((v) => v.isActive).length
-  const inactiveCount = vouchers.filter((v) => !v.isActive).length
-  const expiredPendingCount = vouchers.filter((v) => v.isActive && (new Date(v.endDate).getTime() < nowTime || v.usedCount >= v.usageLimit)).length
+  const platformWideCount = vouchers.filter((v) => !v.storeId && !v.categoryId).length
+  const categoryWideCount = vouchers.filter((v) => !v.storeId && v.categoryId).length
 
   return (
     <AdminLayout>
@@ -123,7 +267,7 @@ export const AdminVouchersPage: React.FC = () => {
               position: 'fixed',
               top: 24,
               right: 24,
-              zIndex: 9999,
+              zIndex: 99999,
               padding: '12px 20px',
               borderRadius: 10,
               backgroundColor: toastMessage.type === 'success' ? '#065f46' : '#991b1b',
@@ -165,7 +309,7 @@ export const AdminVouchersPage: React.FC = () => {
               </h1>
             </div>
             <p style={{ fontSize: 14, color: '#64748b', marginTop: 6, marginBottom: 0 }}>
-              Kiểm soát ngân sách khuyến mãi, tỷ lệ hấp thụ và vận hành Background Worker quét voucher quá hạn (TASK-70)
+              Tạo và kiểm soát các mã voucher cho toàn sàn thương mại, theo từng danh mục hoặc cho từng gian hàng cụ thể.
             </p>
           </div>
 
@@ -187,8 +331,31 @@ export const AdminVouchersPage: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
               <span>Làm mới</span>
+            </button>
+
+            {/* Create Platform Voucher Button */}
+            <button
+              type="button"
+              onClick={openCreateModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '9px 20px',
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+              }}
+            >
+              <Plus size={16} />
+              <span>Tạo Voucher Sàn Mới</span>
             </button>
 
             {/* Background Worker Trigger Button (TASK-70) */}
@@ -200,7 +367,7 @@ export const AdminVouchersPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '9px 20px',
+                padding: '9px 18px',
                 backgroundColor: '#dc2626',
                 color: '#ffffff',
                 border: 'none',
@@ -214,143 +381,54 @@ export const AdminVouchersPage: React.FC = () => {
               title="Kích hoạt tức thì VoucherExpiryWorker quét toàn bộ voucher hết hạn hoặc hết lượt dùng"
             >
               <Zap size={15} />
-              <span>{triggeringJob ? 'Đang chạy Worker...' : '⚡ Quét & Khóa Voucher Quá Hạn'}</span>
+              <span>{triggeringJob ? 'Đang chạy Worker...' : '⚡ Quét Voucher Quá Hạn'}</span>
             </button>
           </div>
         </div>
 
-        {/* Bento Stats Cards */}
+        {/* Bento Stats Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: 16,
             marginBottom: 24
           }}
         >
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '18px 20px',
-              borderRadius: 12,
-              border: '1px solid #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>Tổng mã khuyến mại</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>{totalCount}</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 13, fontWeight: 600 }}>
+              <span>Tổng số Voucher</span>
+              <Tag size={18} color="#6366f1" />
             </div>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 10,
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#475569'
-              }}
-            >
-              <Tag size={20} />
-            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 8 }}>{totalCount}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Toàn hệ sinh thái WebChicKen</div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '18px 20px',
-              borderRadius: 12,
-              border: '1px solid #bbf7d0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#166534' }}>Đang hoạt động</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#15803d', marginTop: 4 }}>{activeCount}</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 13, fontWeight: 600 }}>
+              <span>Đang hoạt động</span>
+              <CheckCircle2 size={18} color="#10b981" />
             </div>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 10,
-                backgroundColor: '#ecfdf5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#15803d'
-              }}
-            >
-              <CheckCircle2 size={20} />
-            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#10b981', marginTop: 8 }}>{activeCount}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Khách có thể sử dụng ngay</div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '18px 20px',
-              borderRadius: 12,
-              border: '1px solid #fecaca',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#991b1b' }}>Đã vô hiệu hóa</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#b91c1c', marginTop: 4 }}>{inactiveCount}</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 13, fontWeight: 600 }}>
+              <span>Voucher Toàn Sàn</span>
+              <Globe size={18} color="#2563eb" />
             </div>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 10,
-                backgroundColor: '#fef2f2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#b91c1c'
-              }}
-            >
-              <Power size={20} />
-            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#2563eb', marginTop: 8 }}>{platformWideCount}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Áp dụng chung mọi đơn hàng</div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              padding: '18px 20px',
-              borderRadius: 12,
-              border: '1px solid #fed7aa',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#9a3412' }}>Chờ Worker quét tắt</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#c2410c', marginTop: 4 }}>{expiredPendingCount}</div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: 13, fontWeight: 600 }}>
+              <span>Theo Danh Mục Ngành Hàng</span>
+              <FolderTree size={18} color="#d97706" />
             </div>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 10,
-                backgroundColor: '#fff7ed',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#c2410c'
-              }}
-            >
-              <Flame size={20} />
-            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#d97706', marginTop: 8 }}>{categoryWideCount}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Trợ giá cho ngành hàng chỉ định</div>
           </div>
         </div>
 
@@ -376,7 +454,7 @@ export const AdminVouchersPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm mã voucher, tên chương trình, gian hàng..."
+                placeholder="Tìm mã voucher, tên chương trình, gian hàng, danh mục..."
                 style={{
                   width: '100%',
                   padding: '9px 12px 9px 36px',
@@ -388,6 +466,29 @@ export const AdminVouchersPage: React.FC = () => {
                 }}
               />
               <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 11 }} />
+            </div>
+
+            {/* Scope Select */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>Phạm vi:</label>
+              <select
+                value={scopeFilter}
+                onChange={(e) => setScopeFilter(e.target.value as any)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  fontSize: 13,
+                  backgroundColor: '#ffffff',
+                  outline: 'none',
+                  color: '#334155'
+                }}
+              >
+                <option value="ALL">Mọi phạm vi</option>
+                <option value="PLATFORM">Toàn sàn thương mại</option>
+                <option value="CATEGORY">Theo danh mục</option>
+                <option value="STORE">Theo từng gian hàng</option>
+              </select>
             </div>
 
             {/* Status Select */}
@@ -429,7 +530,7 @@ export const AdminVouchersPage: React.FC = () => {
                 }}
               >
                 <option value="ALL">Tất cả loại</option>
-                <option value="AMOUNT">Giảm số tiền cố định (VNĐ)</option>
+                <option value="AMOUNT">Giảm số tiền cố định (₫)</option>
                 <option value="PERCENTAGE">Giảm theo tỷ lệ (%)</option>
               </select>
             </div>
@@ -441,6 +542,7 @@ export const AdminVouchersPage: React.FC = () => {
               setSearchQuery('')
               setStatusFilter('ALL')
               setTypeFilter('ALL')
+              setScopeFilter('ALL')
               showToast('Đã đặt lại bộ lọc', 'success')
             }}
             style={{
@@ -449,7 +551,7 @@ export const AdminVouchersPage: React.FC = () => {
               border: '1px solid #cbd5e1',
               borderRadius: 8,
               fontSize: 13,
-              color: '#475569',
+              color: '#64748b',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex',
@@ -462,140 +564,157 @@ export const AdminVouchersPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Data Table */}
+        {/* Voucher Table */}
         <div
           style={{
             backgroundColor: '#ffffff',
-            borderRadius: 14,
+            borderRadius: 12,
             border: '1px solid #e2e8f0',
-            overflow: 'hidden',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+            overflow: 'hidden'
           }}
         >
           {loading ? (
-            <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>
-              <RefreshCw size={28} className="spin" style={{ margin: '0 auto 12px' }} />
-              <div>Đang tải dữ liệu voucher sàn...</div>
+            <div style={{ padding: '60px 0', textAlign: 'center', color: '#64748b' }}>
+              <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+              <div>Đang tải dữ liệu phiếu giảm giá toàn sàn...</div>
             </div>
           ) : filteredVouchers.length === 0 ? (
-            <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>
-              <Percent size={48} style={{ margin: '0 auto 14px', opacity: 0.4 }} />
-              <p style={{ fontSize: 16, fontWeight: 600, color: '#475569', margin: '0 0 6px' }}>
-                Không tìm thấy voucher nào phù hợp
-              </p>
-              <p style={{ fontSize: 13, margin: 0 }}>
-                Thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm.
-              </p>
+            <div style={{ padding: '60px 0', textAlign: 'center', color: '#94a3b8' }}>
+              <Tag size={40} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#475569' }}>Không tìm thấy voucher phù hợp</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>Thử thay đổi từ khóa hoặc điều kiện bộ lọc của bạn</div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13.5 }}>
                 <thead>
-                  <tr
-                    style={{
-                      borderBottom: '1px solid #e2e8f0',
-                      backgroundColor: '#f8fafc',
-                      color: '#475569',
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em'
-                    }}
-                  >
-                    <th style={{ padding: '14px 16px' }}>Mã Voucher</th>
-                    <th style={{ padding: '14px 16px' }}>Chi Tiết & Chiết Khấu</th>
-                    <th style={{ padding: '14px 16px' }}>Áp Dụng Cho</th>
-                    <th style={{ padding: '14px 16px' }}>Thời Gian Hiệu Lực</th>
-                    <th style={{ padding: '14px 16px' }}>Tỷ Lệ Tiêu Dùng</th>
-                    <th style={{ padding: '14px 16px' }}>Trạng Thái</th>
-                    <th style={{ padding: '14px 16px', textAlign: 'right' }}>Thao Tác</th>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
+                    <th style={{ padding: '14px 18px' }}>MÃ & TÊN CHƯƠNG TRÌNH</th>
+                    <th style={{ padding: '14px 18px' }}>MỨC CHIẾT KHẤU</th>
+                    <th style={{ padding: '14px 18px' }}>ĐƠN TỐI THIỂU</th>
+                    <th style={{ padding: '14px 18px' }}>PHẠM VI ÁP DỤNG</th>
+                    <th style={{ padding: '14px 18px' }}>THỜI HẠN</th>
+                    <th style={{ padding: '14px 18px' }}>TIẾN ĐỘ DÙNG</th>
+                    <th style={{ padding: '14px 18px' }}>TRẠNG THÁI</th>
+                    <th style={{ padding: '14px 18px', textAlign: 'center' }}>THAO TÁC</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredVouchers.map((item) => {
+                    const usagePercent = item.usageLimit > 0 ? Math.min(100, Math.round((item.usedCount / item.usageLimit) * 100)) : 0
                     const isDateExpired = new Date(item.endDate).getTime() < nowTime
                     const isLimitReached = item.usedCount >= item.usageLimit
-                    const usagePercent = Math.min(100, Math.round((item.usedCount / item.usageLimit) * 100))
 
                     return (
-                      <tr
-                        key={item.id}
-                        style={{
-                          borderBottom: '1px solid #f1f5f9',
-                          transition: 'background-color 0.15s'
-                        }}
-                      >
-                        {/* Code */}
-                        <td style={{ padding: '14px 16px' }}>
-                          <div
+                      <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        {/* Code & Title */}
+                        <td style={{ padding: '14px 18px' }}>
+                          <span
                             style={{
-                              fontFamily: 'monospace',
-                              fontSize: 14,
-                              fontWeight: 800,
-                              color: '#1e40af',
-                              backgroundColor: '#eff6ff',
-                              padding: '4px 10px',
-                              borderRadius: 6,
                               display: 'inline-block',
-                              border: '1px dashed #bfdbfe'
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              backgroundColor: '#eff6ff',
+                              border: '1px dashed #3b82f6',
+                              color: '#1d4ed8',
+                              fontWeight: 800,
+                              fontSize: 12.5,
+                              letterSpacing: '0.5px'
                             }}
                           >
                             {item.code}
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginTop: 6 }}>
-                            {item.title}
-                          </div>
+                          </span>
+                          <div style={{ fontWeight: 600, color: '#0f172a', marginTop: 4 }}>{item.title}</div>
+                          {item.description && <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{item.description}</div>}
                         </td>
 
-                        {/* Discount value & min order */}
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#d97706' }}>
-                            {item.type === 'PERCENTAGE'
-                              ? `Giảm ${item.discountValueMinor}% (Tối đa ${item.maxDiscountAmountMinor.toLocaleString('vi-VN')} ₫)`
-                              : `Giảm ${item.discountValueMinor.toLocaleString('vi-VN')} ₫`}
-                          </div>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                            Đơn tối thiểu: {item.minOrderValueMinor.toLocaleString('vi-VN')} ₫
-                          </div>
+                        {/* Value */}
+                        <td style={{ padding: '14px 18px' }}>
+                          {item.type === 'PERCENTAGE' ? (
+                            <div>
+                              <span style={{ color: '#d97706', fontWeight: 700 }}>Giảm {item.discountValueMinor}%</span>
+                              {item.maxDiscountAmountMinor > 0 && (
+                                <div style={{ fontSize: 12, color: '#64748b' }}>Tối đa {formatMoney(item.maxDiscountAmountMinor)}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <div>
+                              <span style={{ color: '#059669', fontWeight: 700 }}>Giảm {formatMoney(item.discountValueMinor)}</span>
+                            </div>
+                          )}
                         </td>
 
-                        {/* Store / Platform */}
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#334155' }}>
-                            <Store size={14} color="#64748b" />
-                            <span>{item.storeName || 'Toàn sàn WebChicKen'}</span>
-                          </div>
+                        {/* Min Order */}
+                        <td style={{ padding: '14px 18px', color: '#334155', fontWeight: 500 }}>
+                          {item.minOrderValueMinor > 0 ? formatMoney(item.minOrderValueMinor) : '0 ₫'}
                         </td>
 
-                        {/* Validity period */}
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontSize: 12.5, color: '#334155', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Calendar size={13} color="#64748b" />
-                            <span>Hết hạn: {new Date(item.endDate).toLocaleDateString('vi-VN')}</span>
-                          </div>
-                          {isDateExpired && (
+                        {/* Scope */}
+                        <td style={{ padding: '14px 18px' }}>
+                          {item.categoryId ? (
                             <span
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: 3,
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: '#b91c1c',
-                                backgroundColor: '#fef2f2',
-                                padding: '2px 6px',
-                                borderRadius: 4,
-                                marginTop: 4
+                                gap: 4,
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                backgroundColor: '#fef3c7',
+                                color: '#b45309',
+                                fontSize: 12,
+                                fontWeight: 700
                               }}
                             >
-                              <Clock size={11} />
-                              <span>Đã quá hạn</span>
+                              <FolderTree size={12} />
+                              Danh mục: {categoryMap[item.categoryId] || 'Ngành hàng'}
+                            </span>
+                          ) : item.storeId ? (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                backgroundColor: '#f1f5f9',
+                                color: '#475569',
+                                fontSize: 12,
+                                fontWeight: 600
+                              }}
+                            >
+                              <Store size={12} />
+                              {item.storeName || 'Shop riêng'}
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                backgroundColor: '#eff6ff',
+                                color: '#1d4ed8',
+                                fontSize: 12,
+                                fontWeight: 700
+                              }}
+                            >
+                              <Globe size={12} />
+                              Toàn Sàn WebChicKen
                             </span>
                           )}
                         </td>
 
-                        {/* Usage progress */}
-                        <td style={{ padding: '14px 16px', minWidth: 140 }}>
+                        {/* Date */}
+                        <td style={{ padding: '14px 18px', fontSize: 12.5, color: '#475569' }}>
+                          <div>Hết hạn: {new Date(item.endDate).toLocaleDateString('vi-VN')}</div>
+                          {isDateExpired && (
+                            <span style={{ color: '#dc2626', fontWeight: 700, fontSize: 11 }}>● Đã hết hạn</span>
+                          )}
+                        </td>
+
+                        {/* Usage */}
+                        <td style={{ padding: '14px 18px', minWidth: 130 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#475569', marginBottom: 4 }}>
                             <span>{item.usedCount} / {item.usageLimit}</span>
                             <span style={{ fontWeight: 600 }}>{usagePercent}%</span>
@@ -610,72 +729,77 @@ export const AdminVouchersPage: React.FC = () => {
                               }}
                             />
                           </div>
-                          {isLimitReached && (
-                            <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600, marginTop: 3 }}>
-                              Hết lượt sử dụng
-                            </div>
-                          )}
                         </td>
 
                         {/* Status */}
-                        <td style={{ padding: '14px 16px' }}>
+                        <td style={{ padding: '14px 18px' }}>
                           {item.isActive ? (
                             <span
                               style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
+                                display: 'inline-block',
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                backgroundColor: '#dcfce7',
+                                color: '#166534',
                                 fontSize: 12,
-                                fontWeight: 600,
-                                padding: '4px 10px',
-                                borderRadius: 9999,
-                                backgroundColor: '#ecfdf5',
-                                color: '#047857',
-                                border: '1px solid #a7f3d0'
+                                fontWeight: 700
                               }}
                             >
-                              <CheckCircle2 size={12} />
-                              <span>Đang hoạt động</span>
+                              ● Hoạt động
                             </span>
                           ) : (
                             <span
                               style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
+                                display: 'inline-block',
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                backgroundColor: '#fee2e2',
+                                color: '#991b1b',
                                 fontSize: 12,
-                                fontWeight: 600,
-                                padding: '4px 10px',
-                                borderRadius: 9999,
-                                backgroundColor: '#fef2f2',
-                                color: '#b91c1c',
-                                border: '1px solid #fecaca'
+                                fontWeight: 700
                               }}
                             >
-                              <Power size={12} />
-                              <span>Đã vô hiệu hóa</span>
+                              ● Đã khóa
                             </span>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleToggle(item.id, item.code)}
-                            style={{
-                              padding: '6px 12px',
-                              borderRadius: 6,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              border: `1px solid ${item.isActive ? '#fca5a5' : '#86efac'}`,
-                              backgroundColor: item.isActive ? '#fff1f2' : '#f0fdf4',
-                              color: item.isActive ? '#be123c' : '#15803d'
-                            }}
-                          >
-                            {item.isActive ? 'Tắt voucher' : 'Mở lại'}
-                          </button>
+                        <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggle(item.id, item.code)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: 6,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                border: `1px solid ${item.isActive ? '#fca5a5' : '#86efac'}`,
+                                backgroundColor: item.isActive ? '#fff1f2' : '#f0fdf4',
+                                color: item.isActive ? '#be123c' : '#15803d'
+                              }}
+                            >
+                              {item.isActive ? 'Khóa' : 'Mở'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setDeletingVoucher(item)}
+                              title="Xóa voucher"
+                              style={{
+                                border: '1px solid #fee2e2',
+                                backgroundColor: '#fff5f5',
+                                color: '#dc2626',
+                                padding: 6,
+                                borderRadius: 6,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -684,30 +808,516 @@ export const AdminVouchersPage: React.FC = () => {
               </table>
             </div>
           )}
+        </div>
 
-          {/* Footer */}
+        {/* ── CREATE MODAL ── */}
+        {isCreateModalOpen && (
           <div
             style={{
-              padding: '14px 20px',
-              borderTop: '1px solid #e2e8f0',
-              backgroundColor: '#f8fafc',
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 99999,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: 12.5,
-              color: '#64748b'
+              justifyContent: 'center',
+              padding: 20
             }}
           >
-            <span>
-              Hiển thị <strong>{filteredVouchers.length}</strong> / <strong>{totalCount}</strong> vouchers
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <ShieldCheck size={14} color="#059669" />
-              <span>Background Worker quét tự động định kỳ mỗi 60 giây qua ScheduledExecutorService</span>
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 16,
+                maxWidth: 620,
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {/* Modal Header */}
+              <div
+                style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid #e2e8f0',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
+                    Thiết Lập Phiếu Giảm Giá Sàn Thương Mại
+                  </h3>
+                  <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                    Cấp phát voucher trợ giá cho toàn sàn hoặc theo từng ngành hàng
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <form onSubmit={handleCreateVoucher} style={{ padding: '20px 24px' }}>
+                {/* 1. Scope selection */}
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>
+                    1. Phạm vi áp dụng của voucher:
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div
+                      onClick={() => setFormScope('PLATFORM')}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: 10,
+                        border: formScope === 'PLATFORM' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                        backgroundColor: formScope === 'PLATFORM' ? '#eff6ff' : '#ffffff',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>
+                        <Globe size={16} color={formScope === 'PLATFORM' ? '#2563eb' : '#64748b'} />
+                        Toàn Sàn Thương Mại
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                        Áp dụng cho mọi đơn hàng trên hệ thống
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setFormScope('CATEGORY')}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: 10,
+                        border: formScope === 'CATEGORY' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                        backgroundColor: formScope === 'CATEGORY' ? '#eff6ff' : '#ffffff',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13.5, color: '#0f172a' }}>
+                        <FolderTree size={16} color={formScope === 'CATEGORY' ? '#2563eb' : '#64748b'} />
+                        Theo 1 Danh Mục Toàn Sàn
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                        Áp dụng cho sản phẩm thuộc ngành hàng được chọn
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dropdown danh mục nếu chọn theo Category */}
+                  {formScope === 'CATEGORY' && (
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#475569', marginBottom: 4 }}>
+                        Chọn danh mục ngành hàng áp dụng trên toàn sàn:
+                      </label>
+                      <select
+                        value={formCategoryId}
+                        onChange={(e) => setFormCategoryId(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '9px 12px',
+                          borderRadius: 8,
+                          border: '1px solid #cbd5e1',
+                          fontSize: 13.5,
+                          backgroundColor: '#ffffff'
+                        }}
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Voucher Code & Title */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                      Mã Voucher *
+                    </label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        type="text"
+                        placeholder="VD: CHICKY30K"
+                        value={formCode}
+                        onChange={(e) => setFormCode(e.target.value.toUpperCase())}
+                        style={{
+                          flex: 1,
+                          padding: '9px 12px',
+                          borderRadius: 8,
+                          border: '1px solid #cbd5e1',
+                          fontSize: 13.5,
+                          fontWeight: 700,
+                          textTransform: 'uppercase'
+                        }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={generateRandomCode}
+                        style={{
+                          padding: '9px 10px',
+                          borderRadius: 8,
+                          border: '1px solid #e2e8f0',
+                          backgroundColor: '#f8fafc',
+                          color: '#475569',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Tự sinh
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                      Tên chương trình voucher *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="VD: Siêu Hội Khuyến Mãi Sàn - Giảm 30K"
+                      value={formTitle}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #cbd5e1',
+                        fontSize: 13.5
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Description */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                    Mô tả điều kiện (tùy chọn)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Voucher trợ giá độc quyền từ nền tảng WebChicKen"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #cbd5e1',
+                      fontSize: 13
+                    }}
+                  />
+                </div>
+
+                {/* 4. Type & Discount Value */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                      Loại giảm giá
+                    </label>
+                    <select
+                      value={formType}
+                      onChange={(e) => setFormType(e.target.value as VoucherType)}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #cbd5e1',
+                        fontSize: 13.5,
+                        backgroundColor: '#ffffff'
+                      }}
+                    >
+                      <option value="AMOUNT">Số tiền cố định (₫)</option>
+                      <option value="PERCENTAGE">Theo phần trăm (%)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 4 }}>
+                      {formType === 'PERCENTAGE' ? 'Mức giảm (%)' : 'Số tiền giảm (₫)'} *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={formType === 'PERCENTAGE' ? '100' : undefined}
+                      value={formDiscountValue}
+                      onChange={(e) => setFormDiscountValue(e.target.value)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #cbd5e1',
+                        fontSize: 13.5
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* 5. Min Order & Max Discount */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Đơn hàng tối thiểu (₫)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formMinOrderValue}
+                      onChange={(e) => setFormMinOrderValue(e.target.value)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #cbd5e1',
+                        fontSize: 13.5
+                      }}
+                    />
+                  </div>
+
+                  {formType === 'PERCENTAGE' ? (
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                        Mức giảm tối đa (₫)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formMaxDiscount}
+                        onChange={(e) => setFormMaxDiscount(e.target.value)}
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          padding: '9px 12px',
+                          borderRadius: 8,
+                          border: '1px solid #cbd5e1',
+                          fontSize: 13.5
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                        Lượt dùng tối đa
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={formUsageLimit}
+                        onChange={(e) => setFormUsageLimit(e.target.value)}
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          padding: '9px 12px',
+                          borderRadius: 8,
+                          border: '1px solid #cbd5e1',
+                          fontSize: 13.5
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Dates */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Thời gian bắt đầu *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formStartDate}
+                      onChange={(e) => setFormStartDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #cbd5e1',
+                        fontSize: 13
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                      Thời gian kết thúc *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formEndDate}
+                      onChange={(e) => setFormEndDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #cbd5e1',
+                        fontSize: 13
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, borderTop: '1px solid #f1f5f9', paddingTop: 16 }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: 8,
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#ffffff',
+                      color: '#475569',
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Hủy bỏ
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    style={{
+                      padding: '9px 22px',
+                      borderRadius: 8,
+                      border: 'none',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      opacity: creating ? 0.7 : 1
+                    }}
+                  >
+                    {creating && <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+                    <span>{creating ? 'Đang tạo...' : 'Kích Hoạt Voucher Toàn Sàn'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* ── DELETE MODAL ── */}
+        {deletingVoucher && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 14,
+                maxWidth: 440,
+                width: '100%',
+                padding: 24,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                textAlign: 'center'
+              }}
+            >
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px'
+                }}
+              >
+                <AlertTriangle size={28} />
+              </div>
+
+              <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
+                Xác nhận xóa mã giảm giá sàn?
+              </h3>
+              <p style={{ margin: '0 0 20px', fontSize: 13.5, color: '#64748b', lineHeight: 1.5 }}>
+                Bạn có chắc chắn muốn xóa vĩnh viễn voucher <strong>[{deletingVoucher.code}]</strong>? Hành động này sẽ loại bỏ hoàn toàn mã khỏi cơ sở dữ liệu.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+                <button
+                  onClick={() => setDeletingVoucher(null)}
+                  disabled={submittingDelete}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#475569',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy bỏ
+                </button>
+
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={submittingDelete}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    backgroundColor: '#dc2626',
+                    color: '#ffffff',
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  {submittingDelete && <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+                  <span>{submittingDelete ? 'Đang xóa...' : 'Xác nhận xóa'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )
 }
+
+export default AdminVouchersPage

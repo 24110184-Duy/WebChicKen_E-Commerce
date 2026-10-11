@@ -24,6 +24,7 @@ import { SellerShipmentPage } from '../../pages/seller/SellerShipmentPage'
 import { SellerDashboardPage } from '../../pages/seller/SellerDashboardPage'
 import { SellerFeedbackPage } from '../../pages/seller/SellerFeedbackPage'
 import { SellerChatPage } from '../../pages/seller/SellerChatPage'
+import { SellerVouchersPage } from '../../pages/seller/SellerVouchersPage'
 import { SellerRegisterPage } from '../../pages/seller/SellerRegisterPage'
 import { AdminDashboardPage } from '../../pages/admin/AdminDashboardPage'
 import { SellersPage } from '../../pages/admin/Sellers'
@@ -126,6 +127,8 @@ export const AppRouter = () => {
         <Route path="/seller/feedback" element={<SellerFeedbackPage />} />
         <Route path={PATHS.SELLER.CHAT} element={<SellerChatPage />} />
         <Route path="/seller/chat" element={<SellerChatPage />} />
+        <Route path={PATHS.SELLER.VOUCHERS} element={<SellerVouchersPage />} />
+        <Route path="/seller/vouchers" element={<SellerVouchersPage />} />
       </Route>
 
       {/* Protected Backoffice Admin Routes (Must Have ADMIN / SUPER_ADMIN / MODERATOR Role) */}

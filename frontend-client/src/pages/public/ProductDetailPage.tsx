@@ -10,7 +10,7 @@ import { PATHS } from '../../app/router/paths'
 import { ProductReviews } from '../../features/reviews/components/ProductReviews'
 import { ProductShopCard } from '../../features/shop'
 import { toast } from '../../components/feedback/Toast'
-import { ShieldAlert, EyeOff, ArrowRight } from 'lucide-react'
+import { ShieldAlert, EyeOff } from 'lucide-react'
 import { AdminProductActionModal } from '../../features/admin/components/AdminProductActionModal'
 
 export const ProductDetailPage: React.FC = () => {
@@ -226,25 +226,7 @@ export const ProductDetailPage: React.FC = () => {
                 </button>
               )}
 
-              <Link
-                to={PATHS.ADMIN.PRODUCTS}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: '#ffffff',
-                  color: '#334155',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <span>Mở Trong Admin Hub</span>
-                <ArrowRight size={14} />
-              </Link>
+
             </div>
           </div>
         )}

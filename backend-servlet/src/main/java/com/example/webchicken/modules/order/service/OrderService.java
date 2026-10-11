@@ -89,6 +89,11 @@ public interface OrderService {
      * Tổng số đơn hàng toàn sàn.
      */
     long countAllPlatformOrders(OrderStatus status);
+
+    /**
+     * Quản trị viên xóa vĩnh viễn đơn hàng khỏi hệ thống (TASK-Admin).
+     */
+    void deleteOrderAsAdmin(String orderCode);
 }
 
 

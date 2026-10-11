@@ -118,7 +118,7 @@ export const AdminFeedbacksPage: React.FC = () => {
   }, [loadFeedbacks])
 
   const displayedFeedbacks = useMemo(() => {
-    return feedbacks.filter((item) => {
+    const filtered = feedbacks.filter((item) => {
       if (senderFilter === 'CUSTOMER') {
         const isCustomer = item.senderRole === 'CUSTOMER' || !item.shopName
         if (!isCustomer) return false
@@ -127,6 +127,22 @@ export const AdminFeedbacksPage: React.FC = () => {
         if (!isSeller) return false
       }
       return true
+    })
+
+    return [...filtered].sort((a, b) => {
+      const aPending = a.status === 'PENDING'
+      const bPending = b.status === 'PENDING'
+      // 1. Ưu tiên PENDING lên đầu danh sách
+      if (aPending && !bPending) return -1
+      if (!aPending && bPending) return 1
+
+      // 2. Đối với PENDING: sort theo ngày cũ nhất lên đầu (FIFO - cũ nhất xử lý trước)
+      if (aPending && bPending) {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      }
+
+      // 3. Đối với các trạng thái khác: sort theo ngày mới nhất lên đầu
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
   }, [feedbacks, senderFilter])
 
@@ -145,12 +161,12 @@ export const AdminFeedbacksPage: React.FC = () => {
   }
 
   const handleSaveResponse = async (id: string, newStatus: FeedbackStatus, adminResponse: string) => {
-    const updated = await respondToFeedback(id, {
+    await respondToFeedback(id, {
       status: newStatus,
       adminResponse
     })
-    setFeedbacks((prev) => prev.map((f) => (f.id === id ? updated : f)))
-    showToast(`Đã lưu và phản hồi phiếu khiếu nại [${id}] thành công!`, 'success')
+    showToast(`Đã xử lý phiếu khiếu nại [${id.slice(0, 8)}] thành công!`, 'success')
+    await loadFeedbacks()
   }
 
   const getStatusBadge = (status: FeedbackStatus) => {
@@ -307,11 +323,11 @@ export const AdminFeedbacksPage: React.FC = () => {
                 <MessageSquare size={16} />
               </div>
               <h1 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Hòm Thư Phản Hồi & Khiếu Nại Nhà Bán
+                Hòm Thư Phản Hồi & Khiếu Nại (User Feedback)
               </h1>
             </div>
             <p style={{ fontSize: 12.5, color: '#64748b', marginTop: 3, marginBottom: 0 }}>
-              Tiếp nhận, xử lý khiếu nại và phản hồi trực tiếp cho các nhà bán hàng / chủ trang trại trên sàn
+              Tiếp nhận, xử lý khiếu nại và phản hồi trực tiếp cho khách hàng & nhà bán hàng trên sàn
             </p>
           </div>
 
@@ -970,38 +986,72 @@ export const AdminFeedbacksPage: React.FC = () => {
                           {getStatusBadge(item.status)}
                         </td>
                         <td style={{ padding: '7px 6px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRespond(item)}
-                            style={{
-                              padding: '4px 8px',
-                              backgroundColor: '#2563eb',
-                              color: '#ffffff',
-                              border: 'none',
-                              borderRadius: 5,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 3,
-                              boxShadow: '0 1px 2px rgba(37, 99, 235, 0.2)',
-                              whiteSpace: 'nowrap',
-                              transition: 'all 0.15s ease'
-                            }}
-                            title="Xem & Xử lý phản hồi"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#1d4ed8'
-                              e.currentTarget.style.transform = 'translateY(-1px)'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#2563eb'
-                              e.currentTarget.style.transform = 'translateY(0)'
-                            }}
-                          >
-                            <Eye size={11} />
-                            <span>Xử lý</span>
-                          </button>
+                          {item.status !== 'PENDING' || Boolean(item.adminResponse) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRespond(item)}
+                              style={{
+                                padding: '4px 8px',
+                                backgroundColor: '#f8fafc',
+                                color: '#475569',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: 5,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3,
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Xem chi tiết kết quả xử lý"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#e2e8f0'
+                                e.currentTarget.style.borderColor = '#94a3b8'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f8fafc'
+                                e.currentTarget.style.borderColor = '#cbd5e1'
+                              }}
+                            >
+                              <Eye size={11} />
+                              <span>Xem</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRespond(item)}
+                              style={{
+                                padding: '4px 8px',
+                                backgroundColor: '#2563eb',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: 5,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3,
+                                boxShadow: '0 1px 2px rgba(37, 99, 235, 0.2)',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Xử lý phản hồi"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#1d4ed8'
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#2563eb'
+                                e.currentTarget.style.transform = 'translateY(0)'
+                              }}
+                            >
+                              <Eye size={11} />
+                              <span>Xử lý</span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     )

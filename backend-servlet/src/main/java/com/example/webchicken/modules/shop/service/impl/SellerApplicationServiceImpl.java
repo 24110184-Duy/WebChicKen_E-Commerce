@@ -6,6 +6,7 @@ import com.example.webchicken.common.exception.ValidationException;
 import com.example.webchicken.modules.identity.dao.SellerDAO;
 import com.example.webchicken.modules.identity.dao.UserDAO;
 import com.example.webchicken.modules.identity.model.entity.SellerEntity;
+import com.example.webchicken.modules.identity.model.entity.UserEntity;
 import com.example.webchicken.modules.shop.dao.SellerApplicationDAO;
 import com.example.webchicken.modules.shop.dao.StoreDAO;
 import com.example.webchicken.modules.shop.model.dto.request.ApplySellerRequest;
@@ -30,7 +31,6 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
     private final SellerApplicationDAO sellerApplicationDAO;
     private final StoreDAO storeDAO;
     private final SellerDAO sellerDAO;
-    @SuppressWarnings("unused")
     private final UserDAO userDAO;
 
     public SellerApplicationServiceImpl(
@@ -74,6 +74,16 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
             entity = pendingOpt.get();
             entity.setShopName(request.shopName().trim());
             entity.setDocumentUrl(request.documentUrl() != null ? request.documentUrl().trim() : null);
+            if (request.taxCode() != null) entity.setTaxCode(request.taxCode().trim());
+            if (request.ownerName() != null) entity.setOwnerName(request.ownerName().trim());
+            if (request.phone() != null) entity.setPhone(request.phone().trim());
+            if (request.email() != null) entity.setEmail(request.email().trim());
+            if (request.farmLocation() != null) entity.setFarmLocation(request.farmLocation().trim());
+            if (request.farmType() != null) entity.setFarmType(request.farmType().trim());
+            if (request.certificateType() != null) entity.setCertificateType(request.certificateType().trim());
+            if (request.certificateNumber() != null) entity.setCertificateNumber(request.certificateNumber().trim());
+            if (request.certificateExpiry() != null) entity.setCertificateExpiry(request.certificateExpiry().trim());
+            if (request.dailyCapacity() != null) entity.setDailyCapacity(request.dailyCapacity().trim());
             entity.setStatus("PENDING");
             entity.setSubmittedAt(now);
             entity.setReviewedAt(null);
@@ -87,6 +97,16 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
             entity.setUserId(userId);
             entity.setShopName(request.shopName().trim());
             entity.setDocumentUrl(request.documentUrl() != null ? request.documentUrl().trim() : null);
+            entity.setTaxCode(request.taxCode() != null ? request.taxCode().trim() : null);
+            entity.setOwnerName(request.ownerName() != null ? request.ownerName().trim() : null);
+            entity.setPhone(request.phone() != null ? request.phone().trim() : null);
+            entity.setEmail(request.email() != null ? request.email().trim() : null);
+            entity.setFarmLocation(request.farmLocation() != null ? request.farmLocation().trim() : null);
+            entity.setFarmType(request.farmType() != null ? request.farmType().trim() : "Thương mại điện tử & Bán lẻ");
+            entity.setCertificateType(request.certificateType() != null ? request.certificateType().trim() : "ĐKKD Hợp Lệ");
+            entity.setCertificateNumber(request.certificateNumber() != null ? request.certificateNumber().trim() : "DKKD-2025-01");
+            entity.setCertificateExpiry(request.certificateExpiry() != null ? request.certificateExpiry().trim() : "Không thời hạn");
+            entity.setDailyCapacity(request.dailyCapacity() != null ? request.dailyCapacity().trim() : "Cung ứng theo ngày");
             entity.setStatus("PENDING");
             entity.setSubmittedAt(now);
             sellerApplicationDAO.save(entity);
@@ -145,12 +165,20 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
             // Nâng cấp user thành Seller & Khởi tạo Store
             LocalDateTime now = LocalDateTime.now();
 
-            // 1. Tạo bản ghi trong sellers nếu chưa có
-            if (sellerDAO.findById(app.getUserId()).isEmpty()) {
+            // 1. Tạo hoặc cập nhật bản ghi trong sellers
+            Optional<SellerEntity> sellerOpt = sellerDAO.findById(app.getUserId());
+            if (sellerOpt.isEmpty()) {
                 SellerEntity seller = new SellerEntity();
                 seller.setUserId(app.getUserId());
                 seller.setApprovedAt(now);
+                if (app.getTaxCode() != null) {
+                    seller.setTaxCode(app.getTaxCode());
+                }
                 sellerDAO.save(seller);
+            } else if (app.getTaxCode() != null && sellerOpt.get().getTaxCode() == null) {
+                SellerEntity seller = sellerOpt.get();
+                seller.setTaxCode(app.getTaxCode());
+                sellerDAO.update(seller);
             }
 
             // 2. Tạo gian hàng Store mặc định
@@ -183,6 +211,33 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
     }
 
     private SellerApplicationResponse toResponse(SellerApplicationEntity entity) {
+        String ownerName = entity.getOwnerName();
+        String phone = entity.getPhone();
+        String email = entity.getEmail();
+        String farmLocation = entity.getFarmLocation();
+        String taxCode = entity.getTaxCode();
+
+        // Fallback tự động lấy thông tin từ UserEntity / SellerEntity nếu entity chưa có
+        if (ownerName == null || phone == null || email == null) {
+            try {
+                Optional<UserEntity> userOpt = userDAO.findById(entity.getUserId());
+                if (userOpt.isPresent()) {
+                    UserEntity u = userOpt.get();
+                    if (ownerName == null || ownerName.isBlank()) ownerName = u.getFullName() != null ? u.getFullName() : u.getUsername();
+                    if (phone == null || phone.isBlank()) phone = u.getPhone();
+                    if (email == null || email.isBlank()) email = u.getEmail();
+                }
+            } catch (Exception ignored) {}
+        }
+        if (taxCode == null || taxCode.isBlank()) {
+            try {
+                Optional<SellerEntity> sellerOpt = sellerDAO.findById(entity.getUserId());
+                if (sellerOpt.isPresent() && sellerOpt.get().getTaxCode() != null) {
+                    taxCode = sellerOpt.get().getTaxCode();
+                }
+            } catch (Exception ignored) {}
+        }
+
         return new SellerApplicationResponse(
                 entity.getId(),
                 entity.getUserId(),
@@ -192,7 +247,17 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
                 entity.getRejectionReason(),
                 entity.getAdminResponseId(),
                 entity.getSubmittedAt(),
-                entity.getReviewedAt()
+                entity.getReviewedAt(),
+                ownerName,
+                phone,
+                email,
+                farmLocation,
+                entity.getFarmType() != null ? entity.getFarmType() : "Thương mại điện tử & Bán lẻ",
+                taxCode,
+                entity.getCertificateType() != null ? entity.getCertificateType() : "ĐKKD Hợp Lệ",
+                entity.getCertificateNumber() != null ? entity.getCertificateNumber() : "DKKD-2025-01",
+                entity.getCertificateExpiry() != null ? entity.getCertificateExpiry() : "Không thời hạn",
+                entity.getDailyCapacity() != null ? entity.getDailyCapacity() : "Cung ứng theo ngày"
         );
     }
 }

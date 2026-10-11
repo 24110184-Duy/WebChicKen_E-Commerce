@@ -53,6 +53,10 @@ export const AdminProductsPage: React.FC = () => {
     try {
       const data = await adminProductApi.getProducts()
       setProducts(data.items)
+      const pendingCount = data.items.filter((p) => p.status === 'PENDING_APPROVAL').length
+      window.dispatchEvent(
+        new CustomEvent('admin:pending-products-updated', { detail: { count: pendingCount } })
+      )
     } catch (err) {
       console.error('Failed to load products for moderation:', err)
       showToast('Không thể tải danh sách sản phẩm kiểm duyệt.', 'error')

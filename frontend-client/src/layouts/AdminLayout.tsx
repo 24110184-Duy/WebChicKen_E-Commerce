@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../app/store/authStore'
 import { PATHS } from '../app/router/paths'
+import { adminProductApi } from '../features/admin/api/adminProductApi'
+import { adminShopApi } from '../features/admin/api/adminShopApi'
 
 export interface AdminLayoutProps {
   children: React.ReactNode
@@ -25,17 +27,85 @@ export interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { user } = useAuthStore()
+  const [pendingProductsCount, setPendingProductsCount] = React.useState<number>(0)
+  const [pendingShopsCount, setPendingShopsCount] = React.useState<number>(0)
+
+  const loadPendingCounts = React.useCallback(async () => {
+    try {
+      const [prodsRes, shopsRes] = await Promise.allSettled([
+        adminProductApi.getProducts({ size: 100 }),
+        adminShopApi.getApplications('PENDING'),
+      ])
+
+      if (prodsRes.status === 'fulfilled') {
+        const items = prodsRes.value.items || []
+        const count = items.filter((p) => p.status === 'PENDING_APPROVAL').length
+        setPendingProductsCount(count)
+      }
+
+      if (shopsRes.status === 'fulfilled') {
+        const apps = shopsRes.value || []
+        const count = apps.filter((a) => a.status === 'PENDING').length
+        setPendingShopsCount(count)
+      }
+    } catch {
+      // Bỏ qua lỗi kết nối tạm thời
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadPendingCounts()
+
+    const handleRefresh = () => {
+      loadPendingCounts()
+    }
+
+    const handleProductCount = (e: Event) => {
+      const custom = e as CustomEvent<{ count: number }>
+      if (typeof custom.detail?.count === 'number') {
+        setPendingProductsCount(custom.detail.count)
+      } else {
+        loadPendingCounts()
+      }
+    }
+
+    const handleShopCount = (e: Event) => {
+      const custom = e as CustomEvent<{ count: number }>
+      if (typeof custom.detail?.count === 'number') {
+        setPendingShopsCount(custom.detail.count)
+      } else {
+        loadPendingCounts()
+      }
+    }
+
+    window.addEventListener('admin:refresh-badges', handleRefresh)
+    window.addEventListener('admin:pending-products-updated', handleProductCount)
+    window.addEventListener('admin:pending-shops-updated', handleShopCount)
+
+    return () => {
+      window.removeEventListener('admin:refresh-badges', handleRefresh)
+      window.removeEventListener('admin:pending-products-updated', handleProductCount)
+      window.removeEventListener('admin:pending-shops-updated', handleShopCount)
+    }
+  }, [loadPendingCounts, location.pathname])
+
   const adminName = user?.fullName || user?.email || user?.username || 'Quản Trị Viên'
   const adminRole = user?.roles.find(r => ['SUPER_ADMIN', 'MODERATOR'].includes(r)) || 'SUPER_ADMIN'
   const initials = user?.fullName
     ? user.fullName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? 'AD'
 
-  // Helper function to check active path
-  const isActive = (path: string, exact: boolean = false) => {
-    if (exact) return location.pathname === path
-    return location.pathname.startsWith(path)
-  }
+  // Active check helpers matching routes accurately
+  const isDashboardActive = location.pathname === '/admin' || location.pathname === '/admin/dashboard'
+  const isOrdersActive = location.pathname.startsWith('/admin/orders')
+  const isProductsActive = location.pathname.startsWith('/admin/products')
+  const isCategoriesActive = location.pathname.startsWith('/admin/categories')
+  const isShopsActive = location.pathname.startsWith('/admin/shops') || location.pathname.startsWith('/admin/sellers')
+  const isVouchersActive = location.pathname.startsWith('/admin/vouchers')
+  const isFeedbacksActive = location.pathname.startsWith('/admin/feedbacks') || location.pathname.startsWith('/admin/feedback')
+  const isUsersActive = location.pathname.startsWith('/admin/users')
+  const isAuditLogsActive = location.pathname.startsWith('/admin/audit-logs')
+  const isSettingsActive = location.pathname.startsWith('/admin/settings')
 
   return (
     <div className="admin-shell">
@@ -101,70 +171,123 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Left Dark Sidebar */}
         <aside className="admin-sidebar">
           <div>
-            {/* Overview Group */}
+            {/* 1. OVERVIEW */}
             <div className="admin-nav-group">
-              <div className="admin-nav-group-title">Platform Intelligence</div>
+              <div className="admin-nav-group-title">Overview</div>
               <Link
                 to={PATHS.ADMIN.DASHBOARD}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.DASHBOARD, true) ? 'active' : ''}`}
+                className={`admin-nav-item ${isDashboardActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
                   <LayoutDashboard style={{ width: 17, height: 17 }} />
-                  <span>Overview & Metrics</span>
+                  <span>Overview (Dashboard)</span>
                 </div>
               </Link>
             </div>
 
-            {/* Governance & Moderation Group (TASK-64, TASK-65, TASK-69) */}
+            {/* 2. ORDER */}
             <div className="admin-nav-group">
-              <div className="admin-nav-group-title">Governance & Approvals</div>
+              <div className="admin-nav-group-title">Order</div>
               <Link
-                to={PATHS.ADMIN.SHOPS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.SHOPS) ? 'active' : ''}`}
+                to={PATHS.ADMIN.ORDERS}
+                className={`admin-nav-item ${isOrdersActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
-                  <Store style={{ width: 17, height: 17 }} />
-                  <span>Shop Approvals</span>
+                  <ShoppingBag style={{ width: 17, height: 17 }} />
+                  <span>Platform Orders</span>
                 </div>
               </Link>
+            </div>
 
+            {/* 3. PRODUCT & CATALOG */}
+            <div className="admin-nav-group">
+              <div className="admin-nav-group-title">Product & Catalog</div>
               <Link
                 to={PATHS.ADMIN.PRODUCTS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.PRODUCTS) ? 'active' : ''}`}
+                className={`admin-nav-item ${isProductsActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
                   <ShieldCheck style={{ width: 17, height: 17 }} />
                   <span>Product Moderation</span>
                 </div>
-                <span className="admin-nav-badge" title="Pending Product Quality Approvals">
-                  5
-                </span>
+                {pendingProductsCount > 0 && (
+                  <span className="admin-nav-badge" title="Sản phẩm chờ quản trị viên kiểm duyệt">
+                    {pendingProductsCount}
+                  </span>
+                )}
               </Link>
 
               <Link
+                to={PATHS.ADMIN.CATEGORIES}
+                className={`admin-nav-item ${isCategoriesActive ? 'active' : ''}`}
+              >
+                <div className="admin-nav-item-content">
+                  <FolderTree style={{ width: 17, height: 17 }} />
+                  <span>Categories Tree</span>
+                </div>
+              </Link>
+            </div>
+
+            {/* 4. SHOP / MERCHANT */}
+            <div className="admin-nav-group">
+              <div className="admin-nav-group-title">Shop Management</div>
+              <Link
+                to={PATHS.ADMIN.SHOPS}
+                className={`admin-nav-item ${isShopsActive ? 'active' : ''}`}
+              >
+                <div className="admin-nav-item-content">
+                  <Store style={{ width: 17, height: 17 }} />
+                  <span>Shop Approvals</span>
+                </div>
+                {pendingShopsCount > 0 && (
+                  <span className="admin-nav-badge" title="Hồ sơ gian hàng chờ xét duyệt">
+                    {pendingShopsCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+
+            {/* 5. MARKETING CENTRE */}
+            <div className="admin-nav-group">
+              <div className="admin-nav-group-title">Marketing Centre</div>
+              <Link
+                to={PATHS.ADMIN.VOUCHERS}
+                className={`admin-nav-item ${isVouchersActive ? 'active' : ''}`}
+              >
+                <div className="admin-nav-item-content">
+                  <Percent style={{ width: 17, height: 17 }} />
+                  <span>Platform Vouchers</span>
+                </div>
+              </Link>
+            </div>
+
+            {/* 6. CUSTOMER SERVICE */}
+            <div className="admin-nav-group">
+              <div className="admin-nav-group-title">Customer Service</div>
+              <Link
                 to={PATHS.ADMIN.FEEDBACKS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.FEEDBACKS) ? 'active' : ''}`}
+                className={`admin-nav-item ${isFeedbacksActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
                   <MessageSquare style={{ width: 17, height: 17 }} />
-                  <span>Seller Feedback</span>
+                  <span>User Feedback</span>
                 </div>
                 <span
                   className="admin-nav-badge"
                   style={{ backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}
-                  title="Seller Inquiries & Complaints"
+                  title="User Inquiries & Complaints"
                 >
                   Hot
                 </span>
               </Link>
             </div>
 
-            {/* User Security & Audit (TASK-66, TASK-67) */}
+            {/* 7. ACCOUNTS & SECURITY */}
             <div className="admin-nav-group">
-              <div className="admin-nav-group-title">Security & Accounts</div>
+              <div className="admin-nav-group-title">Accounts & Security</div>
               <Link
                 to={PATHS.ADMIN.USERS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.USERS) ? 'active' : ''}`}
+                className={`admin-nav-item ${isUsersActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
                   <Users style={{ width: 17, height: 17 }} />
@@ -174,7 +297,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
               <Link
                 to={PATHS.ADMIN.AUDIT_LOGS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.AUDIT_LOGS) ? 'active' : ''}`}
+                className={`admin-nav-item ${isAuditLogsActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
                   <ScrollText style={{ width: 17, height: 17 }} />
@@ -183,42 +306,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </Link>
             </div>
 
-            {/* Marketplace Operations Group */}
+            {/* 8. SYSTEM */}
             <div className="admin-nav-group">
-              <div className="admin-nav-group-title">Marketplace Operations</div>
-              <Link
-                to={PATHS.ADMIN.CATEGORIES}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.CATEGORIES) ? 'active' : ''}`}
-              >
-                <div className="admin-nav-item-content">
-                  <FolderTree style={{ width: 17, height: 17 }} />
-                  <span>Categories Tree</span>
-                </div>
-              </Link>
-
-              <Link
-                to={PATHS.ADMIN.ORDERS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.ORDERS) ? 'active' : ''}`}
-              >
-                <div className="admin-nav-item-content">
-                  <ShoppingBag style={{ width: 17, height: 17 }} />
-                  <span>Platform Orders</span>
-                </div>
-              </Link>
-
-              <Link
-                to={PATHS.ADMIN.VOUCHERS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.VOUCHERS) ? 'active' : ''}`}
-              >
-                <div className="admin-nav-item-content">
-                  <Percent style={{ width: 17, height: 17 }} />
-                  <span>Platform Vouchers</span>
-                </div>
-              </Link>
-
+              <div className="admin-nav-group-title">System Settings</div>
               <Link
                 to={PATHS.ADMIN.SETTINGS}
-                className={`admin-nav-item ${isActive(PATHS.ADMIN.SETTINGS) ? 'active' : ''}`}
+                className={`admin-nav-item ${isSettingsActive ? 'active' : ''}`}
               >
                 <div className="admin-nav-item-content">
                   <Settings style={{ width: 17, height: 17 }} />

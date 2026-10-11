@@ -253,4 +253,53 @@ public class OrderDAO extends BaseDAO {
         } catch (Exception ignored) {
         }
     }
+
+    /**
+     * Quản trị viên xóa vĩnh viễn đơn hàng và các bản ghi liên quan (cancellations, items, history, payments).
+     */
+    public void deleteByOrderCode(String orderCode) {
+        if (orderCode == null || orderCode.isBlank()) return;
+        executeInTransaction(em -> {
+            Optional<OrderEntity> opt = findByOrderCode(orderCode);
+            if (opt.isPresent()) {
+                OrderEntity order = opt.get();
+                String orderId = order.getId();
+                try {
+                    em.createQuery("DELETE FROM StockReservationEntity s WHERE s.orderId = :oid OR s.orderId = :ocode")
+                            .setParameter("oid", orderId)
+                            .setParameter("ocode", orderCode)
+                            .executeUpdate();
+                } catch (Exception ignored) {}
+                try {
+                    em.createQuery("DELETE FROM ProductReviewEntity r WHERE r.orderId = :oid")
+                            .setParameter("oid", orderId)
+                            .executeUpdate();
+                } catch (Exception ignored) {}
+                try {
+                    em.createQuery("DELETE FROM PaymentEntity p WHERE p.orderId = :oid")
+                            .setParameter("oid", orderId)
+                            .executeUpdate();
+                } catch (Exception ignored) {}
+                try {
+                    em.createQuery("DELETE FROM OrderCancellationEntity c WHERE c.orderId = :oid")
+                            .setParameter("oid", orderId)
+                            .executeUpdate();
+                } catch (Exception ignored) {}
+                try {
+                    em.createQuery("DELETE FROM OrderStatusHistoryEntity h WHERE h.orderId = :oid")
+                            .setParameter("oid", orderId)
+                            .executeUpdate();
+                } catch (Exception ignored) {}
+                try {
+                    em.createQuery("DELETE FROM OrderItemEntity i WHERE i.orderId = :oid")
+                            .setParameter("oid", orderId)
+                            .executeUpdate();
+                } catch (Exception ignored) {}
+                OrderEntity ref = em.find(OrderEntity.class, orderId);
+                if (ref != null) {
+                    em.remove(ref);
+                }
+            }
+        });
+    }
 }

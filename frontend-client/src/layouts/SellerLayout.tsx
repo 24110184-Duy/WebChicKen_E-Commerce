@@ -16,6 +16,7 @@ import {
   MessageSquare,
   ShieldCheck,
   Plus,
+  Tag,
 } from 'lucide-react'
 import { PATHS } from '../app/router/paths'
 import { sellerApi } from '../features/seller/api/sellerApi'
@@ -92,6 +93,7 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
 
   const isOrderActive = location.pathname.startsWith('/seller/orders')
   const isProductActive = location.pathname.startsWith('/seller/products')
+  const isVoucherActive = location.pathname.startsWith('/seller/vouchers') || location.pathname.startsWith('/seller/promotions')
 
   const isFeedbackActive = location.pathname.startsWith('/seller/feedback')
   const isChatActive = location.pathname.startsWith('/seller/chat')
@@ -395,7 +397,19 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
               </Link>
             </div>
 
-            {/* 5. CUSTOMER SERVICE (Chăm sóc & Phản hồi Admin) */}
+            {/* 5. MARKETING & VOUCHERS */}
+            <div className="seller-nav-group">
+              <div className="seller-nav-group-title">Marketing Centre</div>
+              <Link
+                to={PATHS.SELLER.VOUCHERS}
+                className={`seller-nav-item ${isVoucherActive ? 'active' : ''}`}
+              >
+                <Tag style={{ width: 17, height: 17 }} />
+                <span>Mã Giảm Giá (Vouchers)</span>
+              </Link>
+            </div>
+
+            {/* 6. CUSTOMER SERVICE (Chăm sóc & Phản hồi Admin) */}
             <div className="seller-nav-group">
               <div className="seller-nav-group-title">Customer Service</div>
               <Link
