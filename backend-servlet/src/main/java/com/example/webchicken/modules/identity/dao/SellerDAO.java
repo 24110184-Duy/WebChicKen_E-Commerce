@@ -17,9 +17,25 @@ public class SellerDAO extends BaseDAO {
         return executeQuery(em -> Optional.ofNullable(em.find(SellerEntity.class, sellerId)));
     }
 
-    /** Lưu seller mới. */
+    /** Lưu seller mới. Nếu bản ghi trong users đã tồn tại, chèn an toàn vào bảng sellers */
     public void save(SellerEntity seller) {
-        executeInTransaction(em -> em.persist(seller));
+        if (seller == null || seller.getUserId() == null || seller.getUserId().isBlank()) {
+            return;
+        }
+        executeInTransaction(em -> {
+            Number count = (Number) em.createNativeQuery(
+                    "SELECT COUNT(*) FROM sellers WHERE id = ?")
+                    .setParameter(1, seller.getUserId())
+                    .getSingleResult();
+            if (count.longValue() == 0) {
+                em.createNativeQuery(
+                        "INSERT INTO sellers (id, tax_code, approved_at) VALUES (?, ?, ?)")
+                        .setParameter(1, seller.getUserId())
+                        .setParameter(2, seller.getTaxCode())
+                        .setParameter(3, seller.getApprovedAt() != null ? seller.getApprovedAt() : java.time.LocalDateTime.now())
+                        .executeUpdate();
+            }
+        });
     }
 
     /** Cập nhật seller. */

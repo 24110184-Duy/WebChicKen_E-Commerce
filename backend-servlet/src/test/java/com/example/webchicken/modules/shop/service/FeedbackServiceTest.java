@@ -12,6 +12,7 @@ import com.example.webchicken.modules.shop.model.dto.response.FeedbackPageRespon
 import com.example.webchicken.modules.shop.model.dto.response.FeedbackResponse;
 import com.example.webchicken.modules.shop.model.entity.FeedbackEntity;
 import com.example.webchicken.modules.shop.service.impl.FeedbackServiceImpl;
+import com.example.webchicken.modules.identity.model.entity.AdminEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -146,6 +147,45 @@ public class FeedbackServiceTest {
                 contains("Đã liên hệ tài xế"),
                 eq("192.168.1.100")
         );
+    }
+
+    @Test
+    @DisplayName("Admin phúc đáp phiếu sử dụng username thay vì UUID định danh")
+    void testRespondFeedbackUsesAdminUsernameInsteadOfUuid() {
+        String feedbackId = "fb-ticket-123";
+        String adminUuid = "a841e39e-ce5a-495a-8e21-73723eca9001";
+        FeedbackEntity entity = new FeedbackEntity(feedbackId, "seller-5", "COMPLAINT", "Khiếu nại sản phẩm", "Chi tiết", null);
+
+        AdminEntity adminEntity = new AdminEntity();
+        adminEntity.setUserId(adminUuid);
+        adminEntity.setUsername("super_admin");
+        adminEntity.setFullName("Nguyễn Văn Quản Trị");
+
+        when(feedbackDAO.findById(feedbackId)).thenReturn(Optional.of(entity));
+        when(userDAO.findById(adminUuid)).thenReturn(Optional.of(adminEntity));
+
+        RespondFeedbackRequest request = new RespondFeedbackRequest("RESOLVED", "Đã giải quyết thỏa đáng.");
+        FeedbackResponse response = feedbackService.respondFeedback(feedbackId, adminUuid, request, "127.0.0.1");
+
+        assertNotNull(response);
+        assertEquals("super_admin", response.resolvedBy(), "Phải trả về username của admin thay vì chuỗi UUID thô gây hoang mang");
+    }
+
+    @Test
+    @DisplayName("Admin phúc đáp phiếu với trạng thái IN_REVIEW thành công")
+    void testRespondFeedbackWithInReviewStatus() {
+        String feedbackId = "fb-ticket-in-review";
+        String adminUuid = "admin-reviewer";
+        FeedbackEntity entity = new FeedbackEntity(feedbackId, "seller-5", "INQUIRY", "Hỏi đáp vận hành", "Cần hỗ trợ", null);
+
+        when(feedbackDAO.findById(feedbackId)).thenReturn(Optional.of(entity));
+
+        RespondFeedbackRequest request = new RespondFeedbackRequest("IN_REVIEW", "Ban Quản trị đang xem xét yêu cầu.");
+        FeedbackResponse response = feedbackService.respondFeedback(feedbackId, adminUuid, request, "127.0.0.1");
+
+        assertNotNull(response);
+        assertEquals("IN_REVIEW", response.status(), "Phải chấp nhận trạng thái IN_REVIEW từ frontend");
+        assertEquals("Ban Quản trị đang xem xét yêu cầu.", response.adminResponse());
     }
 
     @Test

@@ -163,27 +163,10 @@ export const AdminProductsPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div style={{ padding: '24px 32px' }}>
+      <div className="mod-container">
         {/* Toast Alert */}
         {toastMessage && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 24,
-              right: 32,
-              zIndex: 10000,
-              backgroundColor: toastMessage.type === 'success' ? '#059669' : '#dc2626',
-              color: '#ffffff',
-              padding: '12px 20px',
-              borderRadius: 8,
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
+          <div className={`mod-toast ${toastMessage.type}`}>
             {toastMessage.type === 'success' ? (
               <CheckCircle2 size={18} />
             ) : (
@@ -194,56 +177,23 @@ export const AdminProductsPage: React.FC = () => {
         )}
 
         {/* 1. Header & Title */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 24,
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  backgroundColor: '#7c3aed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                }}
-              >
-                <ShieldCheck size={20} />
-              </div>
-              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#0f172a' }}>
+        <div className="mod-header">
+          <div className="mod-header-left">
+            <div className="mod-header-icon">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <h1 className="mod-header-title">
                 Kiểm Duyệt Sản Phẩm (Product Moderation)
               </h1>
+              <p className="mod-header-subtitle">
+                Thẩm định nguồn gốc xuất xứ, thông tin pháp lý, chất lượng sản phẩm và phân loại SKU trước khi công khai trên sàn WebChicKen.
+              </p>
             </div>
-            <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: 14 }}>
-              Thẩm định nguồn gốc xuất xứ, thông tin pháp lý, chất lượng sản phẩm và phân loại SKU trước khi công khai trên sàn WebChicKen.
-            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Link
-              to="/seller/products?action=new"
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#0f172a',
-                background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
-                borderRadius: 8,
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                boxShadow: '0 2px 6px rgba(234, 179, 8, 0.3)',
-              }}
-            >
+          <div className="mod-header-actions">
+            <Link to="/seller/products?action=new" className="mod-btn-create">
               <Package size={15} />
               <span>Thêm Sản Phẩm Mới (Seller Center)</span>
             </Link>
@@ -253,19 +203,7 @@ export const AdminProductsPage: React.FC = () => {
                 loadProducts()
                 showToast('Đã làm mới danh sách sản phẩm từ hệ thống.', 'success')
               }}
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#475569',
-                backgroundColor: '#ffffff',
-                border: '1px solid #cbd5e1',
-                borderRadius: 8,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
+              className="mod-btn-refresh"
             >
               <RotateCcw size={14} />
               <span>Làm mới Danh sách</span>
@@ -273,186 +211,106 @@ export const AdminProductsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Banner: Cơ chế kiểm duyệt 2 luồng */}
-        <div
-          style={{
-            marginBottom: 20,
-            padding: '14px 18px',
-            borderRadius: 12,
-            backgroundColor: '#f8fafc',
-            border: '1px solid #cbd5e1',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                backgroundColor: '#eff6ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#2563eb',
-                flexShrink: 0,
-              }}
-            >
-              <ShieldCheck size={20} />
+        {/* 2. Banner: Cơ chế kiểm duyệt 2 luồng */}
+        <div className="mod-banner">
+          <div className="mod-banner-icon">
+            <ShieldCheck size={22} />
+          </div>
+          <div className="mod-banner-content">
+            <div className="mod-banner-heading">
+              <span>Hệ Thống Kiểm Duyệt Sản Phẩm 2 Luồng</span>
+              <span className="mod-banner-tag">Dual-Track AI & Admin</span>
             </div>
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a' }}>
-                Hệ Thống Kiểm Duyệt Sản Phẩm 2 Luồng (Dual-Track Moderation Bot & Admin)
-              </div>
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 1.5 }}>
-                • <b>Luồng 1 (BOT AI tự động):</b> Đồ thông thường hợp lệ (thời trang, đồ gia dụng, nông sản...) được duyệt mở bán ngay.<br />
-                • <b>Luồng 2 (Admin thẩm định an toàn):</b> Món hàng khả nghi hoặc tag/tên liên quan đến sức khỏe, thuốc, thực phẩm chức năng... bắt buộc Quản trị viên duyệt chứng chỉ an toàn.
-              </div>
+            <div className="mod-banner-desc">
+              • <b>Luồng 1 (BOT AI tự động):</b> Đồ thông thường hợp lệ (thời trang, đồ gia dụng, nông sản...) được duyệt mở bán ngay.<br />
+              • <b>Luồng 2 (Admin thẩm định an toàn):</b> Món hàng khả nghi hoặc tag/tên liên quan đến sức khỏe, thuốc, thực phẩm chức năng... bắt buộc Quản trị viên duyệt chứng chỉ an toàn.
             </div>
           </div>
         </div>
 
-        {/* 2. Bento KPI Cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gap: 14,
-            marginBottom: 24,
-          }}
-        >
+        {/* 3. Bento KPI Cards (5 Thẻ chỉ số) */}
+        <div className="mod-kpi-grid">
+          {/* Card 1: Chờ Admin duyệt */}
           <div
             onClick={() => setActiveTab('PENDING_APPROVAL')}
-            style={{
-              padding: '16px 18px',
-              backgroundColor: '#ffffff',
-              borderRadius: 12,
-              border: activeTab === 'PENDING_APPROVAL' ? '2px solid #f59e0b' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
+            className={`mod-kpi-card pending ${activeTab === 'PENDING_APPROVAL' ? 'active' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>CHỜ ADMIN DUYỆT</span>
-              <Clock size={18} color="#d97706" />
+            <div className="mod-kpi-header">
+              <span className="mod-kpi-label">CHỜ ADMIN DUYỆT</span>
+              <div className="mod-kpi-icon">
+                <Clock size={17} />
+              </div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#d97706', marginTop: 6 }}>
-              {stats.pending}
-            </div>
-            <span style={{ fontSize: 11.5, color: '#b45309', fontWeight: 500 }}>Nghi vấn thuốc / an toàn</span>
+            <div className="mod-kpi-value">{stats.pending}</div>
+            <span className="mod-kpi-sub">Nghi vấn thuốc / an toàn</span>
           </div>
 
+          {/* Card 2: Bot tự duyệt */}
           <div
             onClick={() => setActiveTab('BOT_APPROVED')}
-            style={{
-              padding: '16px 18px',
-              backgroundColor: '#ffffff',
-              borderRadius: 12,
-              border: activeTab === 'BOT_APPROVED' ? '2px solid #8b5cf6' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
+            className={`mod-kpi-card bot ${activeTab === 'BOT_APPROVED' ? 'active' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>BOT TỰ DUYỆT</span>
-              <CheckCircle2 size={18} color="#7c3aed" />
+            <div className="mod-kpi-header">
+              <span className="mod-kpi-label">BOT TỰ DUYỆT</span>
+              <div className="mod-kpi-icon">
+                <CheckCircle2 size={17} />
+              </div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#7c3aed', marginTop: 6 }}>
-              {stats.botApproved}
-            </div>
-            <span style={{ fontSize: 11.5, color: '#6d28d9', fontWeight: 500 }}>Đạt chuẩn thông thường</span>
+            <div className="mod-kpi-value">{stats.botApproved}</div>
+            <span className="mod-kpi-sub">Đạt chuẩn thông thường</span>
           </div>
 
+          {/* Card 3: Admin đã duyệt */}
           <div
             onClick={() => setActiveTab('ADMIN_APPROVED')}
-            style={{
-              padding: '16px 18px',
-              backgroundColor: '#ffffff',
-              borderRadius: 12,
-              border: activeTab === 'ADMIN_APPROVED' ? '2px solid #10b981' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
+            className={`mod-kpi-card approved ${activeTab === 'ADMIN_APPROVED' ? 'active' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>ADMIN ĐÃ DUYỆT</span>
-              <ShieldCheck size={18} color="#059669" />
+            <div className="mod-kpi-header">
+              <span className="mod-kpi-label">ADMIN ĐÃ DUYỆT</span>
+              <div className="mod-kpi-icon">
+                <ShieldCheck size={17} />
+              </div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#059669', marginTop: 6 }}>
-              {stats.adminApproved}
-            </div>
-            <span style={{ fontSize: 11.5, color: '#047857', fontWeight: 500 }}>Thẩm định an toàn</span>
+            <div className="mod-kpi-value">{stats.adminApproved}</div>
+            <span className="mod-kpi-sub">Thẩm định an toàn</span>
           </div>
 
+          {/* Card 4: Bị từ chối / Tạm khóa */}
           <div
             onClick={() => setActiveTab('INACTIVE')}
-            style={{
-              padding: '16px 18px',
-              backgroundColor: '#ffffff',
-              borderRadius: 12,
-              border: activeTab === 'INACTIVE' ? '2px solid #ef4444' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
+            className={`mod-kpi-card rejected ${activeTab === 'INACTIVE' ? 'active' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>TỪ CHỐI / TẠM KHÓA</span>
-              <XCircle size={18} color="#dc2626" />
+            <div className="mod-kpi-header">
+              <span className="mod-kpi-label">TỪ CHỐI / TẠM KHÓA</span>
+              <div className="mod-kpi-icon">
+                <XCircle size={17} />
+              </div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#dc2626', marginTop: 6 }}>
-              {stats.inactive}
-            </div>
-            <span style={{ fontSize: 11.5, color: '#b91c1c', fontWeight: 500 }}>Vi phạm hoặc chưa đạt</span>
+            <div className="mod-kpi-value">{stats.inactive}</div>
+            <span className="mod-kpi-sub">Vi phạm hoặc chưa đạt</span>
           </div>
 
+          {/* Card 5: Tổng sản phẩm */}
           <div
             onClick={() => setActiveTab('ALL')}
-            style={{
-              padding: '16px 18px',
-              backgroundColor: '#ffffff',
-              borderRadius: 12,
-              border: activeTab === 'ALL' ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
+            className={`mod-kpi-card total ${activeTab === 'ALL' ? 'active' : ''}`}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12.5, color: '#64748b', fontWeight: 600 }}>TỔNG SẢN PHẨM</span>
-              <Package size={18} color="#2563eb" />
+            <div className="mod-kpi-header">
+              <span className="mod-kpi-label">TỔNG SẢN PHẨM</span>
+              <div className="mod-kpi-icon">
+                <Package size={17} />
+              </div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', marginTop: 6 }}>
-              {stats.total}
-            </div>
-            <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 500 }}>Toàn sàn WebChicKen</span>
+            <div className="mod-kpi-value">{stats.total}</div>
+            <span className="mod-kpi-sub">Toàn sàn WebChicKen</span>
           </div>
         </div>
 
-        {/* 3. Search Bar & Filter Tabs */}
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: 12,
-            border: '1px solid #e2e8f0',
-            overflow: 'hidden',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div
-            style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 16,
-              flexWrap: 'wrap',
-            }}
-          >
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {/* 4. Filter Bar & Data Table Card */}
+        <div className="mod-content-card">
+          <div className="mod-toolbar">
+            {/* Tabs Group */}
+            <div className="mod-tabs-group">
               {(
                 [
                   { key: 'PENDING_APPROVAL', label: 'Chờ Admin duyệt (Sức khỏe)', count: stats.pending },
@@ -465,241 +323,171 @@ export const AdminProductsPage: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: 'none',
-                    backgroundColor: activeTab === tab.key ? '#0f172a' : '#f1f5f9',
-                    color: activeTab === tab.key ? '#ffffff' : '#475569',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s ease',
-                  }}
+                  className={`mod-tab-btn ${activeTab === tab.key ? 'active' : ''}`}
                 >
                   <span>{tab.label}</span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      padding: '2px 6px',
-                      borderRadius: 10,
-                      backgroundColor: activeTab === tab.key ? '#334155' : '#e2e8f0',
-                      color: activeTab === tab.key ? '#ffffff' : '#64748b',
-                    }}
-                  >
-                    {tab.count}
-                  </span>
+                  <span className="mod-tab-count">{tab.count}</span>
                 </button>
               ))}
             </div>
 
             {/* Search Box */}
-            <div style={{ position: 'relative', width: 320 }}>
-              <Search
-                size={16}
-                color="#94a3b8"
-                style={{ position: 'absolute', left: 12, top: 11 }}
-              />
+            <div className="mod-search-box">
+              <Search size={16} className="mod-search-icon" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm tên sản phẩm, người duyệt, ghi chú..."
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  padding: '9px 12px 9px 36px',
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                  fontSize: 13,
-                  outline: 'none',
-                }}
+                className="mod-search-input"
               />
             </div>
           </div>
 
-          {/* 4. Products Table */}
+          {/* Data Table / Empty States */}
           {isLoading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#64748b' }}>
+            <div style={{ padding: 56, textAlign: 'center', color: '#64748b' }}>
               Đang tải danh sách sản phẩm...
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div style={{ padding: 64, textAlign: 'center' }}>
-              <Package size={48} color="#cbd5e1" style={{ margin: '0 auto 12px auto' }} />
-              <h3 style={{ margin: '0 0 4px 0', fontSize: 16, fontWeight: 700, color: '#334155' }}>
-                Không tìm thấy sản phẩm nào
-              </h3>
-              <p style={{ margin: 0, fontSize: 13, color: '#94a3b8' }}>
-                Thử thay đổi bộ lọc tab hoặc từ khóa tìm kiếm.
-              </p>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead
-                  style={{
-                    backgroundColor: '#f8fafc',
-                    color: '#64748b',
-                    fontSize: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
+            activeTab === 'PENDING_APPROVAL' && stats.pending === 0 && !searchQuery.trim() ? (
+              // Empty State Thông Minh khi không có sản phẩm nào cần Quản trị viên duyệt
+              <div className="mod-empty-state">
+                <div className="mod-empty-icon-wrap safe">
+                  <ShieldCheck size={38} />
+                </div>
+                <h3 className="mod-empty-title">
+                  Tất cả sản phẩm đã an toàn & được phê duyệt!
+                </h3>
+                <p className="mod-empty-desc">
+                  Hiện không có sản phẩm nào thuộc luồng y tế/sức khỏe cần Quản trị viên thẩm định. Toàn bộ sản phẩm trên sàn WebChicKen đã được mở bán an toàn hoặc tự động xử lý bởi BOT AI.
+                </p>
+                <button
+                  className="mod-empty-action-btn"
+                  onClick={() => setActiveTab('ALL')}
                 >
+                  <Package size={15} />
+                  <span>Xem danh sách tất cả ({stats.total}) sản phẩm trên sàn</span>
+                </button>
+              </div>
+            ) : (
+              // Empty State trung tính cho tìm kiếm hoặc các tab khác
+              <div className="mod-empty-state">
+                <div className="mod-empty-icon-wrap neutral">
+                  <Package size={38} />
+                </div>
+                <h3 className="mod-empty-title">
+                  Không tìm thấy sản phẩm nào
+                </h3>
+                <p className="mod-empty-desc">
+                  {searchQuery.trim()
+                    ? `Không tìm thấy kết quả nào khớp với từ khóa "${searchQuery}". Hãy thử kiểm tra lại chính tả hoặc xóa bộ lọc tìm kiếm.`
+                    : 'Hiện chưa có sản phẩm nào trong danh mục lọc này.'}
+                </p>
+                {searchQuery.trim() ? (
+                  <button
+                    className="mod-empty-action-btn"
+                    onClick={() => setSearchQuery('')}
+                    style={{ background: '#475569' }}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Xóa từ khóa tìm kiếm</span>
+                  </button>
+                ) : (
+                  <button
+                    className="mod-empty-action-btn"
+                    onClick={() => setActiveTab('ALL')}
+                  >
+                    <Package size={15} />
+                    <span>Xem tất cả ({stats.total}) sản phẩm</span>
+                  </button>
+                )}
+              </div>
+            )
+          ) : (
+            <div className="mod-table-responsive">
+              <table className="mod-table">
+                <thead className="mod-thead">
                   <tr>
-                    <th style={{ padding: '12px 16px' }}>Sản phẩm</th>
-                    <th style={{ padding: '12px 16px' }}>Gian hàng & Xuất xứ</th>
-                    <th style={{ padding: '12px 16px' }}>Giá & Kho</th>
-                    <th style={{ padding: '12px 16px' }}>Trạng thái</th>
-                    <th style={{ padding: '12px 16px' }}>Người duyệt / Cơ chế</th>
-                    <th style={{ padding: '12px 16px' }}>Ngày nộp</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Thao tác</th>
+                    <th className="mod-th">Sản phẩm</th>
+                    <th className="mod-th">Gian hàng & Xuất xứ</th>
+                    <th className="mod-th">Giá & Kho</th>
+                    <th className="mod-th">Trạng thái</th>
+                    <th className="mod-th">Người duyệt / Cơ chế</th>
+                    <th className="mod-th">Ngày nộp</th>
+                    <th className="mod-th right">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody style={{ fontSize: 13 }}>
+                <tbody className="mod-tbody">
                   {filteredProducts.map((p) => {
                     return (
-                      <tr
-                        key={p.id}
-                        style={{
-                          borderTop: '1px solid #e2e8f0',
-                          backgroundColor: '#ffffff',
-                          transition: 'background-color 0.1s',
-                        }}
-                      >
+                      <tr key={p.id}>
                         {/* Column 1: Image & Name */}
-                        <td style={{ padding: '14px 16px', maxWidth: 300 }}>
-                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <td className="mod-td">
+                          <div className="mod-product-cell">
                             <img
                               src={
                                 p.thumbnailUrl ||
                                 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=200&q=80'
                               }
                               alt={p.name}
-                              style={{
-                                width: 52,
-                                height: 52,
-                                borderRadius: 8,
-                                objectFit: 'cover',
-                                border: '1px solid #e2e8f0',
-                                flexShrink: 0,
-                              }}
+                              className="mod-product-thumb"
                             />
-                            <div>
-                              <span
-                                style={{
-                                  fontSize: 10,
-                                  fontWeight: 700,
-                                  color: '#7c3aed',
-                                  backgroundColor: '#f5f3ff',
-                                  padding: '1px 6px',
-                                  borderRadius: 4,
-                                }}
-                              >
+                            <div className="mod-product-details">
+                              <span className="mod-cat-badge">
                                 {p.categoryName || 'Gia cầm'}
                               </span>
-                              <div
-                                style={{
-                                  fontWeight: 700,
-                                  color: '#0f172a',
-                                  fontSize: 13,
-                                  marginTop: 2,
-                                  lineHeight: 1.3,
-                                }}
-                              >
+                              <div className="mod-product-name" title={p.name}>
                                 {p.name}
                               </div>
-                              <span style={{ fontSize: 11, color: '#94a3b8' }}>Mã: {p.id}</span>
+                              <span className="mod-product-sku">Mã: {p.id.slice(0, 16)}...</span>
                             </div>
                           </div>
                         </td>
 
                         {/* Column 2: Store & Origin */}
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                        <td className="mod-td">
+                          <div className="mod-store-title">
                             <Store size={14} color="#d97706" />
                             <span>{p.storeName || p.storeId}</span>
                           </div>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
+                          <div className="mod-origin-sub">
                             📍 {p.origin || 'Chưa cập nhật'}
                           </div>
                           {p.farmingStandard && (
-                            <div
-                              style={{
-                                fontSize: 11,
-                                color: '#16a34a',
-                                fontWeight: 600,
-                                marginTop: 2,
-                              }}
-                            >
+                            <div className="mod-standard-tag">
                               ✓ {p.farmingStandard}
                             </div>
                           )}
                         </td>
 
                         {/* Column 3: Price & Stock */}
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontWeight: 700, color: '#ea580c' }}>
+                        <td className="mod-td">
+                          <div className="mod-price-val">
                             {formatPrice(p.minPriceMinor)}
                           </div>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                          <div className="mod-stock-val">
                             Kho: <b>{p.totalStock}</b> sản phẩm
                           </div>
                         </td>
 
                         {/* Column 4: Status */}
-                        <td style={{ padding: '14px 16px' }}>
+                        <td className="mod-td">
                           {p.status === 'ACTIVE' && (
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                padding: '4px 8px',
-                                borderRadius: 6,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                backgroundColor: '#ecfdf5',
-                                color: '#059669',
-                                border: '1px solid #a7f3d0',
-                              }}
-                            >
+                            <span className="mod-status-pill active">
                               <CheckCircle2 size={13} />
                               <span>Đã Duyệt</span>
                             </span>
                           )}
                           {p.status === 'INACTIVE' && (
                             <div>
-                              <span
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '4px 8px',
-                                  borderRadius: 6,
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  backgroundColor: '#fef2f2',
-                                  color: '#dc2626',
-                                  border: '1px solid #fecaca',
-                                }}
-                              >
+                              <span className="mod-status-pill rejected">
                                 <XCircle size={13} />
                                 <span>Bị Từ Chối</span>
                               </span>
                               {p.rejectionReason && (
                                 <div
-                                  style={{
-                                    fontSize: 11,
-                                    color: '#b91c1c',
-                                    maxWidth: 180,
-                                    marginTop: 4,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
+                                  className="mod-rejection-hint"
                                   title={p.rejectionReason}
                                 >
                                   Lý do: {p.rejectionReason}
@@ -708,20 +496,7 @@ export const AdminProductsPage: React.FC = () => {
                             </div>
                           )}
                           {p.status === 'PENDING_APPROVAL' && (
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                padding: '4px 8px',
-                                borderRadius: 6,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                backgroundColor: '#fffbeb',
-                                color: '#d97706',
-                                border: '1px solid #fde68a',
-                              }}
-                            >
+                            <span className="mod-status-pill pending">
                               <Clock size={13} />
                               <span>Chờ Phê Duyệt</span>
                             </span>
@@ -729,70 +504,31 @@ export const AdminProductsPage: React.FC = () => {
                         </td>
 
                         {/* Column 5: Moderated By / Audit Mode */}
-                        <td style={{ padding: '14px 16px' }}>
+                        <td className="mod-td">
                           {p.moderatedBy === 'BOT_AUTO_APPROVER' ? (
                             <div>
-                              <span
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '4px 8px',
-                                  borderRadius: 9999,
-                                  fontSize: 11.5,
-                                  fontWeight: 700,
-                                  backgroundColor: '#faf5ff',
-                                  color: '#7e22ce',
-                                  border: '1px solid #d8b4fe',
-                                }}
-                              >
+                              <span className="mod-mode-pill bot">
                                 🤖 BOT Tự Động Duyệt
                               </span>
-                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                              <div className="mod-mode-sub">
                                 Đạt chuẩn thông thường
                               </div>
                             </div>
                           ) : p.moderatedBy ? (
                             <div>
-                              <span
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '4px 8px',
-                                  borderRadius: 9999,
-                                  fontSize: 11.5,
-                                  fontWeight: 700,
-                                  backgroundColor: '#eff6ff',
-                                  color: '#1d4ed8',
-                                  border: '1px solid #bfdbfe',
-                                }}
-                              >
+                              <span className="mod-mode-pill admin">
                                 🛡️ {p.moderatedBy}
                               </span>
-                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                              <div className="mod-mode-sub">
                                 Quản trị viên thẩm định
                               </div>
                             </div>
                           ) : p.status === 'PENDING_APPROVAL' ? (
                             <div>
-                              <span
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '4px 8px',
-                                  borderRadius: 9999,
-                                  fontSize: 11.5,
-                                  fontWeight: 700,
-                                  backgroundColor: '#fffbeb',
-                                  color: '#b45309',
-                                  border: '1px solid #fde68a',
-                                }}
-                              >
+                              <span className="mod-mode-pill suspicious">
                                 ⚠️ Cần Admin duyệt
                               </span>
-                              <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 600, marginTop: 3 }}>
+                              <div className="mod-mode-sub danger">
                                 Nghi vấn thuốc / sức khỏe
                               </div>
                             </div>
@@ -802,36 +538,17 @@ export const AdminProductsPage: React.FC = () => {
                         </td>
 
                         {/* Column 6: Date */}
-                        <td style={{ padding: '14px 16px', color: '#64748b', fontSize: 12 }}>
+                        <td className="mod-td" style={{ color: '#64748b', fontSize: 12 }}>
                           {new Date(p.createdAt).toLocaleDateString('vi-VN')}
                         </td>
 
-                        {/* Column 6: Actions */}
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              justifyContent: 'flex-end',
-                            }}
-                          >
+                        {/* Column 7: Actions */}
+                        <td className="mod-td right">
+                          <div className="mod-actions-wrap">
                             <button
                               onClick={() => handleOpenDetail(p)}
                               title="Xem chi tiết thẩm định"
-                              style={{
-                                padding: '6px 12px',
-                                borderRadius: 6,
-                                fontSize: 12,
-                                fontWeight: 600,
-                                border: '1px solid #cbd5e1',
-                                backgroundColor: '#ffffff',
-                                color: '#334155',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
+                              className="mod-btn-action detail"
                             >
                               <Eye size={13} />
                               <span>Chi tiết</span>
@@ -843,19 +560,7 @@ export const AdminProductsPage: React.FC = () => {
                                   onClick={() => handleApprove(p)}
                                   disabled={isSubmitting}
                                   title="Duyệt mở bán"
-                                  style={{
-                                    padding: '6px 12px',
-                                    borderRadius: 6,
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    border: 'none',
-                                    backgroundColor: '#16a34a',
-                                    color: '#ffffff',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                  }}
+                                  className="mod-btn-action approve"
                                 >
                                   <CheckCircle2 size={13} />
                                   <span>Duyệt</span>
@@ -865,19 +570,7 @@ export const AdminProductsPage: React.FC = () => {
                                   onClick={() => handleOpenReject(p)}
                                   disabled={isSubmitting}
                                   title="Từ chối sản phẩm"
-                                  style={{
-                                    padding: '6px 12px',
-                                    borderRadius: 6,
-                                    fontSize: 12,
-                                    fontWeight: 600,
-                                    border: 'none',
-                                    backgroundColor: '#fee2e2',
-                                    color: '#dc2626',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                  }}
+                                  className="mod-btn-action reject"
                                 >
                                   <XCircle size={13} />
                                   <span>Từ chối</span>
@@ -890,16 +583,7 @@ export const AdminProductsPage: React.FC = () => {
                                 onClick={() => handleOpenReject(p)}
                                 disabled={isSubmitting}
                                 title="Tạm khóa / Hạ khỏi sàn"
-                                style={{
-                                  padding: '6px 10px',
-                                  borderRadius: 6,
-                                  fontSize: 12,
-                                  fontWeight: 600,
-                                  border: '1px solid #fecaca',
-                                  backgroundColor: '#fff',
-                                  color: '#dc2626',
-                                  cursor: 'pointer',
-                                }}
+                                className="mod-btn-action reject"
                               >
                                 Tạm khóa
                               </button>
@@ -939,4 +623,5 @@ export const AdminProductsPage: React.FC = () => {
     </AdminLayout>
   )
 }
+
 export default AdminProductsPage

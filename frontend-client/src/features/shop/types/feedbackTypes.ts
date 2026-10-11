@@ -53,3 +53,16 @@ export interface FeedbackFilterParams {
   type?: string
   search?: string
 }
+
+/**
+ * Chuẩn hóa tên Quản Trị Viên giải quyết phiếu phản hồi / khiếu nại.
+ * Ngăn chặn việc hiển thị mã định danh UUID thô gây hoang mang cho người dùng.
+ */
+export const formatAdminResolver = (name?: string): string => {
+  if (!name || !name.trim()) return 'Ban Quản trị WebChicKen'
+  const trimmed = name.trim()
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return 'Ban Quản trị WebChicKen'
+  }
+  return trimmed
+}

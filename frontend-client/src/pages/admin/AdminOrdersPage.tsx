@@ -107,43 +107,43 @@ export const AdminOrdersPage: React.FC = () => {
     switch (status) {
       case 'PENDING':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="admin-ord-status-pill pending">
             <Clock style={{ width: 12, height: 12 }} /> Chờ xử lý
           </span>
         )
       case 'CONFIRMED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="admin-ord-status-pill confirmed">
             <CheckCircle2 style={{ width: 12, height: 12 }} /> Đã xác nhận
           </span>
         )
       case 'SHIPPING':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+          <span className="admin-ord-status-pill shipping">
             <Truck style={{ width: 12, height: 12 }} /> Đang vận chuyển
           </span>
         )
       case 'DELIVERED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="admin-ord-status-pill delivered">
             <CheckCircle2 style={{ width: 12, height: 12 }} /> Đã giao thành công
           </span>
         )
       case 'CANCELLED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+          <span className="admin-ord-status-pill cancelled">
             <XCircle style={{ width: 12, height: 12 }} /> Đã hủy
           </span>
         )
       case 'RETURNED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+          <span className="admin-ord-status-pill returned">
             <RotateCcw style={{ width: 12, height: 12 }} /> Đã trả hàng
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+          <span className="admin-ord-status-pill">
             {status}
           </span>
         )
@@ -173,7 +173,7 @@ export const AdminOrdersPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="admin-mod-container">
         {/* Toast */}
         {toastMessage && (
           <div
@@ -183,13 +183,13 @@ export const AdminOrdersPage: React.FC = () => {
               right: 24,
               zIndex: 9999,
               padding: '12px 20px',
-              borderRadius: 8,
+              borderRadius: 10,
               boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
               fontSize: 14,
-              fontWeight: 500,
+              fontWeight: 600,
               backgroundColor: toastMessage.type === 'success' ? '#ecfdf5' : '#fef2f2',
               color: toastMessage.type === 'success' ? '#065f46' : '#991b1b',
               border: `1px solid ${toastMessage.type === 'success' ? '#a7f3d0' : '#fecaca'}`
@@ -205,89 +205,92 @@ export const AdminOrdersPage: React.FC = () => {
         )}
 
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <ShoppingBag style={{ width: 24, height: 24, color: '#4f46e5' }} />
-              <h1 className="text-2xl font-bold text-gray-900">Quản Lý Đơn Hàng Toàn Sàn (Platform Orders Hub)</h1>
+        <div className="admin-mod-header">
+          <div className="admin-mod-header-left">
+            <div className="admin-mod-icon-box">
+              <ShoppingBag size={24} />
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Giám sát dòng đơn hàng toàn sàn, kiểm tra giao dịch liên shop, xử lý khiếu nại và can thiệp bảo vệ quyền lợi người mua.
-            </p>
+            <div className="admin-mod-title-text">
+              <h1>Quản Lý Đơn Hàng Toàn Sàn (Platform Orders Hub)</h1>
+              <p>Giám sát dòng đơn hàng toàn sàn, kiểm tra giao dịch liên shop, xử lý khiếu nại và can thiệp bảo vệ quyền lợi người mua.</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
+              type="button"
               onClick={loadOrders}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+              className="cat-btn-secondary"
             >
-              <RefreshCw style={{ width: 15, height: 15 }} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
               <span>Làm mới</span>
             </button>
           </div>
         </div>
 
         {/* Bento Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tổng đơn hàng</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Toàn hệ sinh thái</p>
+        <div className="admin-ord-bento-grid">
+          <div className="admin-ord-bento-card theme-indigo">
+            <div className="admin-ord-bento-meta">
+              <span className="admin-ord-bento-label">Tổng đơn hàng</span>
+              <span className="admin-ord-bento-value">{totalCount}</span>
+              <span className="admin-ord-bento-sub">Toàn hệ sinh thái</span>
             </div>
-            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-              <Layers style={{ width: 20, height: 20 }} />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Chờ xử lý</p>
-              <p className="text-2xl font-bold text-amber-700 mt-1">{pendingCount}</p>
-              <p className="text-xs text-amber-600 mt-0.5">Cần đóng gói</p>
-            </div>
-            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
-              <Clock style={{ width: 20, height: 20 }} />
+            <div className="admin-ord-bento-icon">
+              <Layers size={22} />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-purple-600 uppercase tracking-wider">Đang giao hàng</p>
-              <p className="text-2xl font-bold text-purple-700 mt-1">{shippingCount}</p>
-              <p className="text-xs text-purple-600 mt-0.5">Đang trên đường</p>
+          <div className="admin-ord-bento-card theme-amber">
+            <div className="admin-ord-bento-meta">
+              <span className="admin-ord-bento-label">Chờ xử lý</span>
+              <span className="admin-ord-bento-value" style={{ color: '#d97706' }}>{pendingCount}</span>
+              <span className="admin-ord-bento-sub">Cần đóng gói</span>
             </div>
-            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
-              <Truck style={{ width: 20, height: 20 }} />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Giao thành công</p>
-              <p className="text-2xl font-bold text-emerald-700 mt-1">{deliveredCount}</p>
-              <p className="text-xs text-emerald-600 mt-0.5">Hoàn tất</p>
-            </div>
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-              <CheckCircle2 style={{ width: 20, height: 20 }} />
+            <div className="admin-ord-bento-icon">
+              <Clock size={22} />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Doanh số toàn sàn</p>
-              <p className="text-lg font-bold text-indigo-700 mt-1">{formatVnd(totalRevenue)}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Tổng giá trị đơn</p>
+          <div className="admin-ord-bento-card theme-purple">
+            <div className="admin-ord-bento-meta">
+              <span className="admin-ord-bento-label">Đang giao hàng</span>
+              <span className="admin-ord-bento-value" style={{ color: '#7c3aed' }}>{shippingCount}</span>
+              <span className="admin-ord-bento-sub">Đang trên đường</span>
             </div>
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-              <DollarSign style={{ width: 20, height: 20 }} />
+            <div className="admin-ord-bento-icon">
+              <Truck size={22} />
+            </div>
+          </div>
+
+          <div className="admin-ord-bento-card theme-emerald">
+            <div className="admin-ord-bento-meta">
+              <span className="admin-ord-bento-label">Giao thành công</span>
+              <span className="admin-ord-bento-value" style={{ color: '#059669' }}>{deliveredCount}</span>
+              <span className="admin-ord-bento-sub">Hoàn tất</span>
+            </div>
+            <div className="admin-ord-bento-icon">
+              <CheckCircle2 size={22} />
+            </div>
+          </div>
+
+          <div className="admin-ord-bento-card theme-indigo">
+            <div className="admin-ord-bento-meta">
+              <span className="admin-ord-bento-label">Doanh số toàn sàn</span>
+              <span className="admin-ord-bento-value" style={{ fontSize: 18, color: '#4f46e5' }}>
+                {formatVnd(totalRevenue)}
+              </span>
+              <span className="admin-ord-bento-sub">Tổng giá trị đơn</span>
+            </div>
+            <div className="admin-ord-bento-icon">
+              <DollarSign size={22} />
             </div>
           </div>
         </div>
 
         {/* Filter Tabs & Search Bar */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
-          <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-3">
+        <div className="admin-ord-toolbar-card">
+          <div className="admin-ord-tabs-row">
             {[
               { key: 'ALL', label: 'Tất cả' },
               { key: 'PENDING', label: 'Chờ xử lý' },
@@ -297,33 +300,30 @@ export const AdminOrdersPage: React.FC = () => {
               { key: 'CANCELLED', label: 'Đã hủy' }
             ].map((tab) => (
               <button
+                type="button"
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  statusFilter === tab.key
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`admin-ord-tab-btn ${statusFilter === tab.key ? 'active' : ''}`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
 
-          <div className="relative">
-            <Search style={{ width: 18, height: 18, color: '#9ca3af', position: 'absolute', left: 12, top: 11 }} />
+          <div className="admin-ord-search-box">
+            <Search size={18} className="admin-ord-search-icon" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm theo mã đơn hàng (ORD-...), tên gian hàng, địa chỉ nhận hàng..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="admin-ord-search-input"
             />
           </div>
         </div>
 
         {/* Orders Table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="admin-ord-table-card">
           {loading ? (
             <div className="py-20 text-center">
               <RefreshCw style={{ width: 32, height: 32, color: '#6366f1', margin: '0 auto' }} className="animate-spin mb-3" />
@@ -336,27 +336,27 @@ export const AdminOrdersPage: React.FC = () => {
               <p className="text-sm text-gray-500 mt-1">Vui lòng thử chọn trạng thái khác hoặc xóa tìm kiếm.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div style={{ width: '100%', overflowX: 'hidden' }}>
+              <table className="admin-ord-table">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <th className="py-3.5 px-4">Mã Đơn Hàng</th>
-                    <th className="py-3.5 px-4">Gian Hàng / Cửa Hàng</th>
-                    <th className="py-3.5 px-4">Ngày Đặt Hàng</th>
-                    <th className="py-3.5 px-4">Thanh Toán</th>
-                    <th className="py-3.5 px-4">Trạng Thái Đơn</th>
-                    <th className="py-3.5 px-4">Tổng Tiền</th>
-                    <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                  <tr>
+                    <th>Mã Đơn Hàng</th>
+                    <th>Gian Hàng / Cửa Hàng</th>
+                    <th>Ngày Đặt Hàng</th>
+                    <th>Thanh Toán</th>
+                    <th>Trạng Thái Đơn</th>
+                    <th>Tổng Tiền</th>
+                    <th className="text-right">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
+                <tbody>
                   {filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                    <tr key={order.id}>
+                      <td>
+                        <span className="admin-ord-code-badge">
                           {order.orderCode}
                         </span>
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 2 }}>
                           {order.items?.length || 0} sản phẩm
                         </div>
                       </td>

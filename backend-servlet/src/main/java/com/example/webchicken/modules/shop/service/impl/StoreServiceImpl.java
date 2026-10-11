@@ -20,17 +20,39 @@ public class StoreServiceImpl implements StoreService {
     private final StoreDAO storeDAO;
     private final com.example.webchicken.modules.identity.dao.SellerDAO sellerDAO;
     private final com.example.webchicken.modules.identity.dao.UserDAO userDAO;
+    private final com.example.webchicken.modules.identity.dao.AdminDAO adminDAO;
 
     public StoreServiceImpl(StoreDAO storeDAO) {
-        this(storeDAO, null, null);
+        this(storeDAO, null, null, null);
     }
 
     public StoreServiceImpl(StoreDAO storeDAO,
                             com.example.webchicken.modules.identity.dao.SellerDAO sellerDAO,
                             com.example.webchicken.modules.identity.dao.UserDAO userDAO) {
+        this(storeDAO, sellerDAO, userDAO, null);
+    }
+
+    public StoreServiceImpl(StoreDAO storeDAO,
+                            com.example.webchicken.modules.identity.dao.SellerDAO sellerDAO,
+                            com.example.webchicken.modules.identity.dao.UserDAO userDAO,
+                            com.example.webchicken.modules.identity.dao.AdminDAO adminDAO) {
         this.storeDAO = Objects.requireNonNull(storeDAO, "storeDAO must not be null");
         this.sellerDAO = sellerDAO;
         this.userDAO = userDAO;
+        this.adminDAO = adminDAO;
+    }
+
+    private boolean isUserAdmin(String userId) {
+        if (userId == null || userId.isBlank()) return false;
+        if (adminDAO != null && adminDAO.findById(userId).isPresent()) {
+            return true;
+        }
+        if (userDAO != null) {
+            return userDAO.findById(userId)
+                    .map(u -> u instanceof com.example.webchicken.modules.identity.model.entity.AdminEntity)
+                    .orElse(false);
+        }
+        return false;
     }
 
     @Override
@@ -38,18 +60,9 @@ public class StoreServiceImpl implements StoreService {
         if (storeId == null || storeId.isBlank()) {
             throw new ValidationException("Mã gian hàng không hợp lệ.");
         }
-        StoreEntity store = storeDAO.findById(storeId).orElse(null);
-        if (store != null) {
-            return toResponse(store);
-        }
-
-        // Nếu là fallback storeId hoặc gian hàng chưa tìm thấy, lấy gian hàng đầu tiên trên hệ thống
-        java.util.List<StoreEntity> anyStores = storeDAO.findAll(1, 1);
-        if (!anyStores.isEmpty()) {
-            return toResponse(anyStores.get(0));
-        }
-
-        throw new NotFoundException("Không tìm thấy gian hàng với ID: " + storeId);
+        return storeDAO.findById(storeId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy gian hàng với ID: " + storeId));
     }
 
     @Override
@@ -62,37 +75,61 @@ public class StoreServiceImpl implements StoreService {
             return toResponse(storeOpt.get());
         }
 
-        // Tự động khởi tạo gian hàng nếu tài khoản đã tồn tại (Admin hoặc Seller)
-        if (userDAO != null && sellerDAO != null) {
-            java.util.Optional<com.example.webchicken.modules.identity.model.entity.UserEntity> userOpt = userDAO.findById(sellerId);
-            if (userOpt.isPresent()) {
-                java.time.LocalDateTime now = java.time.LocalDateTime.now();
-                if (sellerDAO.findById(sellerId).isEmpty()) {
-                    com.example.webchicken.modules.identity.model.entity.SellerEntity seller = new com.example.webchicken.modules.identity.model.entity.SellerEntity();
-                    seller.setUserId(sellerId);
-                    seller.setApprovedAt(now);
-                    sellerDAO.save(seller);
-                }
+        // Tự động khởi tạo gian hàng độc lập cho tài khoản Admin hoặc Seller chưa có Store (Multi-Admin Isolation)
+        boolean isAdmin = isUserAdmin(sellerId);
+        boolean hasSellerProfile = (sellerDAO != null && sellerDAO.findById(sellerId).isPresent());
 
-                com.example.webchicken.modules.identity.model.entity.UserEntity u = userOpt.get();
-                String storeName = (u.getFullName() != null && !u.getFullName().isBlank())
-                        ? u.getFullName() + " Mall"
-                        : "WebChicKen Official Store";
-
-                StoreEntity newStore = new StoreEntity(
-                        java.util.UUID.randomUUID().toString(),
-                        storeName,
-                        "MALL",
-                        sellerId,
-                        now
-                );
-                storeDAO.save(newStore);
-                log.info("Đã tự động khởi tạo gian hàng [{}] ({}) cho tài khoản {}", storeName, newStore.getId(), sellerId);
+        if (isAdmin || hasSellerProfile) {
+            StoreEntity newStore = createDedicatedStore(sellerId, isAdmin);
+            if (newStore != null) {
                 return toResponse(newStore);
             }
         }
 
-        throw new NotFoundException("Người bán chưa có gian hàng trên hệ thống.");
+        throw new NotFoundException("Tài khoản chưa có gian hàng trên hệ thống.");
+    }
+
+    private synchronized StoreEntity createDedicatedStore(String sellerId, boolean isAdmin) {
+        // Kiểm tra lại xem trong lúc chờ có luồng nào đã tạo chưa
+        var existing = storeDAO.findBySellerId(sellerId);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        // Đảm bảo có profile trong bảng sellers
+        if (sellerDAO != null) {
+            com.example.webchicken.modules.identity.model.entity.SellerEntity seller =
+                    new com.example.webchicken.modules.identity.model.entity.SellerEntity();
+            seller.setUserId(sellerId);
+            seller.setApprovedAt(java.time.LocalDateTime.now());
+            sellerDAO.save(seller);
+        }
+
+        // Tạo gian hàng độc lập hoàn toàn mới cho từng Quản trị viên / Người bán
+        String storeName = "Gian Hàng";
+        if (userDAO != null) {
+            var uOpt = userDAO.findById(sellerId);
+            if (uOpt.isPresent()) {
+                var u = uOpt.get();
+                if (u.getFullName() != null && !u.getFullName().isBlank()) {
+                    storeName = u.getFullName() + (isAdmin ? " Official Store" : " Store");
+                } else if (u.getUsername() != null && !u.getUsername().isBlank()) {
+                    storeName = u.getUsername() + (isAdmin ? " Official Store" : " Store");
+                }
+            }
+        }
+
+        String storeId = java.util.UUID.randomUUID().toString();
+        StoreEntity store = new StoreEntity(
+                storeId,
+                storeName,
+                isAdmin ? "MALL" : "SELLER",
+                sellerId,
+                java.time.LocalDateTime.now()
+        );
+        storeDAO.save(store);
+        log.info("Đã tự động khởi tạo gian hàng độc lập mới [{}] (ID: {}) cho tài khoản {}", storeName, storeId, sellerId);
+        return store;
     }
 
     @Override
@@ -107,8 +144,10 @@ public class StoreServiceImpl implements StoreService {
         StoreEntity store = storeDAO.findById(storeId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy gian hàng với ID: " + storeId));
 
-        // Kiểm tra quyền sở hữu IDOR (SEC-09)
-        if (!store.getSellerId().equals(sellerId)) {
+        // Kiểm tra quyền sở hữu IDOR (SEC-09): Cho phép nếu là chủ sở hữu hoặc Quản trị viên
+        boolean isOwner = store.getSellerId().equals(sellerId);
+        boolean isAdmin = isUserAdmin(sellerId);
+        if (!isOwner && !isAdmin) {
             throw new AuthorizationException("Bạn không có quyền chỉnh sửa gian hàng này.");
         }
 

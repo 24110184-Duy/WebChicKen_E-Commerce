@@ -15,8 +15,14 @@ public interface AuthService {
     /** Đăng nhập hệ thống bằng email và mật khẩu */
     AuthResponse login(LoginRequest request);
 
+    /** Bản ghi kết quả xoay vòng token (Access Token mới + Refresh Token mới) */
+    record TokenRotationResult(String accessToken, String newRefreshToken) {}
+
     /** Xoay vòng Refresh Token (Token Rotation) tạo Access Token mới */
     String refreshToken(String rawRefreshToken);
+
+    /** Xoay vòng Refresh Token đầy đủ và trả về cặp token mới để cập nhật Cookie HttpOnly */
+    TokenRotationResult rotateRefreshToken(String rawRefreshToken);
 
     /** Tạo và lưu Refresh Token mới vào DB */
     String createRefreshToken(String userId);

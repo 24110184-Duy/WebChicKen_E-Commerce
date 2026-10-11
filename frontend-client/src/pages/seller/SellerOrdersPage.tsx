@@ -111,6 +111,9 @@ export const SellerOrdersPage: React.FC = () => {
         if (store?.id) {
           currentShopId = store.id
           setShopId(currentShopId)
+          if (user?.id) {
+            localStorage.setItem(`seller_store_${user.id}`, JSON.stringify(store))
+          }
         } else if (user?.id) {
           const cached = localStorage.getItem(`seller_store_${user.id}`)
           if (cached) {

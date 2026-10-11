@@ -22,10 +22,11 @@ import {
   submitCustomerFeedback,
   fetchMyFeedbacks
 } from '../../features/shop/api/feedbackApi'
-import type {
-  FeedbackItem,
-  FeedbackType,
-  FeedbackStatus
+import {
+  type FeedbackItem,
+  type FeedbackType,
+  type FeedbackStatus,
+  formatAdminResolver
 } from '../../features/shop/types/feedbackTypes'
 import { toast } from '../../components/feedback/Toast'
 import { Link } from 'react-router-dom'
@@ -611,6 +612,12 @@ export const HelpCenterPage: React.FC = () => {
                           Phúc Đáp Từ Ban Quản Trị ChickyMart:
                         </div>
                         <div className="hc-admin-reply-text">{t.adminResponse}</div>
+                        {t.resolvedBy && (
+                          <div style={{ fontSize: 11, color: '#166534', marginTop: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <ShieldCheck size={12} color="#166534" />
+                            <span>Xử lý bởi: {formatAdminResolver(t.resolvedBy)}</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -844,8 +851,17 @@ export const HelpCenterPage: React.FC = () => {
                     'Ban Quản Trị đã ghi nhận phiếu của bạn và đang tiến hành điều tra, đối soát thông tin. Chúng tôi sẽ phản hồi lại ngay tại đây khi có kết quả!'}
                 </div>
                 {selectedTicket.resolvedBy && (
-                  <div style={{ fontSize: 11, color: '#166534', marginTop: 8, fontWeight: 600 }}>
-                    Xử lý bởi: {selectedTicket.resolvedBy}
+                  <div style={{
+                    fontSize: 12,
+                    color: '#166534',
+                    marginTop: 8,
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <ShieldCheck size={14} color="#166534" />
+                    <span>Xử lý bởi: <strong>{formatAdminResolver(selectedTicket.resolvedBy)}</strong></span>
                   </div>
                 )}
               </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authApi } from '../api/authApi'
 import { useAuthStore } from '../../../app/store/authStore'
@@ -35,11 +35,14 @@ export const useGoogleAuth = () => {
     [login, navigate, location.state]
   )
 
+  const hasInitializedRef = useRef(false)
+
   // Khởi tạo Google One-Tap nếu người dùng đã có phiên Google trong trình duyệt
   useEffect(() => {
-    if (!window.google?.accounts?.id) return
+    if (!window.google?.accounts?.id || hasInitializedRef.current) return
 
     try {
+      hasInitializedRef.current = true
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: async (res) => {
@@ -63,7 +66,7 @@ export const useGoogleAuth = () => {
 
       // Hiển thị prompt One Tap nhẹ nhàng nếu người dùng chưa tương tác
       window.google.accounts.id.prompt()
-    } catch (e) {
+    } catch {
       // Ignored nếu browser chặn One-Tap
     }
   }, [handleAuthSuccess])

@@ -140,7 +140,7 @@ public class CompositionRoot {
         // ── 3. Services ───────────────────────────────────────────────────────
         // Identity
         AuthService      authService      = new AuthServiceImpl(userDAO, userSessionDAO, customerDAO, sellerDAO, adminDAO, userSocialAccountDAO, new com.example.webchicken.infrastructure.security.SocialAuthVerifier());
-        CustomerService  customerService  = new CustomerServiceImpl(customerDAO, userDAO, addressDAO);
+        CustomerService  customerService  = new CustomerServiceImpl(customerDAO, userDAO, addressDAO, sellerDAO);
         SellerService    sellerService    = new SellerServiceImpl(sellerDAO, userDAO);
 
         // Inventory
@@ -179,7 +179,7 @@ public class CompositionRoot {
         ProductVariantService productVariantService = new ProductVariantServiceImpl(productVariantDAO);
 
         // Shop
-        StoreService             storeService             = new StoreServiceImpl(storeDAO, sellerDAO, userDAO);
+        StoreService             storeService             = new StoreServiceImpl(storeDAO, sellerDAO, userDAO, adminDAO);
         SellerApplicationService sellerApplicationService = new SellerApplicationServiceImpl(sellerApplicationDAO, storeDAO, sellerDAO, userDAO);
 
         // Backoffice Audit Log (TASK-67)

@@ -67,49 +67,31 @@ public class SellerApplicationServiceImpl implements SellerApplicationService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 1. Tạo bản ghi trong sellers nếu chưa có
-        if (sellerDAO.findById(userId).isEmpty()) {
-            SellerEntity seller = new SellerEntity();
-            seller.setUserId(userId);
-            seller.setApprovedAt(now);
-            sellerDAO.save(seller);
-        }
-
-        // 2. Tạo gian hàng Store riêng biệt ngay lập tức cho người bán
-        StoreEntity store = new StoreEntity(
-                UUID.randomUUID().toString(),
-                request.shopName().trim(),
-                "SELLER",
-                userId,
-                now
-        );
-        storeDAO.save(store);
-        log.info("Đã tạo gian hàng riêng [{}] ({}) cho người bán {}", store.getStoreName(), store.getId(), userId);
-
-        // 3. Cập nhật hoặc lưu hồ sơ đăng ký với trạng thái APPROVED
+        // Cập nhật hoặc tạo mới đơn đăng ký ở trạng thái PENDING chờ Admin duyệt
         Optional<SellerApplicationEntity> pendingOpt = sellerApplicationDAO.findPendingByUserId(userId);
         SellerApplicationEntity entity;
         if (pendingOpt.isPresent()) {
             entity = pendingOpt.get();
             entity.setShopName(request.shopName().trim());
-            entity.setStatus("APPROVED");
-            entity.setAdminResponseId("SYSTEM_AUTO");
-            entity.setReviewedAt(now);
+            entity.setDocumentUrl(request.documentUrl() != null ? request.documentUrl().trim() : null);
+            entity.setStatus("PENDING");
+            entity.setSubmittedAt(now);
+            entity.setReviewedAt(null);
+            entity.setAdminResponseId(null);
+            entity.setRejectionReason(null);
             sellerApplicationDAO.update(entity);
+            log.info("Người dùng {} đã cập nhật đơn đăng ký người bán (chờ Admin duyệt): {}", userId, entity.getId());
         } else {
             entity = new SellerApplicationEntity();
             entity.setId(UUID.randomUUID().toString());
             entity.setUserId(userId);
             entity.setShopName(request.shopName().trim());
             entity.setDocumentUrl(request.documentUrl() != null ? request.documentUrl().trim() : null);
-            entity.setStatus("APPROVED");
-            entity.setAdminResponseId("SYSTEM_AUTO");
+            entity.setStatus("PENDING");
             entity.setSubmittedAt(now);
-            entity.setReviewedAt(now);
             sellerApplicationDAO.save(entity);
+            log.info("Người dùng {} đã gửi đơn đăng ký người bán mới (chờ Admin duyệt): {}", userId, entity.getId());
         }
-
-        log.info("Người dùng {} đã được kích hoạt gian hàng Seller Centre: {} ({})", userId, entity.getShopName(), entity.getId());
 
         return toResponse(entity);
     }

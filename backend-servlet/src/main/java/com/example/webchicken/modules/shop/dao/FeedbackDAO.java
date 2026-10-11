@@ -73,8 +73,13 @@ public class FeedbackDAO extends BaseDAO {
             Map<String, Object> params = new HashMap<>();
 
             if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
-                jpql.append("AND f.status = :status ");
-                params.put("status", status.trim().toUpperCase());
+                String s = status.trim().toUpperCase();
+                if ("IN_REVIEW".equals(s) || "PROCESSING".equals(s)) {
+                    jpql.append("AND (f.status = 'IN_REVIEW' OR f.status = 'PROCESSING') ");
+                } else {
+                    jpql.append("AND f.status = :status ");
+                    params.put("status", s);
+                }
             }
 
             if (type != null && !type.isBlank() && !"ALL".equalsIgnoreCase(type)) {
@@ -104,8 +109,13 @@ public class FeedbackDAO extends BaseDAO {
             Map<String, Object> params = new HashMap<>();
 
             if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
-                jpql.append("AND f.status = :status ");
-                params.put("status", status.trim().toUpperCase());
+                String s = status.trim().toUpperCase();
+                if ("IN_REVIEW".equals(s) || "PROCESSING".equals(s)) {
+                    jpql.append("AND (f.status = 'IN_REVIEW' OR f.status = 'PROCESSING') ");
+                } else {
+                    jpql.append("AND f.status = :status ");
+                    params.put("status", s);
+                }
             }
 
             if (type != null && !type.isBlank() && !"ALL".equalsIgnoreCase(type)) {

@@ -151,8 +151,13 @@ public class FeedbackServiceImpl implements FeedbackService {
                 ? request.status().trim().toUpperCase()
                 : "RESOLVED";
 
-        if (!List.of("PROCESSING", "RESOLVED", "REJECTED").contains(newStatus)) {
-            throw new ValidationException("Trạng thái xử lý không hợp lệ (hỗ trợ PROCESSING, RESOLVED, REJECTED).");
+        // Chuẩn hóa PROCESSING tương đương IN_REVIEW để đồng bộ frontend
+        if ("PROCESSING".equals(newStatus)) {
+            newStatus = "IN_REVIEW";
+        }
+
+        if (!List.of("IN_REVIEW", "RESOLVED", "REJECTED").contains(newStatus)) {
+            throw new ValidationException("Trạng thái xử lý không hợp lệ (hỗ trợ IN_REVIEW, RESOLVED, REJECTED).");
         }
 
         if (("RESOLVED".equals(newStatus) || "REJECTED".equals(newStatus))
@@ -164,14 +169,31 @@ public class FeedbackServiceImpl implements FeedbackService {
         if (request.adminResponse() != null) {
             entity.setAdminResponse(request.adminResponse().trim());
         }
-        entity.setResolvedBy((adminId != null && !adminId.isBlank()) ? adminId.trim() : "ADMIN");
+        // Ưu tiên hiển thị tên user (username) của Admin thay vì mã UUID gây hoang mang cho người dùng
+        String resolvedBy = (adminId != null && !adminId.isBlank()) ? adminId.trim() : "ADMIN";
+        if (adminId != null && !adminId.isBlank() && userDAO != null) {
+            try {
+                UserEntity adminUser = userDAO.findById(adminId.trim()).orElse(null);
+                if (adminUser != null) {
+                    if (adminUser.getUsername() != null && !adminUser.getUsername().isBlank()) {
+                        resolvedBy = adminUser.getUsername().trim();
+                    } else if (adminUser.getFullName() != null && !adminUser.getFullName().isBlank()) {
+                        resolvedBy = adminUser.getFullName().trim();
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        if (resolvedBy.length() > 50) {
+            resolvedBy = resolvedBy.substring(0, 50);
+        }
+        entity.setResolvedBy(resolvedBy);
 
         if ("RESOLVED".equals(newStatus) || "REJECTED".equals(newStatus)) {
             entity.setResolvedAt(LocalDateTime.now());
         }
 
         feedbackDAO.update(entity);
-        log.info("Admin [{}] updated feedback [{}] status to [{}] with response", adminId, id, newStatus);
+        log.info("Admin [{}] ({}) updated feedback [{}] status to [{}] with response", adminId, resolvedBy, id, newStatus);
 
         // Ghi nhận Audit Log (TASK-67)
         if (auditLogService != null) {
@@ -213,6 +235,34 @@ public class FeedbackServiceImpl implements FeedbackService {
 
         String senderRole = (shopName != null && !shopName.isBlank()) ? "SELLER" : "CUSTOMER";
 
+        String resolvedBy = entity.getResolvedBy();
+        if (resolvedBy != null && !resolvedBy.isBlank()) {
+            boolean isUuid = resolvedBy.matches("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+            if (userDAO != null) {
+                try {
+                    UserEntity adminUser = userDAO.findById(resolvedBy.trim()).orElse(null);
+                    if (adminUser != null) {
+                        if (adminUser.getUsername() != null && !adminUser.getUsername().isBlank()) {
+                            resolvedBy = adminUser.getUsername().trim();
+                        } else if (adminUser.getFullName() != null && !adminUser.getFullName().isBlank()) {
+                            resolvedBy = adminUser.getFullName().trim();
+                        }
+                    } else if (isUuid) {
+                        resolvedBy = "Ban Quản trị WebChicKen";
+                    }
+                } catch (Exception ignored) {
+                    if (isUuid) resolvedBy = "Ban Quản trị WebChicKen";
+                }
+            } else if (isUuid) {
+                resolvedBy = "Ban Quản trị WebChicKen";
+            }
+        }
+
+        String status = entity.getStatus();
+        if ("PROCESSING".equalsIgnoreCase(status)) {
+            status = "IN_REVIEW";
+        }
+
         return new FeedbackResponse(
                 entity.getId(),
                 entity.getUserId(),
@@ -224,9 +274,9 @@ public class FeedbackServiceImpl implements FeedbackService {
                 entity.getSubject(),
                 entity.getContent(),
                 entity.getImageUrl(),
-                entity.getStatus(),
+                status,
                 entity.getAdminResponse(),
-                entity.getResolvedBy(),
+                resolvedBy,
                 entity.getCreatedAt(),
                 entity.getResolvedAt()
         );

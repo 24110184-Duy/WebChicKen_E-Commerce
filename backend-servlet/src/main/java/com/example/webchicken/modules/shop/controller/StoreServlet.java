@@ -40,26 +40,34 @@ public class StoreServlet extends BaseApiServlet {
         String pathInfo = req.getPathInfo();
         if (pathInfo == null) pathInfo = "";
 
-        if ("/me".equalsIgnoreCase(pathInfo)) {
-            AuthenticatedUser user = getAuthenticatedUser(req);
-            if (user == null) {
-                unauthorized(resp, "Vui lòng đăng nhập để xem thông tin gian hàng.");
+        try {
+            if ("/me".equalsIgnoreCase(pathInfo)) {
+                AuthenticatedUser user = getAuthenticatedUser(req);
+                if (user == null) {
+                    unauthorized(resp, "Vui lòng đăng nhập để xem thông tin gian hàng.");
+                    return;
+                }
+                StoreResponse store = service().getStoreBySellerId(user.userId());
+                ok(resp, store);
                 return;
             }
-            StoreResponse store = service().getStoreBySellerId(user.userId());
-            ok(resp, store);
-            return;
-        }
 
-        // GET /{id}
-        String storeId = pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
-        if (!storeId.isBlank()) {
-            StoreResponse store = service().getStoreById(storeId);
-            ok(resp, store);
-            return;
-        }
+            // GET /{id}
+            String storeId = pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
+            if (!storeId.isBlank()) {
+                StoreResponse store = service().getStoreById(storeId);
+                ok(resp, store);
+                return;
+            }
 
-        notFound(resp, "Endpoint không tồn tại.");
+            notFound(resp, "Endpoint không tồn tại.");
+        } catch (com.example.webchicken.common.exception.AppException e) {
+            writeJson(resp, e.getHttpStatus(), com.example.webchicken.common.model.ApiResponse.fail(
+                    com.example.webchicken.common.model.ApiError.of(e.getErrorCode(), e.getMessage())));
+        } catch (Exception e) {
+            writeJson(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, com.example.webchicken.common.model.ApiResponse.fail(
+                    com.example.webchicken.common.model.ApiError.of("INTERNAL_SERVER_ERROR", "Lỗi truy vấn gian hàng: " + e.getMessage())));
+        }
     }
 
     @Override

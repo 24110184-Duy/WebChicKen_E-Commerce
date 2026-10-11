@@ -72,3 +72,6 @@ Thumbs.db
 !frontend-client/.env.example
 application-local.properties
 application-prod.properties
+
+# Uploads
+uploads/

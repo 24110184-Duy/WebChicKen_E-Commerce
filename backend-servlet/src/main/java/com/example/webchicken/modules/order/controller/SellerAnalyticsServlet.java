@@ -95,8 +95,8 @@ public class SellerAnalyticsServlet extends BaseApiServlet {
             } catch (Exception ignored) {}
         }
 
-        // Default store fallback for development
-        return "store-1";
+        // Default store fallback for development / admin
+        return "s0000000-0000-0000-0000-000000000001";
     }
 
     private void verifyOwnership(HttpServletRequest req, String shopId) {

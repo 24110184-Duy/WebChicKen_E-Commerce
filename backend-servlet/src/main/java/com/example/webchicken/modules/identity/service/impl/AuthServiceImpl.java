@@ -275,7 +275,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String refreshToken(String rawRefreshToken) {
+    public TokenRotationResult rotateRefreshToken(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new AuthenticationException("Refresh token không hợp lệ.");
         }
@@ -301,11 +301,18 @@ public class AuthServiceImpl implements AuthService {
 
         // Token Rotation: Hủy session cũ, tạo session mới
         userSessionDAO.deactivate(session);
-        createRefreshToken(user.getUserId());
+        String newRefreshToken = createRefreshToken(user.getUserId());
 
         List<String> roles = resolveUserRoles(user);
         String subjectIdentifier = user.getEmail() != null ? user.getEmail() : (user.getUsername() != null ? user.getUsername() : user.getPhone());
-        return jwtProvider.generateAccessToken(user.getUserId(), subjectIdentifier, roles);
+        String accessToken = jwtProvider.generateAccessToken(user.getUserId(), subjectIdentifier, roles);
+
+        return new TokenRotationResult(accessToken, newRefreshToken);
+    }
+
+    @Override
+    public String refreshToken(String rawRefreshToken) {
+        return rotateRefreshToken(rawRefreshToken).accessToken();
     }
 
     @Override
@@ -325,6 +332,7 @@ public class AuthServiceImpl implements AuthService {
         } else if (user instanceof AdminEntity a) {
             roles.add(a.getRole() != null ? a.getRole().name() : "SUPER_ADMIN");
             roles.add("ADMIN");
+            roles.add("SELLER");
         }
 
         // Kiểm tra đa vai trò qua bảng sellers và admins
@@ -340,6 +348,7 @@ public class AuthServiceImpl implements AuthService {
                 String roleName = admOpt.get().getRole() != null ? admOpt.get().getRole().name() : "SUPER_ADMIN";
                 roles.add(roleName);
                 roles.add("ADMIN");
+                roles.add("SELLER");
             }
         }
 

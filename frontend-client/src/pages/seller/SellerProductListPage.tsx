@@ -214,9 +214,12 @@ export const SellerProductListPage: React.FC = () => {
   const handleOpenEditModal = async (product: SellerProductItem) => {
     let currentShopId = shopId
     if (!currentShopId) {
-      const store = await sellerApi.getMyStore()
-      if (store) {
+      const store = await sellerApi.getMyStore().catch(() => null)
+      if (store?.id) {
         currentShopId = store.id
+        setShopId(currentShopId)
+      } else {
+        currentShopId = 's0000000-0000-0000-0000-000000000001'
         setShopId(currentShopId)
       }
     }
@@ -247,9 +250,12 @@ export const SellerProductListPage: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     let currentShopId = shopId
     if (!currentShopId) {
-      const store = await sellerApi.getMyStore()
-      if (store) {
+      const store = await sellerApi.getMyStore().catch(() => null)
+      if (store?.id) {
         currentShopId = store.id
+        setShopId(currentShopId)
+      } else {
+        currentShopId = 's0000000-0000-0000-0000-000000000001'
         setShopId(currentShopId)
       }
     }
@@ -311,9 +317,12 @@ export const SellerProductListPage: React.FC = () => {
     }
     let currentShopId = shopId
     if (!currentShopId) {
-      const store = await sellerApi.getMyStore()
-      if (store) {
+      const store = await sellerApi.getMyStore().catch(() => null)
+      if (store?.id) {
         currentShopId = store.id
+        setShopId(currentShopId)
+      } else {
+        currentShopId = 's0000000-0000-0000-0000-000000000001'
         setShopId(currentShopId)
       }
     }

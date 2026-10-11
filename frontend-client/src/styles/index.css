@@ -8,8 +8,11 @@
 @import './review.css';
 @import './seller.css';
 @import './admin.css';
+@import './categories.css';
+@import './admin-modules.css';
 @import './chat.css';
 @import './help-center.css';
+@import './product-moderation.css';
 
 
 html {

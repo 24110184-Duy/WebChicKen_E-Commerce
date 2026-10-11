@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   X,
@@ -14,11 +14,14 @@ import {
   Upload,
   Check,
   ShieldCheck,
+  Clock,
+  RotateCcw,
+  AlertCircle,
 } from 'lucide-react'
-import { useAuthStore, authStore } from '../../app/store/authStore'
+import { useAuthStore } from '../../app/store/authStore'
 import { PATHS } from '../../app/router/paths'
 import { toast } from '../../components/feedback/Toast'
-import { sellerApi } from '../../features/seller/api/sellerApi'
+import { sellerApi, type SellerApplicationResponse } from '../../features/seller/api/sellerApi'
 import '../../styles/seller-onboarding.css'
 
 // Danh mục Tỉnh / Thành phố mẫu chuẩn Việt Nam
@@ -219,37 +222,53 @@ const DEFAULT_SHIPPING_METHODS: ShippingMethodItem[] = [
 ]
 
 export const SellerRegisterPage: React.FC = () => {
-  const { user, isAuthenticated, isAdmin } = useAuthStore()
+  const { user, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
 
-  // Kiểm tra tài khoản đã đăng ký gian hàng thực tế chưa (không chặn nếu chưa có gian hàng)
-  const [alreadySeller, setAlreadySeller] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && user?.id) {
-      return localStorage.getItem(`seller_store_${user.id}`) !== null
-    }
-    return false
-  })
+  // Trạng thái hồ sơ người bán
+  const [application, setApplication] = useState<SellerApplicationResponse | null>(null)
+  const [loadingApp, setLoadingApp] = useState<boolean>(true)
+  const [alreadySeller, setAlreadySeller] = useState<boolean>(false)
   const [existingStoreName, setExistingStoreName] = useState<string>('')
+
+  const checkApplicationStatus = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) return
+    setLoadingApp(true)
+    try {
+      // 1. Kiểm tra nếu đã có gian hàng hoạt động trong CSDL
+      const store = await sellerApi.getMyStore().catch(() => null)
+      if (store && store.storeName) {
+        setAlreadySeller(true)
+        setExistingStoreName(store.storeName)
+        setApplication(null)
+        setLoadingApp(false)
+        return
+      }
+
+      // 2. Kiểm tra hồ sơ đăng ký người bán của tài khoản
+      const app = await sellerApi.getMyApplication().catch(() => null)
+      if (app) {
+        if (app.status === 'APPROVED') {
+          setAlreadySeller(true)
+          setExistingStoreName(app.shopName)
+        } else {
+          setApplication(app)
+        }
+      } else {
+        setApplication(null)
+      }
+    } finally {
+      setLoadingApp(false)
+    }
+  }, [isAuthenticated, user?.id])
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate(PATHS.LOGIN, { state: { from: PATHS.SELLER.REGISTER }, replace: true })
       return
     }
-
-    sellerApi.getMyStore().then((store) => {
-      if (store) {
-        setAlreadySeller(true)
-        setExistingStoreName(store.storeName)
-      } else {
-        const hasLocalStore = user?.id && localStorage.getItem(`seller_store_${user.id}`)
-        setAlreadySeller(!!hasLocalStore)
-      }
-    }).catch(() => {
-      const hasLocalStore = user?.id && localStorage.getItem(`seller_store_${user.id}`)
-      setAlreadySeller(!!hasLocalStore)
-    })
-  }, [isAuthenticated, user?.id, navigate])
+    checkApplicationStatus()
+  }, [isAuthenticated, navigate, checkApplicationStatus])
 
   // Trạng thái màn hình: 'welcome' | 'form'
   const [screen, setScreen] = useState<'welcome' | 'form'>('welcome')
@@ -491,50 +510,24 @@ export const SellerRegisterPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // ── Nộp hồ sơ và vào thẳng UI Seller Centre ──
+  // ── Nộp hồ sơ xét duyệt lên Ban Quản Trị ──
   const [submitting, setSubmitting] = useState(false)
 
   const handleFinalSubmit = async () => {
     setSubmitting(true)
     try {
-      await sellerApi.applySeller({
+      const res = await sellerApi.applySeller({
         shopName: shopName.trim(),
         taxCode: taxCode.trim(),
       })
-      const createdStore = await sellerApi.getMyStore()
-      if (createdStore && user?.id) {
-        localStorage.setItem(`seller_store_${user.id}`, JSON.stringify(createdStore))
-      }
+      setApplication(res)
+      toast.success('Hồ sơ mở gian hàng đã được nộp thành công! Đang chờ Quản trị viên xét duyệt.')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err: any) {
-      console.warn('Backend application request handled:', err)
-      if (user?.id) {
-        const fallbackStore = {
-          id: `store_${user.id}`,
-          storeName: shopName.trim(),
-          storeType: 'SELLER',
-          sellerId: user.id,
-          createdAt: new Date().toISOString(),
-        }
-        localStorage.setItem(`seller_store_${user.id}`, JSON.stringify(fallbackStore))
-      }
+      console.error('Lỗi nộp hồ sơ mở gian hàng:', err)
+      toast.error(err?.message || 'Có lỗi xảy ra khi nộp hồ sơ đăng ký.')
     } finally {
       setSubmitting(false)
-      // Lưu trạng thái đã đăng ký Seller vĩnh viễn theo user id
-      if (user?.id) {
-        localStorage.setItem(`seller_registered_${user.id}`, 'true')
-      }
-      setAlreadySeller(true)
-
-      // Cập nhật quyền SELLER ngay lập tức trong authStore
-      authStore.updateUser({
-        roles: Array.from(new Set([...(user?.roles || ['CUSTOMER']), 'SELLER'])),
-      })
-
-      toast.success('Chúc mừng! Bạn đã đăng ký thành công. Đang chuyển tới Kênh Người Bán...')
-      // Chuyển thẳng ra UI Seller Centre
-      setTimeout(() => {
-        navigate(PATHS.SELLER.DASHBOARD, { replace: true })
-      }, 700)
     }
   }
 
@@ -561,8 +554,18 @@ export const SellerRegisterPage: React.FC = () => {
         </div>
       </header>
 
+      {/* ── MÀN HÌNH ĐANG TẢI TRẠNG THÁI ── */}
+      {loadingApp && (
+        <div className="onboarding-welcome-container">
+          <div className="onboarding-welcome-card" style={{ maxWidth: 480, padding: 40 }}>
+            <div className="cart-spinner" style={{ width: 40, height: 40, margin: '0 auto 16px' }} />
+            <span style={{ fontSize: 14, color: '#d4d4d8' }}>Đang kiểm tra hồ sơ người bán...</span>
+          </div>
+        </div>
+      )}
+
       {/* ── MÀN HÌNH CHẶN KHI ĐÃ ĐĂNG KÝ THÀNH SELLER (KHÔNG CHO ĐĂNG KÝ LẠI) ── */}
-      {alreadySeller && (
+      {!loadingApp && alreadySeller && (
         <div className="onboarding-welcome-container">
           <div className="onboarding-welcome-card" style={{ maxWidth: 560 }}>
             <div
@@ -648,39 +651,243 @@ export const SellerRegisterPage: React.FC = () => {
               >
                 <span>Vào Kênh Người Bán</span>
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAlreadySeller(false)
-                    setScreen('form')
-                    setCurrentStep(1)
-                  }}
+      {/* ── MÀN HÌNH CHỜ DUYỆT HỒ SƠ (PENDING) ── */}
+      {!loadingApp && !alreadySeller && application?.status === 'PENDING' && (
+        <div className="onboarding-welcome-container">
+          <div className="onboarding-welcome-card" style={{ maxWidth: 620 }}>
+            <div
+              style={{
+                width: 76,
+                height: 76,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                border: '2px solid #f59e0b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#f59e0b',
+                marginBottom: 20,
+              }}
+            >
+              <Clock style={{ width: 38, height: 38 }} />
+            </div>
+
+            <h1 className="onboarding-welcome-title" style={{ color: '#f59e0b', fontSize: 24 }}>
+              Hồ Sơ Mở Gian Hàng Đang Chờ Xét Duyệt
+            </h1>
+            <p className="onboarding-welcome-desc" style={{ marginBottom: 20 }}>
+              Hồ sơ đăng ký của tài khoản <strong>{usernameDisplay}</strong> đã được nộp thành công và đang trong hàng đợi kiểm duyệt của Ban Quản Trị ChickyMart.
+            </p>
+
+            <div
+              style={{
+                backgroundColor: '#262626',
+                border: '1px solid #3f3f46',
+                borderRadius: 10,
+                padding: '16px 20px',
+                marginBottom: 24,
+                textAlign: 'left',
+                width: '100%',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #3f3f46', paddingBottom: 8 }}>
+                <span style={{ fontSize: 13, color: '#9ca3af' }}>Tên gian hàng đăng ký:</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#facc15' }}>{application.shopName}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #3f3f46', paddingBottom: 8 }}>
+                <span style={{ fontSize: 13, color: '#9ca3af' }}>Mã hồ sơ:</span>
+                <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#e4e6eb' }}>{application.id}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #3f3f46', paddingBottom: 8 }}>
+                <span style={{ fontSize: 13, color: '#9ca3af' }}>Thời gian nộp:</span>
+                <span style={{ fontSize: 13, color: '#e4e6eb' }}>{new Date(application.submittedAt).toLocaleString('vi-VN')}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#9ca3af' }}>Trạng thái:</span>
+                <span
                   style={{
-                    backgroundColor: 'rgba(250, 204, 21, 0.1)',
-                    color: '#facc15',
-                    border: '1px solid rgba(250, 204, 21, 0.4)',
-                    padding: '10px 20px',
-                    borderRadius: 8,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
+                    padding: '4px 12px',
+                    borderRadius: 9999,
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    color: '#f59e0b',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
                   }}
                 >
-                  <span>Mở Gian Hàng Mới (Quyền Quản Trị)</span>
-                </button>
-              )}
+                  ⏳ Đang chờ Quản trị viên duyệt (PENDING)
+                </span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: 8,
+                padding: '12px 16px',
+                fontSize: 12.5,
+                color: '#93c5fd',
+                marginBottom: 26,
+                textAlign: 'left',
+                lineHeight: 1.5,
+              }}
+            >
+              ℹ️ Quản trị viên sàn đang thẩm định hồ sơ của bạn. Sau khi hồ sơ được phê duyệt, quyền Người bán và Kênh Người Bán sẽ tự động được kích hoạt cho tài khoản này.
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, width: '100%', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={checkApplicationStatus}
+                style={{
+                  backgroundColor: '#262626',
+                  color: '#e4e6eb',
+                  border: '1px solid #3f3f46',
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                <RotateCcw style={{ width: 15, height: 15 }} />
+                <span>Kiểm tra lại trạng thái</span>
+              </button>
+
+              <Link
+                to={PATHS.HOME}
+                style={{
+                  textDecoration: 'none',
+                  background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+                  color: '#0f172a',
+                  padding: '10px 24px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 4px 14px rgba(234, 179, 8, 0.35)',
+                }}
+              >
+                <span>Về Trang Chủ Mua Sắm</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MÀN HÌNH BỊ TỪ CHỐI (REJECTED) ── */}
+      {!loadingApp && !alreadySeller && application?.status === 'REJECTED' && screen !== 'form' && (
+        <div className="onboarding-welcome-container">
+          <div className="onboarding-welcome-card" style={{ maxWidth: 620 }}>
+            <div
+              style={{
+                width: 76,
+                height: 76,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                border: '2px solid #ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ef4444',
+                marginBottom: 20,
+              }}
+            >
+              <AlertCircle style={{ width: 38, height: 38 }} />
+            </div>
+
+            <h1 className="onboarding-welcome-title" style={{ color: '#ef4444', fontSize: 24 }}>
+              Hồ Sơ Mở Gian Hàng Chưa Được Phê Duyệt
+            </h1>
+            <p className="onboarding-welcome-desc" style={{ marginBottom: 20 }}>
+              Rất tiếc, hồ sơ đăng ký mở gian hàng của bạn chưa đạt yêu cầu kiểm duyệt của sàn.
+            </p>
+
+            <div
+              style={{
+                backgroundColor: '#262626',
+                border: '1px solid #3f3f46',
+                borderRadius: 10,
+                padding: '16px 20px',
+                marginBottom: 24,
+                textAlign: 'left',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#f87171', marginBottom: 6 }}>
+                Lý do từ chối từ Ban Quản Trị:
+              </div>
+              <div style={{ fontSize: 13.5, color: '#fecaca', lineHeight: 1.5, backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '10px 14px', borderRadius: 6 }}>
+                {application.rejectionReason || 'Thông tin hoặc giấy tờ cung cấp chưa đủ điều kiện mở gian hàng.'}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, width: '100%', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setScreen('form')
+                  setCurrentStep(1)
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+                  color: '#0f172a',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(234, 179, 8, 0.35)',
+                }}
+              >
+                <span>Chỉnh Sửa & Nộp Lại Hồ Sơ</span>
+              </button>
+
+              <Link
+                to={PATHS.HOME}
+                style={{
+                  textDecoration: 'none',
+                  backgroundColor: '#262626',
+                  color: '#e4e6eb',
+                  border: '1px solid #3f3f46',
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>Về Trang Chủ</span>
+              </Link>
             </div>
           </div>
         </div>
       )}
 
       {/* ── MÀN HÌNH CHÀO MỪNG ── */}
-      {!alreadySeller && screen === 'welcome' && (
+      {!loadingApp && !alreadySeller && !application && screen === 'welcome' && (
         <div className="onboarding-welcome-container">
           <div className="onboarding-welcome-card">
             <div className="onboarding-welcome-illustration">

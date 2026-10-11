@@ -9,9 +9,11 @@ import {
   Send,
   Sparkles,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  ZoomIn
 } from 'lucide-react'
 import type { FeedbackItem, FeedbackStatus } from '../../shop/types/feedbackTypes'
+import { ImageLightboxModal } from '../../../components/feedback/ImageLightboxModal'
 
 interface RespondFeedbackModalProps {
   isOpen: boolean
@@ -30,6 +32,7 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
   const [responseContent, setResponseContent] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false)
 
   useEffect(() => {
     if (feedback) {
@@ -272,45 +275,113 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
               </label>
               <div
                 style={{
-                  padding: 10,
+                  padding: 12,
                   backgroundColor: '#f8fafc',
                   border: '1px solid #e2e8f0',
-                  borderRadius: 10,
+                  borderRadius: 12,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 16
                 }}
               >
-                <img
-                  src={feedback.imageUrl}
-                  alt="Minh chứng từ người bán"
+                {/* Clickable Image Preview with Hover Overlay */}
+                <div
+                  onClick={() => setIsLightboxOpen(true)}
                   style={{
-                    width: 100,
+                    position: 'relative',
+                    width: 105,
                     height: 80,
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1'
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    border: '1px solid #cbd5e1',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.06)',
+                    flexShrink: 0
                   }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Ảnh chụp tài liệu kiểm chứng</span>
-                  <a
-                    href={feedback.imageUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  title="Nhấp để phóng to ảnh toàn màn hình"
+                >
+                  <img
+                    src={feedback.imageUrl}
+                    alt="Minh chứng từ người gửi"
                     style={{
-                      fontSize: 12.5,
-                      color: '#2563eb',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      textDecoration: 'none',
-                      fontWeight: 500
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
                     }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
                   >
-                    <span>Mở xem ảnh gốc độ phân giải cao</span>
-                    <ExternalLink size={13} />
-                  </a>
+                    <ZoomIn size={18} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e293b' }}>
+                      Ảnh chụp tài liệu kiểm chứng
+                    </span>
+                    <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>
+                      Nhấp vào ảnh để xem toàn màn hình, xoay góc hoặc tải về máy đối soát.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsLightboxOpen(true)}
+                      style={{
+                        fontSize: 12,
+                        color: '#1d4ed8',
+                        backgroundColor: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        padding: '5px 12px',
+                        borderRadius: 6,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ZoomIn size={13} />
+                      <span>Xem toàn màn hình</span>
+                    </button>
+
+                    <a
+                      href={feedback.imageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        fontSize: 12,
+                        color: '#475569',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        padding: '5px 12px',
+                        borderRadius: 6,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        textDecoration: 'none',
+                        fontWeight: 500
+                      }}
+                    >
+                      <span>Mở tab mới</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -589,6 +660,14 @@ export const RespondFeedbackModal: React.FC<RespondFeedbackModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={isLightboxOpen}
+        imageUrl={feedback.imageUrl || null}
+        title={`Minh chứng phiếu #${feedback.id.slice(0, 8)} - ${feedback.subject}`}
+        onClose={() => setIsLightboxOpen(false)}
+      />
     </div>
   )
 }

@@ -57,8 +57,11 @@ export const UnbanUserModal: React.FC<UnbanUserModalProps> = ({
           backgroundColor: '#ffffff',
           borderRadius: 16,
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
-          maxWidth: 500,
+          maxWidth: 520,
           width: '100%',
+          maxHeight: 'min(90vh, 680px)',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
           border: '1px solid #e2e8f0',
           animation: 'fadeIn 0.2s ease-out'
@@ -119,7 +122,7 @@ export const UnbanUserModal: React.FC<UnbanUserModalProps> = ({
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleSubmit} style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Target User */}
           <div
             style={{

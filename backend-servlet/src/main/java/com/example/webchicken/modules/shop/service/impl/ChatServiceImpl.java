@@ -83,17 +83,28 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public List<ChatConversationResponse> getConversationsForStore(String storeId) {
         if (storeId == null || storeId.isBlank()) return List.of();
+
+        String resolvedStoreName = "Gian hàng của bạn";
+        if (storeDAO != null) {
+            try {
+                resolvedStoreName = storeDAO.findById(storeId)
+                        .map(StoreEntity::getStoreName)
+                        .orElse("Gian hàng của bạn");
+            } catch (Exception ignored) {}
+        }
+
         List<String> customerIds = chatMessageDAO.getCustomerIdsByStore(storeId);
         List<ChatConversationResponse> result = new ArrayList<>();
 
         for (String cId : customerIds) {
             ChatConversationResponse conv = new ChatConversationResponse();
             conv.setStoreId(storeId);
+            conv.setStoreName(resolvedStoreName);
             conv.setCustomerId(cId);
 
             // Tên và Avatar khách hàng
             userDAO.findById(cId).ifPresentOrElse(u -> {
-                conv.setCustomerName(u.getFullName() != null && !u.getFullName().isBlank() ? u.getFullName() : u.getEmail());
+                conv.setCustomerName(u.getFullName() != null && !u.getFullName().isBlank() ? u.getFullName() : (u.getUsername() != null ? u.getUsername() : u.getEmail()));
                 conv.setCustomerAvatar(u.getLogoUrl());
             }, () -> {
                 conv.setCustomerName("Khách hàng");

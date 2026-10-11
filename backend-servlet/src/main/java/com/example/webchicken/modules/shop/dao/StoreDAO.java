@@ -71,6 +71,9 @@ public class StoreDAO extends BaseDAO {
     }
 
     public Optional<StoreEntity> findBySellerId(String sellerId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            return Optional.empty();
+        }
         return executeQuery(em -> {
             TypedQuery<StoreEntity> q = em.createQuery(
                     "SELECT s FROM StoreEntity s WHERE s.sellerId = :sellerId",

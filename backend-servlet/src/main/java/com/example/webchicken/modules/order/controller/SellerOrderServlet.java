@@ -229,6 +229,11 @@ public class SellerOrderServlet extends BaseApiServlet {
             throw new AuthorizationException("Authentication required to manage seller orders");
         }
 
+        // Admin có toàn quyền giám sát và xử lý đơn hàng trên hệ thống (tái sử dụng từ SellerProductServlet & SellerAnalyticsServlet)
+        if (user.isAdmin()) {
+            return;
+        }
+
         try {
             StoreResponse store = storeService().getStoreById(shopId);
             if (store == null) {

@@ -20,9 +20,9 @@ const PRESET_VIOLATION_REASONS = [
 
 const DURATION_OPTIONS = [
   { label: '7 Ngày (Tạm khóa cảnh cáo)', days: 7 },
-  { label: '30 Ngày (Đình chỉ vi phạm mức 2)', days: 30 },
+  { label: '30 Ngày (Đình chỉ mức 2)', days: 30 },
   { label: '90 Ngày (Khóa nghiêm trọng 3 tháng)', days: 90 },
-  { label: 'Vĩnh viễn (Thu hồi tài khoản vĩnh viễn)', days: null }
+  { label: 'Vĩnh viễn (Thu hồi tài khoản)', days: null }
 ]
 
 export const BanUserModal: React.FC<BanUserModalProps> = ({
@@ -81,27 +81,32 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16
+        padding: '16px 20px',
+        boxSizing: 'border-box'
       }}
     >
       <div
         style={{
           backgroundColor: '#ffffff',
           borderRadius: 16,
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
-          maxWidth: 580,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          maxWidth: 620,
           width: '100%',
+          maxHeight: 'min(90vh, 780px)',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
-          border: '1px solid #e2e8f0',
+          border: '1px solid #fee2e2',
           animation: 'fadeIn 0.2s ease-out'
         }}
       >
-        {/* Header */}
+        {/* 1. Fixed Modal Header */}
         <div
           style={{
+            flexShrink: 0,
             backgroundColor: '#fff1f2',
             borderBottom: '1px solid #ffe4e6',
-            padding: '16px 24px',
+            padding: '16px 22px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
@@ -113,21 +118,23 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
                 width: 40,
                 height: 40,
                 borderRadius: 10,
-                backgroundColor: '#e11d48',
+                background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#ffffff'
+                color: '#ffffff',
+                boxShadow: '0 4px 10px rgba(225, 29, 72, 0.3)',
+                flexShrink: 0
               }}
             >
               <ShieldAlert size={22} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#9f1239' }}>
-                Khóa / Cấm Tài Khoản Người Dùng
+              <h3 style={{ margin: 0, fontSize: 16.5, fontWeight: 800, color: '#9f1239' }}>
+                Khóa / Đình Chỉ Tài Khoản Người Dùng
               </h3>
               <p style={{ margin: '2px 0 0 0', fontSize: 12, color: '#be123c', fontWeight: 500 }}>
-                Chế tài kỷ luật & bảo vệ an ninh sàn WebChicKen
+                Chế tài kỷ luật & bảo vệ trật tự sàn WebChicKen
               </p>
             </div>
           </div>
@@ -137,21 +144,34 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
             style={{
               cursor: 'pointer',
               border: 'none',
-              background: 'none',
-              color: '#94a3b8',
+              backgroundColor: '#ffe4e6',
+              color: '#be123c',
               padding: 6,
-              borderRadius: 6,
+              borderRadius: 8,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              transition: 'all 0.15s ease'
             }}
+            title="Đóng cửa sổ"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {/* 2. Scrollable Modal Body */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '20px 22px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#cbd5e1 #f8fafc'
+          }}
+        >
           {/* Target User Info Card */}
           <div
             style={{
@@ -184,11 +204,11 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
               {user.logoUrl ? (
                 <img src={user.logoUrl} alt={user.fullName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                user.fullName.charAt(0)
+                user.fullName?.charAt(0) || 'U'
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{user.fullName}</span>
                 <span
                   style={{
@@ -220,14 +240,14 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
               backgroundColor: '#fffbeb',
               border: '1px solid #fef3c7',
               borderRadius: 10,
-              padding: '12px 14px',
+              padding: '10px 14px',
               display: 'flex',
               alignItems: 'flex-start',
               gap: 10
             }}
           >
-            <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div style={{ fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
+            <AlertTriangle size={17} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ fontSize: 12, color: '#92400e', lineHeight: 1.45 }}>
               <strong style={{ color: '#78350f' }}>Lưu ý an ninh hệ thống:</strong> Khi kích hoạt khóa tài khoản, toàn bộ các phiên làm việc (Active Sessions) của người dùng này trên tất cả các trình duyệt và thiết bị sẽ bị <u>thu hồi ngay lập tức</u> (TASK-66).
             </div>
           </div>
@@ -250,9 +270,10 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
                     border: selectedPreset === reason ? '1px solid #f43f5e' : '1px solid #e2e8f0',
                     backgroundColor: selectedPreset === reason ? '#fff1f2' : '#ffffff',
                     cursor: 'pointer',
-                    fontSize: 12,
+                    fontSize: 12.5,
                     color: selectedPreset === reason ? '#9f1239' : '#334155',
-                    fontWeight: selectedPreset === reason ? 600 : 400
+                    fontWeight: selectedPreset === reason ? 600 : 400,
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <input
@@ -260,7 +281,7 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
                     name="ban_reason"
                     checked={selectedPreset === reason}
                     onChange={() => setSelectedPreset(reason)}
-                    style={{ accentColor: '#e11d48' }}
+                    style={{ accentColor: '#e11d48', cursor: 'pointer' }}
                   />
                   <span>{reason}</span>
                 </label>
@@ -274,26 +295,31 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
               Thời hạn áp dụng chế tài
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-              {DURATION_OPTIONS.map((opt, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSelectedDuration(opt.days)}
-                  style={{
-                    padding: '9px 12px',
-                    borderRadius: 8,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    border: selectedDuration === opt.days ? '2px solid #0f172a' : '1px solid #cbd5e1',
-                    backgroundColor: selectedDuration === opt.days ? '#0f172a' : '#ffffff',
-                    color: selectedDuration === opt.days ? '#ffffff' : '#334155'
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {DURATION_OPTIONS.map((opt, i) => {
+                const isSelected = selectedDuration === opt.days
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelectedDuration(opt.days)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      border: isSelected ? '1.5px solid #e11d48' : '1px solid #cbd5e1',
+                      backgroundColor: isSelected ? '#fff1f2' : '#ffffff',
+                      color: isSelected ? '#9f1239' : '#334155',
+                      boxShadow: isSelected ? '0 1px 3px rgba(225, 29, 72, 0.15)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -303,72 +329,90 @@ export const BanUserModal: React.FC<BanUserModalProps> = ({
               Ghi chú bổ sung / Dẫn chứng kiểm toán
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={customReason}
               onChange={(e) => setCustomReason(e.target.value)}
               placeholder="Nhập mã đơn hàng gian lận, báo cáo vi phạm kiểm dịch hoặc ghi chú chi tiết..."
               style={{
                 width: '100%',
-                padding: '10px 12px',
-                fontSize: 12,
+                padding: '9px 12px',
+                fontSize: 12.5,
                 borderRadius: 8,
                 border: '1px solid #cbd5e1',
                 fontFamily: 'inherit',
                 outline: 'none',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                resize: 'vertical'
               }}
             />
           </div>
 
           {errorMsg && (
-            <div style={{ padding: '10px 14px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 8, fontSize: 12, color: '#e11d48' }}>
+            <div style={{ padding: '10px 14px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 8, fontSize: 12, color: '#e11d48', fontWeight: 600 }}>
               {errorMsg}
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#64748b',
-                backgroundColor: '#f1f5f9',
-                borderRadius: 8,
-                cursor: 'pointer',
-                border: 'none'
-              }}
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: '8px 20px',
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#ffffff',
-                backgroundColor: '#e11d48',
-                borderRadius: 8,
-                cursor: 'pointer',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.3)'
-              }}
-            >
-              <Lock size={15} />
-              <span>{isSubmitting ? 'Đang khóa...' : 'Xác nhận Khóa tài khoản'}</span>
-            </button>
-          </div>
-        </form>
+        {/* 3. Fixed Modal Footer (Luôn hiển thị cố định ở đáy modal, không bị tràn màn hình) */}
+        <div
+          style={{
+            flexShrink: 0,
+            padding: '14px 22px',
+            backgroundColor: '#f8fafc',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 10
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            style={{
+              padding: '9px 18px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#475569',
+              backgroundColor: '#ffffff',
+              borderRadius: 8,
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              border: '1px solid #cbd5e1',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            style={{
+              padding: '9px 20px',
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#ffffff',
+              background: isSubmitting
+                ? '#94a3b8'
+                : 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+              borderRadius: 8,
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: isSubmitting ? 'none' : '0 4px 12px rgba(225, 29, 72, 0.35)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Lock size={15} />
+            <span>{isSubmitting ? 'Đang thực hiện...' : 'Xác nhận Khóa tài khoản'}</span>
+          </button>
+        </div>
       </div>
     </div>
   )
 }
+export default BanUserModal

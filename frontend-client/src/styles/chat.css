@@ -422,37 +422,49 @@
 
 /* ==========================================================================
    2. SELLER CHAT CENTER PAGE (/seller/chat)
-   Full-screen Split-Inbox Desk for Sellers
+   Full-screen Split-Inbox Desk for Sellers (Shopee-Style)
    ========================================================================== */
 .seller-chat-card {
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  height: calc(100vh - 180px);
-  min-height: 580px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  display: flex !important;
+  flex-direction: row !important;
+  height: calc(100vh - 200px);
+  min-height: 560px;
+  max-height: 850px;
   overflow: hidden;
+  position: relative;
+  width: 100%;
 }
 
-@media (max-width: 900px) {
-  .seller-chat-card {
-    grid-template-columns: 1fr;
-    height: auto;
+/* ── Seller Chat Left Inbox List (LUÔN CỐ ĐỊNH BÊN TRÁI, KHÔNG BAO GIỜ BỊ ẨN) ── */
+.seller-inbox-pane {
+  width: 310px !important;
+  min-width: 300px !important;
+  max-width: 330px !important;
+  flex-shrink: 0 !important;
+  height: 100% !important;
+  border-right: 1px solid #e2e8f0;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #ffffff;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 880px) {
+  .seller-inbox-pane {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
   }
 }
 
-/* ── Seller Chat Left Inbox List ── */
-.seller-inbox-pane {
-  border-right: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-}
-
 .seller-inbox-header {
-  padding: 16px 20px;
+  padding: 14px 18px 10px;
   border-bottom: 1px solid #f1f5f9;
   background: #ffffff;
 }
@@ -581,11 +593,16 @@
   color: #0f172a;
 }
 
-/* ── Seller Chat Right Workspace ── */
+/* ── Seller Chat Middle Workspace (KHUNG CHAT CHÍNH GIỮA) ── */
 .seller-chat-main {
-  display: flex;
-  flex-direction: column;
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
   background: #f8fafc;
+  overflow: hidden;
+  position: relative;
 }
 
 .seller-chat-main-header {
@@ -735,4 +752,142 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
+}
+
+/* ── Shopee Seller Inbox Tabs ── */
+.seller-inbox-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.seller-inbox-tab {
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.seller-inbox-tab:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.seller-inbox-tab.active {
+  background: #fffbeb;
+  color: #d97706;
+  font-weight: 700;
+}
+
+/* ── Seller Message with Avatars and Labels ── */
+.seller-msg-container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: 80%;
+  margin-bottom: 6px;
+}
+
+.seller-msg-container.sent {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.seller-msg-container.received {
+  align-self: flex-start;
+  flex-direction: row;
+}
+
+.seller-msg-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.seller-msg-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.seller-msg-container.sent .seller-msg-body {
+  align-items: flex-end;
+}
+
+.seller-msg-container.received .seller-msg-body {
+  align-items: flex-start;
+}
+
+.seller-msg-sender-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seller-msg-badge {
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* ── Seller Right Info Pane (Shopee-Style Desk) ── */
+.seller-chat-info-pane {
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  flex-shrink: 0 !important;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto;
+  height: 100% !important;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 1200px) {
+  .seller-chat-info-pane {
+    display: none !important;
+  }
+}
+
+.seller-info-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.seller-info-section-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

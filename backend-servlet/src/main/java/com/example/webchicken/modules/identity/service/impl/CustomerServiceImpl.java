@@ -29,11 +29,17 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerDAO customerDAO;
     private final UserDAO userDAO;
     private final AddressDAO addressDAO;
+    private final com.example.webchicken.modules.identity.dao.SellerDAO sellerDAO;
 
     public CustomerServiceImpl(CustomerDAO customerDAO, UserDAO userDAO, AddressDAO addressDAO) {
+        this(customerDAO, userDAO, addressDAO, null);
+    }
+
+    public CustomerServiceImpl(CustomerDAO customerDAO, UserDAO userDAO, AddressDAO addressDAO, com.example.webchicken.modules.identity.dao.SellerDAO sellerDAO) {
         this.customerDAO = Objects.requireNonNull(customerDAO, "customerDAO must not be null");
         this.userDAO = Objects.requireNonNull(userDAO, "userDAO must not be null");
         this.addressDAO = Objects.requireNonNull(addressDAO, "addressDAO must not be null");
+        this.sellerDAO = sellerDAO;
     }
 
     @Override
@@ -221,6 +227,9 @@ public class CustomerServiceImpl implements CustomerService {
         String name = user.getClass().getSimpleName();
         if (name.contains("Seller")) roles.add("SELLER");
         if (name.contains("Admin")) roles.add("SUPER_ADMIN");
+        if (sellerDAO != null && !roles.contains("SELLER") && sellerDAO.findById(user.getUserId()).isPresent()) {
+            roles.add("SELLER");
+        }
         if (roles.isEmpty()) roles.add("CUSTOMER");
         return roles;
     }

@@ -15,16 +15,21 @@ import {
   ChevronRight,
   ChevronDown,
   ShieldAlert,
-  Sparkles,
+  ShieldCheck,
   Upload,
   X,
   Search,
+  ZoomIn,
+  ImageOff,
+  Sparkles,
 } from 'lucide-react'
 import { SellerLayout } from '../../layouts/SellerLayout'
-import type {
-  FeedbackItem,
-  FeedbackType,
-  CreateFeedbackPayload,
+import { ImageLightboxModal } from '../../components/feedback/ImageLightboxModal'
+import {
+  type FeedbackItem,
+  type FeedbackType,
+  type CreateFeedbackPayload,
+  formatAdminResolver,
 } from '../../features/shop/types/feedbackTypes'
 import {
   submitSellerFeedback,
@@ -54,6 +59,17 @@ export const SellerFeedbackPage: React.FC = () => {
   const [imageStatus, setImageStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle')
   const [formError, setFormError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Lightbox State
+  const [lightboxState, setLightboxState] = useState<{
+    isOpen: boolean
+    imageUrl: string | null
+    title: string
+  }>({
+    isOpen: false,
+    imageUrl: null,
+    title: ''
+  })
 
   // History search & filter states
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -1209,18 +1225,98 @@ export const SellerFeedbackPage: React.FC = () => {
                               {item.content}
                             </div>
                           </td>
-                          <td style={{ padding: '14px' }}>
+                          <td style={{ padding: '14px', verticalAlign: 'middle' }}>
                             {item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt="Minh chứng"
-                                style={{ width: 36, height: 28, objectFit: 'cover', borderRadius: 3, border: '1px solid #cbd5e1' }}
-                                onError={(e) => {
-                                  ;(e.target as any).style.display = 'none'
-                                }}
-                              />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div
+                                  onClick={() =>
+                                    setLightboxState({
+                                      isOpen: true,
+                                      imageUrl: item.imageUrl!,
+                                      title: `Minh chứng phiếu #${item.id.slice(0, 8)} - ${item.subject}`
+                                    })
+                                  }
+                                  title="Nhấp để phóng to ảnh minh chứng"
+                                  style={{
+                                    position: 'relative',
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: 6,
+                                    overflow: 'hidden',
+                                    border: '1px solid #cbd5e1',
+                                    cursor: 'pointer',
+                                    flexShrink: 0,
+                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)'
+                                  }}
+                                >
+                                  <img
+                                    src={item.imageUrl}
+                                    alt="Minh chứng"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    onError={(e) => {
+                                      ;(e.target as HTMLElement).style.display = 'none'
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                                      opacity: 0,
+                                      transition: 'opacity 0.15s',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#ffffff'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
+                                  >
+                                    <ZoomIn size={14} />
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setLightboxState({
+                                      isOpen: true,
+                                      imageUrl: item.imageUrl!,
+                                      title: `Minh chứng phiếu #${item.id.slice(0, 8)} - ${item.subject}`
+                                    })
+                                  }
+                                  style={{
+                                    padding: '4px 8px',
+                                    borderRadius: 6,
+                                    fontSize: 11.5,
+                                    fontWeight: 600,
+                                    color: '#d97706',
+                                    backgroundColor: '#fef3c7',
+                                    border: '1px solid #fde68a',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  Xem
+                                </button>
+                              </div>
                             ) : (
-                              <span style={{ fontSize: 12, color: '#94a3b8' }}>Không</span>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  fontSize: 11,
+                                  color: '#94a3b8',
+                                  backgroundColor: '#f8fafc',
+                                  padding: '3px 8px',
+                                  borderRadius: 9999,
+                                  border: '1px dashed #cbd5e1',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                <ImageOff size={11} />
+                                <span>Không có</span>
+                              </span>
                             )}
                           </td>
                           <td style={{ padding: '14px', fontSize: 12, color: '#64748b' }}>
@@ -1354,12 +1450,40 @@ export const SellerFeedbackPage: React.FC = () => {
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
                       Ảnh minh chứng:
                     </div>
-                    <div style={{ marginTop: 6 }}>
+                    <div
+                      style={{ marginTop: 6, position: 'relative', display: 'inline-block', cursor: 'pointer' }}
+                      onClick={() =>
+                        setLightboxState({
+                          isOpen: true,
+                          imageUrl: viewingFeedback.imageUrl!,
+                          title: `Minh chứng phiếu #${viewingFeedback.id.slice(0, 8)} - ${viewingFeedback.subject}`
+                        })
+                      }
+                      title="Nhấp để phóng to toàn màn hình"
+                    >
                       <img
                         src={viewingFeedback.imageUrl}
                         alt="Minh chứng đính kèm"
-                        style={{ maxWidth: '100%', maxHeight: 180, borderRadius: 6, border: '1px solid #cbd5e1' }}
+                        style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, border: '1px solid #cbd5e1' }}
                       />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 8,
+                          right: 8,
+                          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                          color: '#ffffff',
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        <ZoomIn size={12} />
+                        <span>Phóng to</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1391,8 +1515,9 @@ export const SellerFeedbackPage: React.FC = () => {
                       <div style={{ fontSize: 13.5, color: '#14532d', lineHeight: 1.6 }}>
                         {viewingFeedback.adminResponse}
                       </div>
-                      <div style={{ fontSize: 11.5, color: '#15803d', marginTop: 8 }}>
-                        Người phụ trách: <strong>{viewingFeedback.resolvedBy || 'Ban Quản trị WebChicKen'}</strong>
+                      <div style={{ fontSize: 11.5, color: '#15803d', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <ShieldCheck size={13} color="#15803d" />
+                        <span>Người phụ trách: <strong>{formatAdminResolver(viewingFeedback.resolvedBy)}</strong></span>
                       </div>
                     </div>
                   ) : (
@@ -1432,6 +1557,14 @@ export const SellerFeedbackPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Lightbox Modal */}
+        <ImageLightboxModal
+          isOpen={lightboxState.isOpen}
+          imageUrl={lightboxState.imageUrl}
+          title={lightboxState.title}
+          onClose={() => setLightboxState({ isOpen: false, imageUrl: null, title: '' })}
+        />
       </div>
     </SellerLayout>
   )

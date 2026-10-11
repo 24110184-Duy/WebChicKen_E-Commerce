@@ -110,8 +110,11 @@ public class AuthServlet extends BaseApiServlet {
             } catch (Exception ignored) {}
         }
 
-        String newAccessToken = authService().refreshToken(token);
-        ok(resp, Map.of("accessToken", newAccessToken));
+        AuthService.TokenRotationResult result = authService().rotateRefreshToken(token);
+        // Cập nhật Refresh Token mới vào Cookie HttpOnly (Tuân thủ chuẩn bảo mật SEC-07 Token Rotation)
+        setRefreshTokenCookie(req, resp, result.newRefreshToken(), 7 * 24 * 60 * 60);
+
+        ok(resp, Map.of("accessToken", result.accessToken()));
     }
 
     private void handleLogout(HttpServletRequest req, HttpServletResponse resp) {

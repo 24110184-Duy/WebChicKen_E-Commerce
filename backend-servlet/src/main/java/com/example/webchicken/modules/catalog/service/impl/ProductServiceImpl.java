@@ -132,17 +132,16 @@ public class ProductServiceImpl implements ProductService {
         if (request.status() == ProductStatus.INACTIVE) {
             initialStatus = ProductStatus.INACTIVE;
             moderationNote = "Bản nháp lưu tạm của Người bán";
-        } else if (isHealthOrSafetyRisk(request.name(), request.description())) {
+        } else {
             initialStatus = ProductStatus.PENDING_APPROVAL;
             moderatedBy = null;
-            moderationNote = "Cảnh báo rủi ro sức khỏe/y tế: Phát hiện yếu tố hoặc từ khóa liên quan đến dược phẩm, thuốc hoặc an toàn người dùng. Yêu cầu Quản trị viên trực tiếp thẩm định giấy phép & chất lượng trước khi mở bán.";
-            log.warn("Sản phẩm mới [{}] chứa từ khóa sức khỏe/thuốc/an toàn. Chuyển vào hàng đợi chờ Quản trị viên duyệt.", request.name());
-        } else {
-            // Hàng hóa thông thường -> BOT AI tự động duyệt thông qua ngay!
-            initialStatus = ProductStatus.ACTIVE;
-            moderatedBy = "BOT_AUTO_APPROVER";
-            moderationNote = "Đạt chuẩn kiểm duyệt tự động bởi hệ thống BOT (An toàn & Thông tin hợp lệ)";
-            log.info("Sản phẩm [{}] đạt chuẩn thông thường. Đã được BOT_AUTO_APPROVER phê duyệt tự động mở bán (ACTIVE).", request.name());
+            if (isHealthOrSafetyRisk(request.name(), request.description())) {
+                moderationNote = "Cảnh báo rủi ro sức khỏe/y tế: Phát hiện yếu tố hoặc từ khóa liên quan đến dược phẩm, thuốc hoặc an toàn người dùng. Yêu cầu Quản trị viên trực tiếp thẩm định giấy phép & chất lượng trước khi mở bán.";
+                log.warn("Sản phẩm mới [{}] chứa từ khóa sức khỏe/thuốc/an toàn. Chuyển vào hàng đợi chờ Quản trị viên duyệt.", request.name());
+            } else {
+                moderationNote = "Sản phẩm mới chờ Quản trị viên kiểm duyệt thông tin & hình ảnh trước khi mở bán.";
+                log.info("Sản phẩm mới [{}] được chuyển vào hàng đợi chờ Quản trị viên duyệt (PENDING_APPROVAL).", request.name());
+            }
         }
 
         String effectiveStoreId = request.storeId();
