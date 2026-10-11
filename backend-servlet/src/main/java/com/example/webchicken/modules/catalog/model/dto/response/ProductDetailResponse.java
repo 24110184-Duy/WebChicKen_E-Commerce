@@ -15,6 +15,27 @@ public record ProductDetailResponse(
         String rejectionReason,
         List<String> imageUrls,
         List<ProductVariantResponse> variants,
+        double rating,
+        int ratingCount,
+        int soldCount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {}
+) {
+    public ProductDetailResponse(
+            String id,
+            String storeId,
+            String categoryId,
+            String categoryName,
+            String name,
+            String description,
+            ProductStatus status,
+            String rejectionReason,
+            List<String> imageUrls,
+            List<ProductVariantResponse> variants,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
+        this(id, storeId, categoryId, categoryName, name, description, status, rejectionReason,
+                imageUrls, variants, 0.0, 0, 0, createdAt, updatedAt);
+    }
+}

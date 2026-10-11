@@ -20,11 +20,10 @@ export const SellerDashboardPage: React.FC = () => {
           try { store = JSON.parse(cached) } catch {}
         }
       }
-      if (store?.id) {
-        sellerApi.fetchDashboardStats(store.id, '7d').then((data) => {
-          setStats(data)
-        }).catch(() => {})
-      }
+      const finalStoreId = store?.id || 's0000000-0000-0000-0000-000000000001'
+      sellerApi.fetchDashboardStats(finalStoreId, '7d').then((data) => {
+        setStats(data)
+      }).catch(() => {})
     }
     resolveStore()
   }, [user?.id])

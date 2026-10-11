@@ -4,6 +4,7 @@ import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { ProductCard } from '../../components/molecules/ProductCard'
 import { catalogApi } from '../../features/catalog/api/catalogApi'
 import type { Category, Product } from '../../features/catalog/types/catalogTypes'
+import { getCategoryAsset } from '../../features/catalog/utils/categoryAssets'
 
 export const HomePage: React.FC = () => {
   // Hero Carousel state
@@ -170,32 +171,30 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="cat-cards-grid">
-            {categories.map(cat => (
-              <Link
-                key={cat.id}
-                to={`/search?categoryId=${cat.id}`}
-                className="cat-card-item"
-              >
-                <div style={{
-                  width: 50,
-                  height: 50,
-                  borderRadius: '50%',
-                  background: '#fef3c7',
-                  border: '1.5px solid #fde68a',
-                  color: '#92400e',
-                  margin: '0 auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}>
-                  {cat.name[0]}
-                </div>
-                <div className="cat-card-title">{cat.name}</div>
-                <div className="cat-card-count">{cat.productCount || 0}+ Items</div>
-              </Link>
-            ))}
+            {categories.map(cat => {
+              const asset = getCategoryAsset(cat)
+              const catProductCount = products.filter(p => p.categoryId === cat.id).length
+              return (
+                <Link
+                  key={cat.id}
+                  to={`/search?categoryId=${cat.id}`}
+                  className="cat-card-item"
+                >
+                  <div className="cat-card-img-wrap">
+                    <img
+                      src={asset.imageUrl}
+                      alt={cat.name}
+                      className="cat-card-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="cat-card-title">{cat.name}</div>
+                  <div className="cat-card-count">
+                    {catProductCount > 0 ? `${catProductCount} sản phẩm` : 'Khám phá ngay'}
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </section>
       )}

@@ -19,8 +19,12 @@ import com.example.webchicken.modules.catalog.model.entity.ProductImageEntity;
 import com.example.webchicken.modules.catalog.model.entity.ProductVariantEntity;
 import com.example.webchicken.modules.catalog.model.enums.ProductStatus;
 import com.example.webchicken.modules.catalog.service.ProductService;
+import com.example.webchicken.modules.review.service.ReviewService;
+import com.example.webchicken.modules.review.model.dto.response.ReviewSummaryResponse;
+import com.example.webchicken.modules.order.service.OrderService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,15 +37,28 @@ public class ProductServiceImpl implements ProductService {
     private final ProductImageDAO productImageDAO;
     private final ProductVariantDAO productVariantDAO;
     private final CategoryDAO categoryDAO;
+    private final ReviewService reviewService;
+    private final OrderService orderService;
 
     public ProductServiceImpl(ProductDAO productDAO,
                               ProductImageDAO productImageDAO,
                               ProductVariantDAO productVariantDAO,
                               CategoryDAO categoryDAO) {
+        this(productDAO, productImageDAO, productVariantDAO, categoryDAO, null, null);
+    }
+
+    public ProductServiceImpl(ProductDAO productDAO,
+                              ProductImageDAO productImageDAO,
+                              ProductVariantDAO productVariantDAO,
+                              CategoryDAO categoryDAO,
+                              ReviewService reviewService,
+                              OrderService orderService) {
         this.productDAO = Objects.requireNonNull(productDAO, "productDAO must not be null");
         this.productImageDAO = Objects.requireNonNull(productImageDAO, "productImageDAO must not be null");
         this.productVariantDAO = Objects.requireNonNull(productVariantDAO, "productVariantDAO must not be null");
         this.categoryDAO = Objects.requireNonNull(categoryDAO, "categoryDAO must not be null");
+        this.reviewService = reviewService;
+        this.orderService = orderService;
     }
 
     @Override
@@ -77,10 +94,14 @@ public class ProductServiceImpl implements ProductService {
         if (request.imageUrls() != null) {
             for (String imgUrl : request.imageUrls()) {
                 if (imgUrl != null && !imgUrl.trim().isEmpty()) {
+                    String cleanUrl = imgUrl.trim();
+                    if (cleanUrl.length() > 500) {
+                        throw new ValidationException("Đường dẫn hình ảnh vượt quá giới hạn 500 ký tự. Vui lòng tải ảnh qua chức năng tải tệp (/api/v1/media/upload).");
+                    }
                     ProductImageEntity imgEntity = new ProductImageEntity(
                             UUID.randomUUID().toString(),
                             productId,
-                            imgUrl.trim()
+                            cleanUrl
                     );
                     productImageDAO.save(imgEntity);
                     savedImages.add(imgEntity.getImageUrl());
@@ -165,10 +186,14 @@ public class ProductServiceImpl implements ProductService {
             productImageDAO.deleteByProductId(id);
             for (String imgUrl : request.imageUrls()) {
                 if (imgUrl != null && !imgUrl.trim().isEmpty()) {
+                    String cleanUrl = imgUrl.trim();
+                    if (cleanUrl.length() > 500) {
+                        throw new ValidationException("Đường dẫn hình ảnh vượt quá giới hạn 500 ký tự. Vui lòng tải ảnh qua chức năng tải tệp (/api/v1/media/upload).");
+                    }
                     ProductImageEntity imgEntity = new ProductImageEntity(
                             UUID.randomUUID().toString(),
                             id,
-                            imgUrl.trim()
+                            cleanUrl
                     );
                     productImageDAO.save(imgEntity);
                 }
@@ -238,6 +263,16 @@ public class ProductServiceImpl implements ProductService {
                 ))
                 .collect(Collectors.toList());
 
+        ReviewSummaryResponse reviewSummary = reviewService != null ? reviewService.getProductReviewSummary(id) : null;
+        double rating = reviewSummary != null ? reviewSummary.averageRating() : 0.0;
+        int ratingCount = reviewSummary != null ? (int) reviewSummary.totalReviews() : 0;
+
+        int soldCount = 0;
+        if (orderService != null) {
+            Map<String, Integer> soldMap = orderService.getProductSoldCounts(List.of(id));
+            soldCount = soldMap.getOrDefault(id, 0);
+        }
+
         return new ProductDetailResponse(
                 product.getId(),
                 product.getStoreId(),
@@ -249,6 +284,9 @@ public class ProductServiceImpl implements ProductService {
                 product.getRejectionReason(),
                 imageUrls,
                 variants,
+                rating,
+                ratingCount,
+                soldCount,
                 product.getCreatedAt(),
                 product.getUpdatedAt()
         );
@@ -266,8 +304,16 @@ public class ProductServiceImpl implements ProductService {
         List<ProductEntity> products = productDAO.findWithFilters(filter);
         long total = productDAO.countWithFilters(filter);
 
+        List<String> productIds = products.stream().map(ProductEntity::getId).toList();
+        Map<String, ReviewSummaryResponse> reviewSummaries = reviewService != null && !productIds.isEmpty()
+                ? reviewService.getProductReviewSummaries(productIds)
+                : Collections.emptyMap();
+        Map<String, Integer> soldCounts = orderService != null && !productIds.isEmpty()
+                ? orderService.getProductSoldCounts(productIds)
+                : Collections.emptyMap();
+
         List<ProductSummaryResponse> items = products.stream()
-                .map(this::toSummary)
+                .map(p -> toSummary(p, reviewSummaries.get(p.getId()), soldCounts.getOrDefault(p.getId(), 0)))
                 .collect(Collectors.toList());
 
         return new PageResult<>(items, total, filter.page(), filter.size());
@@ -312,6 +358,16 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private ProductSummaryResponse toSummary(ProductEntity p) {
+        ReviewSummaryResponse rev = reviewService != null ? reviewService.getProductReviewSummary(p.getId()) : null;
+        int sold = 0;
+        if (orderService != null) {
+            Map<String, Integer> soldMap = orderService.getProductSoldCounts(List.of(p.getId()));
+            sold = soldMap.getOrDefault(p.getId(), 0);
+        }
+        return toSummary(p, rev, sold);
+    }
+
+    private ProductSummaryResponse toSummary(ProductEntity p, ReviewSummaryResponse rev, int soldCount) {
         List<ProductImageEntity> images = productImageDAO.findByProductId(p.getId());
         String thumb = images.isEmpty() ? null : images.get(0).getImageUrl();
 
@@ -319,6 +375,9 @@ public class ProductServiceImpl implements ProductService {
         long minPrice = variants.stream().mapToLong(ProductVariantEntity::getBasePriceMinor).min().orElse(0L);
         long maxPrice = variants.stream().mapToLong(ProductVariantEntity::getBasePriceMinor).max().orElse(0L);
         int totalStock = variants.stream().mapToInt(ProductVariantEntity::getStockQuantity).sum();
+
+        double rating = rev != null ? rev.averageRating() : 0.0;
+        int ratingCount = rev != null ? (int) rev.totalReviews() : 0;
 
         return new ProductSummaryResponse(
                 p.getId(),
@@ -331,6 +390,9 @@ public class ProductServiceImpl implements ProductService {
                 minPrice,
                 maxPrice,
                 totalStock,
+                rating,
+                ratingCount,
+                soldCount,
                 p.getCreatedAt()
         );
     }

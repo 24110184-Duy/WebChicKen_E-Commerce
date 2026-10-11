@@ -30,7 +30,11 @@ public class MediaServiceImpl implements MediaService {
             "image/jpeg",
             "image/jpg",
             "image/png",
-            "image/webp"
+            "image/webp",
+            "image/gif",
+            "image/pjpeg",
+            "image/jfif",
+            "image/x-png"
     );
 
     private final MediaDAO mediaDAO;
@@ -55,8 +59,20 @@ public class MediaServiceImpl implements MediaService {
         if (fileSize > MAX_FILE_SIZE) {
             throw new ValidationException("Dung lượng tệp vượt quá giới hạn cho phép (Tối đa 5MB).");
         }
-        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType.toLowerCase())) {
-            throw new ValidationException("Định dạng tệp không được hỗ trợ. Chỉ chấp nhận JPEG, PNG, WEBP.");
+
+        String resolvedContentType = contentType != null ? contentType.toLowerCase().trim() : "";
+        if ("application/octet-stream".equals(resolvedContentType) || resolvedContentType.isBlank()) {
+            if (originalFilename != null && originalFilename.contains(".")) {
+                String ext = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+                if (ext.equals(".jpg") || ext.equals(".jpeg") || ext.equals(".jfif")) resolvedContentType = "image/jpeg";
+                else if (ext.equals(".png")) resolvedContentType = "image/png";
+                else if (ext.equals(".webp")) resolvedContentType = "image/webp";
+                else if (ext.equals(".gif")) resolvedContentType = "image/gif";
+            }
+        }
+
+        if (!ALLOWED_MIME_TYPES.contains(resolvedContentType)) {
+            throw new ValidationException("Định dạng tệp không được hỗ trợ. Chỉ chấp nhận JPEG, PNG, WEBP, GIF.");
         }
 
         String extension = resolveExtension(originalFilename, contentType);
@@ -118,13 +134,17 @@ public class MediaServiceImpl implements MediaService {
     private String resolveExtension(String filename, String contentType) {
         if (filename != null && filename.contains(".")) {
             String ext = filename.substring(filename.lastIndexOf(".")).toLowerCase();
-            if (ext.equals(".jpg") || ext.equals(".jpeg") || ext.equals(".png") || ext.equals(".webp")) {
+            if (ext.equals(".jpg") || ext.equals(".jpeg") || ext.equals(".png") || ext.equals(".webp") || ext.equals(".gif")) {
                 return ext;
             }
+            if (ext.equals(".jfif")) {
+                return ".jpg";
+            }
         }
-        return switch (contentType.toLowerCase()) {
-            case "image/png" -> ".png";
+        return switch (contentType != null ? contentType.toLowerCase() : "") {
+            case "image/png", "image/x-png" -> ".png";
             case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
             default -> ".jpg";
         };
     }

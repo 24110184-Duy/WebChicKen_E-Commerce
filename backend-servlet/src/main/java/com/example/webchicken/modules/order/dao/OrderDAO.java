@@ -120,6 +120,24 @@ public class OrderDAO extends BaseDAO {
         });
     }
 
+    public List<OrderEntity> findByStoreIdInStatuses(String storeId, List<OrderStatus> statuses, int offset, int limit) {
+        if (statuses == null || statuses.isEmpty()) {
+            return findByStoreId(storeId, (OrderStatus) null, offset, limit);
+        }
+        if (statuses.size() == 1) {
+            return findByStoreId(storeId, statuses.get(0), offset, limit);
+        }
+        return executeQuery(em -> {
+            String jpql = "SELECT o FROM OrderEntity o WHERE o.storeId = :storeId AND o.status IN :statuses ORDER BY o.orderDate DESC";
+            TypedQuery<OrderEntity> query = em.createQuery(jpql, OrderEntity.class)
+                    .setParameter("storeId", storeId)
+                    .setParameter("statuses", statuses);
+            query.setFirstResult(Math.max(0, offset));
+            query.setMaxResults(Math.min(100, Math.max(1, limit)));
+            return query.getResultList();
+        });
+    }
+
     public long countByStoreId(String storeId, OrderStatus status) {
         return executeQuery(em -> {
             String jpql = "SELECT COUNT(o) FROM OrderEntity o WHERE o.storeId = :storeId ";
@@ -132,6 +150,22 @@ public class OrderDAO extends BaseDAO {
                 query.setParameter("status", status);
             }
             return query.getSingleResult();
+        });
+    }
+
+    public long countByStoreIdInStatuses(String storeId, List<OrderStatus> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return countByStoreId(storeId, (OrderStatus) null);
+        }
+        if (statuses.size() == 1) {
+            return countByStoreId(storeId, statuses.get(0));
+        }
+        return executeQuery(em -> {
+            String jpql = "SELECT COUNT(o) FROM OrderEntity o WHERE o.storeId = :storeId AND o.status IN :statuses";
+            return em.createQuery(jpql, Long.class)
+                    .setParameter("storeId", storeId)
+                    .setParameter("statuses", statuses)
+                    .getSingleResult();
         });
     }
 

@@ -40,18 +40,22 @@ export const ProductListingPage: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true)
+      const currentCategory = searchParams.get('categoryId') || selectedCategory || undefined
       const filter: ProductFilter = {
         query: searchParams.get('q') || undefined,
-        categoryId: selectedCategory || undefined,
+        categoryId: currentCategory,
         storeId: storeId || undefined,
         sort,
         page: currentPage,
         size: pageSize,
       }
-      const res = await catalogApi.getProducts(filter)
-      setProducts(res.items)
-      setTotal(res.total)
-      setIsLoading(false)
+      try {
+        const res = await catalogApi.getProducts(filter)
+        setProducts(res.items || [])
+        setTotal(res.total || 0)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     fetchProducts()
@@ -75,7 +79,7 @@ export const ProductListingPage: React.FC = () => {
   const displayedProducts = useMemo(() => {
     return products.filter((p) => {
       // 1. Rating
-      if (minRating > 0 && (p.rating || 5) < minRating) return false
+      if (minRating > 0 && ((p.ratingCount || 0) === 0 || (p.rating || 0) < minRating)) return false
 
       // 2. Price
       const price = p.minPriceMinor || 0
@@ -112,6 +116,7 @@ export const ProductListingPage: React.FC = () => {
   )
 
   const queryText = searchParams.get('q')
+  const currentCat = categories.find(c => c.id === (searchParams.get('categoryId') || selectedCategory))
   const totalPages = Math.ceil(total / pageSize) || 1
 
   return (
@@ -276,8 +281,18 @@ export const ProductListingPage: React.FC = () => {
           <main style={{ minWidth: 0 }}>
             <div className="plp-main-bar">
               <div className="plp-result-count">
-                Found <strong>{displayedProducts.length}</strong> products
-                {queryText && <span> for "<strong>{queryText}</strong>"</span>}
+                {isLoading ? (
+                  <span className="plp-loading-badge">
+                    <span className="plp-spinner-sm" />
+                    Đang tải sản phẩm...
+                  </span>
+                ) : (
+                  <>
+                    Tìm thấy <strong>{displayedProducts.length}</strong> sản phẩm
+                    {queryText && <span> cho từ khóa "<strong>{queryText}</strong>"</span>}
+                    {currentCat && <span style={{ color: '#b45309', fontWeight: 600 }}> ({currentCat.name})</span>}
+                  </>
+                )}
               </div>
 
               <div className="plp-sort-wrap">
@@ -297,8 +312,28 @@ export const ProductListingPage: React.FC = () => {
             </div>
 
             {isLoading ? (
-              <div style={{ padding: '60px 0', textAlign: 'center', color: '#94a3b8', fontSize: 15 }}>
-                Loading fresh products...
+              <div>
+                <div className="plp-loading-panel">
+                  <div className="plp-spinner-lg" />
+                  <div className="plp-loading-title">Đang tải sản phẩm...</div>
+                  <div className="plp-loading-desc">
+                    Vui lòng chờ trong giây lát, hệ thống đang cập nhật danh sách mặt hàng cho bạn.
+                  </div>
+                </div>
+
+                <div className="plp-grid">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                    <div key={i} className="plp-skeleton-card">
+                      <div className="plp-skeleton-img" />
+                      <div className="plp-skeleton-body">
+                        <div className="plp-skeleton-line" style={{ width: '45%', height: 12, marginBottom: 8 }} />
+                        <div className="plp-skeleton-line" style={{ width: '85%', height: 16, marginBottom: 8 }} />
+                        <div className="plp-skeleton-line" style={{ width: '60%', height: 14, marginBottom: 12 }} />
+                        <div className="plp-skeleton-line" style={{ width: '40%', height: 20 }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : displayedProducts.length === 0 ? (
               <div style={{

@@ -254,6 +254,14 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    public java.util.Map<String, ReviewSummaryResponse> getProductReviewSummaries(List<String> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return reviewDAO.getReviewSummaries(productIds);
+    }
+
+    @Override
     public List<ReviewResponse> getMyReviews(String userId, int page, int size) {
         if (userId == null || userId.isBlank()) {
             return List.of();

@@ -35,4 +35,25 @@ public class OrderItemDAO extends BaseDAO {
                 .setParameter("orderId", orderId)
                 .getResultList());
     }
+
+    public java.util.Map<String, Integer> getSoldCounts(List<String> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return executeQuery(em -> {
+            List<Object[]> rows = em.createQuery(
+                    "SELECT i.productId, SUM(i.quantity) FROM OrderItemEntity i WHERE i.productId IN :productIds GROUP BY i.productId",
+                    Object[].class)
+                    .setParameter("productIds", productIds)
+                    .getResultList();
+
+            java.util.Map<String, Integer> map = new java.util.HashMap<>();
+            for (Object[] row : rows) {
+                String pid = (String) row[0];
+                Number sumQty = (Number) row[1];
+                map.put(pid, sumQty != null ? sumQty.intValue() : 0);
+            }
+            return map;
+        });
+    }
 }

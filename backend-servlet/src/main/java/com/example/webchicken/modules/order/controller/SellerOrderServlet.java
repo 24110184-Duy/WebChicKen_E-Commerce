@@ -78,22 +78,23 @@ public class SellerOrderServlet extends BaseApiServlet {
 
             // GET /api/v1/seller/orders/{shopId}
             String statusParam = getStringParam(req, "status", null);
-            OrderStatus status = null;
+            List<OrderStatus> statuses = null;
             boolean filterUnpaid = false;
 
             if (statusParam != null && !statusParam.isBlank() && !"ALL".equalsIgnoreCase(statusParam)) {
                 String normalized = statusParam.trim().toUpperCase();
                 switch (normalized) {
-                    case "COMPLETED", "DELIVERED" -> status = OrderStatus.DELIVERED;
-                    case "TO_SHIP", "CONFIRMED" -> status = OrderStatus.CONFIRMED;
-                    case "SHIPPING" -> status = OrderStatus.SHIPPING;
-                    case "PENDING" -> status = OrderStatus.PENDING;
-                    case "CANCELLATION", "CANCELLED" -> status = OrderStatus.CANCELLED;
-                    case "RETURN_REFUND", "RETURNED" -> status = OrderStatus.RETURNED;
+                    case "COMPLETED", "DELIVERED" -> statuses = List.of(OrderStatus.DELIVERED);
+                    case "TO_SHIP" -> statuses = List.of(OrderStatus.CONFIRMED, OrderStatus.PENDING);
+                    case "CONFIRMED" -> statuses = List.of(OrderStatus.CONFIRMED);
+                    case "PENDING" -> statuses = List.of(OrderStatus.PENDING);
+                    case "SHIPPING" -> statuses = List.of(OrderStatus.SHIPPING);
+                    case "CANCELLATION", "CANCELLED" -> statuses = List.of(OrderStatus.CANCELLED);
+                    case "RETURN_REFUND", "RETURNED" -> statuses = List.of(OrderStatus.RETURNED);
                     case "UNPAID" -> filterUnpaid = true;
                     default -> {
                         try {
-                            status = OrderStatus.valueOf(normalized);
+                            statuses = List.of(OrderStatus.valueOf(normalized));
                         } catch (IllegalArgumentException ignored) {}
                     }
                 }
@@ -103,7 +104,7 @@ public class SellerOrderServlet extends BaseApiServlet {
             int size = getIntParam(req, "size", 50);
             String q = getStringParam(req, "q", null);
 
-            List<OrderResponse> orders = orderService().getStoreOrders(path.shopId(), status, page, size);
+            List<OrderResponse> orders = orderService().getStoreOrdersInStatuses(path.shopId(), statuses, page, size);
 
             if (filterUnpaid) {
                 orders = orders.stream()
@@ -122,10 +123,10 @@ public class SellerOrderServlet extends BaseApiServlet {
                         .toList();
             }
 
-            long totalCount = filterUnpaid ? orders.size() : orderService().countStoreOrders(path.shopId(), status);
+            long totalCount = filterUnpaid ? orders.size() : orderService().countStoreOrdersInStatuses(path.shopId(), statuses);
 
             // Tab badge breakdown counts
-            long allCount = orderService().countStoreOrders(path.shopId(), null);
+            long allCount = orderService().countStoreOrders(path.shopId(), (OrderStatus) null);
             long pendingCount = orderService().countStoreOrders(path.shopId(), OrderStatus.PENDING);
             long confirmedCount = orderService().countStoreOrders(path.shopId(), OrderStatus.CONFIRMED);
             long shippingCount = orderService().countStoreOrders(path.shopId(), OrderStatus.SHIPPING);

@@ -157,10 +157,12 @@ export const ProductDetailPage: React.FC = () => {
             <h1 className="pdp-title">{product.name}</h1>
 
             <div className="pdp-ratings-row">
-              <span className="pdp-rating-score">★ {product.rating}</span>
-              <span>{product.ratingCount} Reviews</span>
+              <span className="pdp-rating-score">
+                ★ {product.ratingCount && product.ratingCount > 0 ? Number(product.rating || 5.0).toFixed(1) : '5.0'}
+              </span>
+              <span>{product.ratingCount && product.ratingCount > 0 ? `${product.ratingCount} Đánh giá` : 'Chưa có đánh giá'}</span>
               <span>•</span>
-              <span>{product.soldCount} Sold</span>
+              <span>{product.soldCount && product.soldCount > 0 ? `${product.soldCount} Đã bán` : '0 Đã bán'}</span>
               <span>•</span>
               <span style={{ color: '#059669', fontWeight: 700 }}>In Stock ({selectedVariant?.stockQuantity || product.totalStock})</span>
             </div>

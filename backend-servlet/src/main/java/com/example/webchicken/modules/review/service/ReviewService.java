@@ -44,6 +44,11 @@ public interface ReviewService {
     ReviewSummaryResponse getProductReviewSummary(String productId);
 
     /**
+     * Thống kê điểm trung bình theo lô (batch) cho nhiều sản phẩm.
+     */
+    java.util.Map<String, ReviewSummaryResponse> getProductReviewSummaries(List<String> productIds);
+
+    /**
      * Lấy danh sách đánh giá của chính người mua đang đăng nhập.
      */
     List<ReviewResponse> getMyReviews(String userId, int page, int size);

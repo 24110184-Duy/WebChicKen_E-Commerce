@@ -505,8 +505,30 @@ public class OrderServiceImpl implements OrderService {
         int offset = (pageNumber - 1) * pageSize;
 
         List<OrderEntity> orders = orderDAO.findByStoreId(storeId, status, offset, pageSize);
-        List<OrderResponse> result = new ArrayList<>();
+        return mapToOrderResponses(storeId, orders);
+    }
 
+    @Override
+    public List<OrderResponse> getStoreOrdersInStatuses(String storeId, List<OrderStatus> statuses, int page, int size) {
+        if (storeId == null || storeId.isBlank()) {
+            throw new ValidationException("Store ID is required");
+        }
+        if (statuses == null || statuses.isEmpty()) {
+            return getStoreOrders(storeId, (OrderStatus) null, page, size);
+        }
+        if (statuses.size() == 1) {
+            return getStoreOrders(storeId, statuses.get(0), page, size);
+        }
+        int pageNumber = Math.max(1, page);
+        int pageSize = Math.min(100, Math.max(1, size));
+        int offset = (pageNumber - 1) * pageSize;
+
+        List<OrderEntity> orders = orderDAO.findByStoreIdInStatuses(storeId, statuses, offset, pageSize);
+        return mapToOrderResponses(storeId, orders);
+    }
+
+    private List<OrderResponse> mapToOrderResponses(String storeId, List<OrderEntity> orders) {
+        List<OrderResponse> result = new ArrayList<>();
         String storeName = "My Store";
         Optional<StoreEntity> storeOpt = storeDAO.findById(storeId);
         if (storeOpt.isPresent()) {
@@ -530,6 +552,20 @@ public class OrderServiceImpl implements OrderService {
             return 0;
         }
         return orderDAO.countByStoreId(storeId, status);
+    }
+
+    @Override
+    public long countStoreOrdersInStatuses(String storeId, List<OrderStatus> statuses) {
+        if (storeId == null || storeId.isBlank()) {
+            return 0;
+        }
+        if (statuses == null || statuses.isEmpty()) {
+            return countStoreOrders(storeId, (OrderStatus) null);
+        }
+        if (statuses.size() == 1) {
+            return countStoreOrders(storeId, statuses.get(0));
+        }
+        return orderDAO.countByStoreIdInStatuses(storeId, statuses);
     }
 
     @Override
@@ -602,7 +638,7 @@ public class OrderServiceImpl implements OrderService {
             storeName = storeOpt.get().getStoreName();
         }
 
-        List<OrderEntity> orders = orderDAO.findByStoreId(storeId, null, 0, 500);
+        List<OrderEntity> orders = orderDAO.findByStoreId(storeId, (OrderStatus) null, 0, 500);
 
         int totalOrders = orders.size();
         int pendingOrders = 0;
@@ -776,6 +812,14 @@ public class OrderServiceImpl implements OrderService {
                 dailyPoints,
                 topProducts,
                 recentOrders);
+    }
+
+    @Override
+    public java.util.Map<String, Integer> getProductSoldCounts(List<String> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return orderItemDAO.getSoldCounts(productIds);
     }
 
     private static class DailyAccumulator {

@@ -15,9 +15,17 @@ import {
   User,
   Save,
   Check,
+  Printer,
 } from 'lucide-react'
 import { SellerLayout } from '../../layouts/SellerLayout'
-import { sellerApi, type SellerOrder } from '../../features/seller/api/sellerApi'
+import {
+  sellerApi,
+  type SellerOrder,
+  type FulfillOrderPayload,
+  type SellerOrderStatusCounts,
+} from '../../features/seller/api/sellerApi'
+import { FulfillmentModal } from '../../features/seller/components/FulfillmentModal'
+import { SellerOrderDetailModal } from '../../features/seller/components/SellerOrderDetailModal'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { toast } from '../../components/feedback/Toast'
 import { useAuthStore } from '../../app/store/authStore'
@@ -43,8 +51,34 @@ export const SellerShipmentPage: React.FC = () => {
   const [searchType, setSearchType] = useState<'ORDER_ID' | 'TRACKING_NO' | 'BUYER_NAME'>('ORDER_ID')
   const [searchTypeOpen, setSearchTypeOpen] = useState<boolean>(false)
 
-  // Date range state
-  const [dateRangeLabel, setDateRangeLabel] = useState<string>('2026/09/10 — 2026/10/10')
+  // Date range state (tính động theo ngày hiện tại)
+  const dateOptions = useMemo(() => {
+    const now = new Date()
+    const fmt = (d: Date) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}/${m}/${day}`
+    }
+    const todayStr = fmt(now)
+    const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const dAll = new Date(now.getFullYear(), 0, 1)
+
+    return [
+      { label: 'Hôm nay (Today)', val: `${todayStr} — ${todayStr}` },
+      { label: '7 ngày qua (Last 7 days)', val: `${fmt(d7)} — ${todayStr}` },
+      { label: '30 ngày qua (Last 30 days)', val: `${fmt(d30)} — ${todayStr}` },
+      { label: 'Toàn bộ thời gian (All)', val: `${fmt(dAll)} — ${todayStr}` },
+    ]
+  }, [])
+
+  const [dateRangeLabel, setDateRangeLabel] = useState<string>(() => {
+    const now = new Date()
+    const fmt = (d: Date) => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
+    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    return `${fmt(d30)} — ${fmt(now)}`
+  })
   const [datePickerOpen, setDatePickerOpen] = useState<boolean>(false)
 
   // Sort state
@@ -54,6 +88,25 @@ export const SellerShipmentPage: React.FC = () => {
   // Modal Mass Upload IMEI/SN
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false)
   const [uploadFileName, setUploadFileName] = useState<string>('')
+
+  // Modal fulfillment & details
+  const [orderToFulfill, setOrderToFulfill] = useState<SellerOrder | null>(null)
+  const [isFulfillmentModalOpen, setIsFulfillmentModalOpen] = useState<boolean>(false)
+  const [selectedDetailOrder, setSelectedDetailOrder] = useState<SellerOrder | null>(null)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
+  const [isMassShipping, setIsMassShipping] = useState<boolean>(false)
+
+  // Tab status counts từ backend CSDL
+  const [statusCounts, setStatusCounts] = useState<SellerOrderStatusCounts>({
+    all: 0,
+    pending: 0,
+    confirmed: 0,
+    shipping: 0,
+    delivered: 0,
+    cancelled: 0,
+    unpaid: 0,
+    returned: 0,
+  })
 
   // Selected orders for mass operations
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([])
@@ -122,13 +175,13 @@ export const SellerShipmentPage: React.FC = () => {
   }, [user?.id])
 
   const MAIN_TABS = [
-    { id: 'ALL', label: 'All' },
-    { id: 'UNPAID', label: 'Unpaid' },
-    { id: 'TO_SHIP', label: 'To ship' },
-    { id: 'SHIPPING', label: 'Shipping' },
-    { id: 'COMPLETED', label: 'Completed' },
-    { id: 'CANCELLATION', label: 'Cancellation' },
-    { id: 'RETURN_REFUND', label: 'Return/Refund' },
+    { id: 'ALL', label: 'All', count: statusCounts.all },
+    { id: 'UNPAID', label: 'Unpaid', count: statusCounts.unpaid || 0 },
+    { id: 'TO_SHIP', label: 'To ship', count: (statusCounts.confirmed || 0) + (statusCounts.pending || 0) },
+    { id: 'SHIPPING', label: 'Shipping', count: statusCounts.shipping || 0 },
+    { id: 'COMPLETED', label: 'Completed', count: statusCounts.delivered || 0 },
+    { id: 'CANCELLATION', label: 'Cancellation', count: statusCounts.cancelled || 0 },
+    { id: 'RETURN_REFUND', label: 'Return/Refund', count: statusCounts.returned || 0 },
   ]
 
   const loadShipmentOrders = async () => {
@@ -152,14 +205,18 @@ export const SellerShipmentPage: React.FC = () => {
             } catch {}
           }
         }
+        if (!currentShopId) {
+          currentShopId = 's0000000-0000-0000-0000-000000000001'
+          setShopId(currentShopId)
+        }
       }
 
       if (currentShopId) {
         let statusParam = 'ALL'
         if (isMassShipView) {
-          statusParam = 'CONFIRMED'
+          statusParam = 'TO_SHIP'
         } else if (activeMainTab === 'TO_SHIP') {
-          statusParam = 'CONFIRMED'
+          statusParam = 'TO_SHIP'
         } else if (activeMainTab === 'CANCELLATION') {
           statusParam = 'CANCELLED'
         } else if (activeMainTab === 'RETURN_REFUND') {
@@ -173,6 +230,9 @@ export const SellerShipmentPage: React.FC = () => {
           q: searchOrderId.trim(),
         })
         setOrders(res.items || [])
+        if (res.counts) {
+          setStatusCounts(res.counts)
+        }
       } else {
         setOrders([])
       }
@@ -210,7 +270,7 @@ export const SellerShipmentPage: React.FC = () => {
 
     // Lọc theo sub-tab
     if (activeSubTab === 'TO_PROCESS') {
-      list = list.filter((o) => !o.carrier || o.status === 'CONFIRMED')
+      list = list.filter((o) => !o.carrier || o.status === 'CONFIRMED' || o.status === 'PENDING')
     } else if (activeSubTab === 'PROCESSED') {
       list = list.filter((o) => o.status === 'SHIPPING' || o.status === 'DELIVERED')
     }
@@ -274,22 +334,307 @@ export const SellerShipmentPage: React.FC = () => {
     }
   }
 
+  // Mở modal chi tiết đơn hàng
+  const handleOpenDetail = (order: SellerOrder) => {
+    setSelectedDetailOrder(order)
+    setIsDetailModalOpen(true)
+  }
+
+  // Mở modal chuẩn bị & bàn giao hàng
+  const handleOpenFulfillment = (order: SellerOrder) => {
+    setOrderToFulfill(order)
+    setIsFulfillmentModalOpen(true)
+  }
+
+  // Người bán xác nhận tiếp nhận đơn hàng (PENDING -> CONFIRMED)
+  const handleConfirmOrder = async (order: SellerOrder) => {
+    const currentShop = order.storeId || shopId
+    if (!currentShop) return
+    try {
+      await sellerApi.updateStoreOrderStatus(currentShop, order.orderCode, {
+        status: 'CONFIRMED',
+        reason: 'Người bán xác nhận tiếp nhận đơn hàng',
+      })
+      toast.success(`Đã xác nhận đơn hàng ${order.orderCode} thành công!`)
+      loadShipmentOrders()
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể xác nhận đơn hàng')
+    }
+  }
+
+  // Người bán xác nhận giao thành công (SHIPPING -> DELIVERED)
+  const handleMarkDelivered = async (order: SellerOrder) => {
+    const currentShop = order.storeId || shopId
+    if (!currentShop) return
+    try {
+      await sellerApi.updateStoreOrderStatus(currentShop, order.orderCode, {
+        status: 'DELIVERED',
+        reason: 'Người bán xác nhận bưu tá đã giao hàng thành công',
+      })
+      toast.success(`Đã cập nhật trạng thái đơn ${order.orderCode} thành GIAO THÀNH CÔNG!`)
+      loadShipmentOrders()
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể cập nhật trạng thái đơn hàng')
+    }
+  }
+
+  // Hủy đơn hàng
+  const handleCancelOrder = async (order: SellerOrder) => {
+    const currentShop = order.storeId || shopId
+    if (!currentShop) return
+    try {
+      await sellerApi.updateStoreOrderStatus(currentShop, order.orderCode, {
+        status: 'CANCELLED',
+        reason: 'Người bán hủy đơn hàng do hết hàng',
+      })
+      toast.success(`Đã hủy đơn hàng ${order.orderCode}`)
+      loadShipmentOrders()
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể hủy đơn hàng')
+    }
+  }
+
+  // Xử lý gửi hàng từ FulfillmentModal
+  const handleFulfillmentSubmit = async (payload: FulfillOrderPayload) => {
+    if (!orderToFulfill) return
+    const currentShop = orderToFulfill.storeId || shopId
+    if (!currentShop) {
+      toast.error('Không tìm thấy thông tin gian hàng.')
+      return
+    }
+    await sellerApi.updateStoreOrderStatus(currentShop, orderToFulfill.orderCode, payload)
+    toast.success(`Đã bàn giao đơn hàng ${orderToFulfill.orderCode} cho ${payload.carrier || 'hãng vận chuyển'}!`)
+    setIsFulfillmentModalOpen(false)
+    setOrderToFulfill(null)
+    loadShipmentOrders()
+  }
+
+  // In phiếu gửi hàng / Vận đơn AWB chuyên nghiệp
+  const openPrintShippingLabels = (ordersToPrint: SellerOrder[]) => {
+    if (ordersToPrint.length === 0) {
+      toast.info('Không có đơn hàng nào để in phiếu gửi.')
+      return
+    }
+    const printWindow = window.open('', '_blank', 'width=850,height=900')
+    if (!printWindow) {
+      toast.error('Trình duyệt đã chặn mở tab in ấn. Vui lòng cấp quyền pop-up cho website.')
+      return
+    }
+
+    const senderInfo = pickupAddress
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Phiếu gửi hàng - ChickyMart Logistics</title>
+          <style>
+            @page { size: A5 landscape; margin: 10mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; color: #1e293b; background: #fff; }
+            .label-page { page-break-after: always; border: 2px dashed #94a3b8; border-radius: 8px; padding: 20px; margin-bottom: 24px; max-width: 720px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px; }
+            .logo { font-size: 20px; font-weight: 800; color: #ca8a04; }
+            .carrier-badge { background: #fef08a; color: #854d0e; padding: 4px 12px; border-radius: 4px; font-weight: 700; font-size: 13px; }
+            .barcode { font-family: monospace; font-size: 20px; font-weight: 900; letter-spacing: 3px; text-align: center; margin: 10px 0; background: #f8fafc; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; }
+            .address-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+            .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 12px; }
+            .box-title { font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; font-size: 11px; }
+            .name { font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 2px; }
+            .items-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+            .items-table th, .items-table td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+            .items-table th { background: #f1f5f9; font-weight: 600; }
+            .footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 12px; }
+            .cod { font-size: 15px; font-weight: 800; color: #b91c1c; }
+          </style>
+        </head>
+        <body>
+          ${ordersToPrint
+            .map(
+              (o) => `
+            <div class="label-page">
+              <div class="header">
+                <div class="logo">CHICKYMART LOGISTICS</div>
+                <div class="carrier-badge">${o.carrier || 'Chicky Express Cold-Chain'}</div>
+              </div>
+              <div class="barcode">
+                *${o.orderCode}*
+                <div style="font-size: 11px; font-weight: normal; letter-spacing: normal; margin-top: 4px; color: #64748b;">
+                  Mã vận đơn: ${o.trackingNumber || 'CK-EXP-' + o.orderCode.replace(/[^0-9]/g, '').slice(-6)}
+                </div>
+              </div>
+              <div class="address-grid">
+                <div class="box">
+                  <div class="box-title">NGƯỜI GỬI (SENDER)</div>
+                  <div class="name">${senderInfo.senderName}</div>
+                  <div>SĐT: ${senderInfo.phone}</div>
+                  <div>Địa chỉ: ${senderInfo.address}</div>
+                </div>
+                <div class="box">
+                  <div class="box-title">NGƯỜI NHẬN (CONSIGNEE)</div>
+                  <div class="name">${o.recipientName || 'Khách hàng'}</div>
+                  <div>SĐT: ${o.recipientPhone || '—'}</div>
+                  <div>Địa chỉ: ${o.shippingAddress || '—'}</div>
+                </div>
+              </div>
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Sản phẩm</th>
+                    <th style="width: 50px; text-align: center;">SL</th>
+                    <th style="width: 110px; text-align: right;">Đơn giá</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(o.items || [])
+                    .map(
+                      (it) => `
+                    <tr>
+                      <td>${it.productName}</td>
+                      <td style="text-align: center;">${it.quantity}</td>
+                      <td style="text-align: right;">${new Intl.NumberFormat('vi-VN').format(it.unitPriceMinor || 0)} đ</td>
+                    </tr>
+                  `
+                    )
+                    .join('')}
+                </tbody>
+              </table>
+              <div class="footer">
+                <div>
+                  <strong>Tiền thu hộ COD: </strong>
+                  <span class="cod">${o.paymentMethod === 'COD' && o.paymentStatus !== 'PAID' ? new Intl.NumberFormat('vi-VN').format(o.totalAmountMinor) + ' đ' : '0 đ (Đã thanh toán)'}</span>
+                </div>
+                <div style="text-align: right; color: #64748b;">
+                  Ngày in: ${new Date().toLocaleString('vi-VN')}
+                </div>
+              </div>
+            </div>
+          `
+            )
+            .join('')}
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+  }
+
   // Thao tác Mass Ship
-  const handleMassShipAction = (actionType: 'GENERATE_CODE' | 'PRINT_LABELS' | 'CONFIRM_HANDOVER') => {
-    const count = selectedOrderIds.length > 0 ? selectedOrderIds.length : filteredOrders.length
-    if (count === 0) {
+  const handleMassShipAction = async (actionType: 'GENERATE_CODE' | 'PRINT_LABELS' | 'CONFIRM_HANDOVER') => {
+    const targetOrders = selectedOrderIds.length > 0
+      ? filteredOrders.filter(o => selectedOrderIds.includes(o.id))
+      : filteredOrders
+
+    if (targetOrders.length === 0) {
       toast.info('Không có đơn hàng nào được chọn.')
       return
     }
+
     if (actionType === 'GENERATE_CODE') {
-      toast.success(`Đã tạo mã vận đơn hàng loạt cho ${count} đơn hàng!`)
+      toast.success(`Đã khởi tạo mã vận đơn cho ${targetOrders.length} đơn hàng đã chọn!`)
     } else if (actionType === 'PRINT_LABELS') {
-      toast.success(`Đang mở phiếu gửi hàng PDF cho ${count} đơn hàng...`)
+      openPrintShippingLabels(targetOrders)
     } else {
-      toast.success(`Đã xác nhận bàn giao ${count} đơn hàng cho bên vận chuyển!`)
-      setSelectedOrderIds([])
-      loadShipmentOrders()
+      // CONFIRM_HANDOVER: Giao hàng loạt thực sự với backend
+      const eligibleOrders = targetOrders.filter(o => o.status === 'CONFIRMED' || o.status === 'PENDING')
+      if (eligibleOrders.length === 0) {
+        toast.info('Tất cả các đơn đã chọn không ở trạng thái Chờ xử lý (CONFIRMED/PENDING).')
+        return
+      }
+
+      setIsMassShipping(true)
+      try {
+        const results = await Promise.allSettled(
+          eligibleOrders.map(o => {
+            const carrier = o.carrier || 'Chicky Express Cold-Chain'
+            const trackingNumber = 'CK-EXP-' + Math.floor(100000 + Math.random() * 900000)
+            return sellerApi.updateStoreOrderStatus(o.storeId || shopId, o.orderCode, {
+              status: 'SHIPPING',
+              carrier,
+              trackingNumber,
+              reason: `Bàn giao bưu tá hàng loạt qua ${carrier}`,
+            })
+          })
+        )
+        const successCount = results.filter(r => r.status === 'fulfilled').length
+        toast.success(`Đã bàn giao thành công ${successCount}/${eligibleOrders.length} đơn hàng sang bên vận chuyển!`)
+        setSelectedOrderIds([])
+        await loadShipmentOrders()
+      } catch (err: any) {
+        toast.error(err.message || 'Lỗi khi xử lý bàn giao hàng loạt.')
+      } finally {
+        setIsMassShipping(false)
+      }
     }
+  }
+
+  // Tiến độ giao hàng & đếm ngược hạn gửi hàng SLA
+  const renderCountdown = (order: SellerOrder) => {
+    if (order.status === 'DELIVERED') {
+      return (
+        <div>
+          <span style={{ color: '#16a34a', fontWeight: 600 }}>Giao thành công</span>
+          <div style={{ fontSize: 11, color: '#8c8c8c' }}>Hoàn tất đơn hàng</div>
+        </div>
+      )
+    }
+    if (order.status === 'CANCELLED') {
+      return (
+        <div>
+          <span style={{ color: '#dc2626', fontWeight: 600 }}>Đã hủy đơn</span>
+          <div style={{ fontSize: 11, color: '#8c8c8c' }}>Không giao</div>
+        </div>
+      )
+    }
+    if (order.status === 'RETURNED') {
+      return (
+        <div>
+          <span style={{ color: '#9333ea', fontWeight: 600 }}>Trả hàng/Hoàn tiền</span>
+          <div style={{ fontSize: 11, color: '#8c8c8c' }}>Khiếu nại</div>
+        </div>
+      )
+    }
+    if (order.status === 'SHIPPING') {
+      return (
+        <div>
+          <span style={{ color: '#2563eb', fontWeight: 600 }}>Đang vận chuyển</span>
+          <div style={{ fontSize: 11, color: '#64748b' }}>
+            {order.trackingNumber ? `Mã: ${order.trackingNumber}` : 'Bưu tá đang giao'}
+          </div>
+        </div>
+      )
+    }
+    if (order.status === 'CONFIRMED' || order.status === 'PENDING') {
+      const orderTime = new Date(order.orderDate || Date.now()).getTime()
+      const deadline = orderTime + 2 * 24 * 60 * 60 * 1000 // Hạn 48 giờ SLA
+      const remainingMs = deadline - Date.now()
+      const remainingHours = Math.round(remainingMs / (1000 * 60 * 60))
+
+      if (remainingHours > 24) {
+        return (
+          <span style={{ color: '#d97706', fontWeight: 600 }}>
+            Còn {Math.ceil(remainingHours / 24)} ngày
+          </span>
+        )
+      } else if (remainingHours > 0) {
+        return (
+          <span style={{ color: '#ea580c', fontWeight: 600 }}>
+            Còn {remainingHours} giờ
+          </span>
+        )
+      } else {
+        return (
+          <span style={{ color: '#dc2626', fontWeight: 700 }}>
+            Quá hạn gửi hàng
+          </span>
+        )
+      }
+    }
+    return <span style={{ color: '#64748b' }}>—</span>
   }
 
   // Lưu cài đặt vận chuyển
@@ -596,23 +941,24 @@ export const SellerShipmentPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  disabled={isMassShipping}
                   onClick={() => handleMassShipAction('CONFIRM_HANDOVER')}
                   style={{
-                    backgroundColor: '#facc15',
+                    backgroundColor: isMassShipping ? '#fef08a' : '#facc15',
                     border: 'none',
                     color: '#0f172a',
                     padding: '7px 20px',
                     borderRadius: 4,
                     fontSize: 12,
                     fontWeight: 700,
-                    cursor: 'pointer',
+                    cursor: isMassShipping ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
                   }}
                 >
                   <Check style={{ width: 14, height: 14 }} />
-                  <span>Xác nhận giao bưu tá</span>
+                  <span>{isMassShipping ? 'Đang bàn giao bưu tá...' : 'Xác nhận giao bưu tá'}</span>
                 </button>
               </div>
             </div>
@@ -689,7 +1035,11 @@ export const SellerShipmentPage: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>
+                          <div
+                            style={{ fontSize: 12, color: '#ca8a04', marginBottom: 4, cursor: 'pointer', fontWeight: 600 }}
+                            onClick={() => handleOpenDetail(order)}
+                            title="Bấm để xem chi tiết đơn hàng"
+                          >
                             Mã đơn: <strong>{order.orderCode}</strong>
                           </div>
                           {order.items?.map((item) => (
@@ -716,11 +1066,11 @@ export const SellerShipmentPage: React.FC = () => {
                             {order.status}
                           </span>
                         </div>
-                        <div style={{ color: '#595959' }}>{order.carrier || 'Chicky Express'}</div>
+                        <div style={{ color: '#595959' }}>{order.carrier || 'Chicky Express Cold-Chain'}</div>
                         <div style={{ textAlign: 'right' }}>
                           <button
                             type="button"
-                            onClick={() => toast.success(`Đã chuẩn bị phiếu giao cho đơn ${order.orderCode}`)}
+                            onClick={() => handleOpenFulfillment(order)}
                             style={{
                               backgroundColor: '#facc15',
                               border: 'none',
@@ -777,9 +1127,26 @@ export const SellerShipmentPage: React.FC = () => {
                       position: 'relative',
                       whiteSpace: 'nowrap',
                       transition: 'color 0.15s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
                     }}
                   >
                     <span>{tab.label}</span>
+                    {typeof tab.count === 'number' && (
+                      <span
+                        style={{
+                          marginLeft: 6,
+                          padding: '1px 7px',
+                          borderRadius: 10,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          backgroundColor: isActive ? '#fef08a' : '#f1f5f9',
+                          color: isActive ? '#854d0e' : '#64748b',
+                        }}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
                     {isActive && (
                       <div
                         style={{
@@ -852,12 +1219,7 @@ export const SellerShipmentPage: React.FC = () => {
                           zIndex: 50,
                         }}
                       >
-                        {[
-                          { label: 'Hôm nay (Today)', val: '2026/10/10 — 2026/10/10' },
-                          { label: '7 ngày qua (Last 7 days)', val: '2026/10/03 — 2026/10/10' },
-                          { label: '30 ngày qua (Last 30 days)', val: '2026/09/10 — 2026/10/10' },
-                          { label: 'Toàn bộ thời gian (All)', val: '2026/01/01 — 2026/10/10' },
-                        ].map((item) => (
+                        {dateOptions.map((item) => (
                           <div
                             key={item.val}
                             onClick={() => {
@@ -1202,15 +1564,16 @@ export const SellerShipmentPage: React.FC = () => {
               style={{
                 backgroundColor: '#ffffff',
                 border: '1px solid #e8e8e8',
-                borderRadius: 4,
-                overflow: 'hidden',
+                borderRadius: 6,
+                overflowX: 'auto',
               }}
             >
               {/* Table Header */}
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '3fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr',
+                  gridTemplateColumns: 'minmax(260px, 3fr) minmax(110px, 1.2fr) minmax(90px, 1fr) minmax(130px, 1.4fr) minmax(160px, 1.6fr) minmax(220px, 2.2fr)',
+                  minWidth: 1000,
                   backgroundColor: '#fafafa',
                   padding: '12px 18px',
                   borderBottom: '1px solid #e8e8e8',
@@ -1260,7 +1623,8 @@ export const SellerShipmentPage: React.FC = () => {
                       key={order.id}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '3fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr',
+                        gridTemplateColumns: 'minmax(260px, 3fr) minmax(110px, 1.2fr) minmax(90px, 1fr) minmax(130px, 1.4fr) minmax(160px, 1.6fr) minmax(220px, 2.2fr)',
+                        minWidth: 1000,
                         padding: '16px 18px',
                         borderBottom: '1px solid #f0f0f0',
                         alignItems: 'center',
@@ -1269,7 +1633,11 @@ export const SellerShipmentPage: React.FC = () => {
                     >
                       {/* Products */}
                       <div>
-                        <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>
+                        <div
+                          style={{ fontSize: 12, color: '#ca8a04', marginBottom: 4, cursor: 'pointer', fontWeight: 600 }}
+                          onClick={() => handleOpenDetail(order)}
+                          title="Bấm để xem chi tiết đơn hàng"
+                        >
                           Mã đơn: <strong>{order.orderCode}</strong>
                         </div>
                         {order.items?.map((item) => (
@@ -1298,8 +1666,26 @@ export const SellerShipmentPage: React.FC = () => {
                       <div>
                         <span
                           style={{
-                            backgroundColor: '#fef9c3',
-                            color: '#854d0e',
+                            backgroundColor:
+                              order.status === 'DELIVERED'
+                                ? '#ecfdf5'
+                                : order.status === 'SHIPPING'
+                                ? '#eff6ff'
+                                : order.status === 'CONFIRMED'
+                                ? '#fefce8'
+                                : order.status === 'CANCELLED'
+                                ? '#fef2f2'
+                                : '#fef9c3',
+                            color:
+                              order.status === 'DELIVERED'
+                                ? '#047857'
+                                : order.status === 'SHIPPING'
+                                ? '#1d4ed8'
+                                : order.status === 'CONFIRMED'
+                                ? '#a16207'
+                                : order.status === 'CANCELLED'
+                                ? '#b91c1c'
+                                : '#854d0e',
                             padding: '3px 8px',
                             borderRadius: 4,
                             fontSize: 11,
@@ -1311,29 +1697,199 @@ export const SellerShipmentPage: React.FC = () => {
                       </div>
 
                       {/* Countdown */}
-                      <div style={{ color: '#595959', fontSize: 12 }}>2 days 14 hours</div>
+                      <div>{renderCountdown(order)}</div>
 
                       {/* Channels */}
-                      <div style={{ color: '#595959' }}>{order.carrier || 'Chicky Express'}</div>
+                      <div>
+                        <div style={{ color: '#1e293b', fontWeight: 600, fontSize: 13 }}>
+                          {order.carrier || 'Chicky Express Cold-Chain'}
+                        </div>
+                        {order.trackingNumber && (
+                          <div style={{ color: '#64748b', fontSize: 11, marginTop: 2, fontFamily: 'monospace' }}>
+                            Mã: {order.trackingNumber}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Actions */}
                       <div style={{ textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          style={{
-                            backgroundColor: '#facc15',
-                            border: 'none',
-                            color: '#0f172a',
-                            padding: '6px 14px',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => toast.success(`Đã in phiếu giao hàng cho đơn ${order.orderCode}`)}
-                        >
-                          Giao hàng
-                        </button>
+                        {order.status === 'CONFIRMED' && (
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'nowrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => openPrintShippingLabels([order])}
+                              title="In phiếu gửi hàng (AWB)"
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #d9d9d9',
+                                color: '#595959',
+                                padding: '0 10px',
+                                height: 32,
+                                borderRadius: 4,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Printer style={{ width: 14, height: 14 }} />
+                            </button>
+                            <button
+                              type="button"
+                              style={{
+                                backgroundColor: '#facc15',
+                                border: 'none',
+                                color: '#0f172a',
+                                padding: '0 14px',
+                                height: 32,
+                                borderRadius: 4,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 4,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                              onClick={() => handleOpenFulfillment(order)}
+                            >
+                              <Truck style={{ width: 14, height: 14 }} />
+                              <span>Giao hàng</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {order.status === 'PENDING' && (
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'nowrap' }}>
+                            <button
+                              type="button"
+                              style={{
+                                backgroundColor: '#facc15',
+                                border: 'none',
+                                color: '#0f172a',
+                                padding: '0 14px',
+                                height: 32,
+                                borderRadius: 4,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                              onClick={() => handleConfirmOrder(order)}
+                            >
+                              Xác nhận đơn
+                            </button>
+                          </div>
+                        )}
+
+                        {order.status === 'SHIPPING' && (
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'nowrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => openPrintShippingLabels([order])}
+                              title="In lại phiếu gửi (AWB)"
+                              style={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #d9d9d9',
+                                color: '#595959',
+                                padding: '0 10px',
+                                height: 32,
+                                borderRadius: 4,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Printer style={{ width: 14, height: 14 }} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMarkDelivered(order)}
+                              title="Xác nhận khách đã nhận hàng"
+                              style={{
+                                backgroundColor: '#10b981',
+                                border: 'none',
+                                color: '#ffffff',
+                                padding: '0 12px',
+                                height: 32,
+                                borderRadius: 4,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 4,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Check style={{ width: 14, height: 14 }} />
+                              <span>Đã giao</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDetail(order)}
+                              title="Xem chi tiết và lịch sử vận chuyển"
+                              style={{
+                                backgroundColor: '#eff6ff',
+                                border: '1px solid #bfdbfe',
+                                color: '#1d4ed8',
+                                padding: '0 12px',
+                                height: 32,
+                                borderRadius: 4,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Chi tiết
+                            </button>
+                          </div>
+                        )}
+
+                        {(order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'RETURNED') && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(order)}
+                            style={{
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #cbd5e1',
+                              color: '#475569',
+                              padding: '0 14px',
+                              height: 32,
+                              borderRadius: 4,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                            }}
+                          >
+                            Chi tiết
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1494,6 +2050,51 @@ export const SellerShipmentPage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* MODAL: ORDER DETAILS & AUDIT HISTORY                      */}
+        {/* ========================================================= */}
+        {isDetailModalOpen && selectedDetailOrder && (
+          <SellerOrderDetailModal
+            order={selectedDetailOrder}
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false)
+              setSelectedDetailOrder(null)
+            }}
+            onConfirmOrder={async (order) => {
+              await handleConfirmOrder(order)
+              setIsDetailModalOpen(false)
+            }}
+            onOpenFulfillment={(order) => {
+              setIsDetailModalOpen(false)
+              handleOpenFulfillment(order)
+            }}
+            onMarkDelivered={async (order) => {
+              await handleMarkDelivered(order)
+              setIsDetailModalOpen(false)
+            }}
+            onCancelOrder={async (order) => {
+              await handleCancelOrder(order)
+              setIsDetailModalOpen(false)
+            }}
+          />
+        )}
+
+        {/* ========================================================= */}
+        {/* MODAL: FULFILLMENT & CARRIER DISPATCH                     */}
+        {/* ========================================================= */}
+        {isFulfillmentModalOpen && orderToFulfill && (
+          <FulfillmentModal
+            isOpen={isFulfillmentModalOpen}
+            order={orderToFulfill}
+            onClose={() => {
+              setIsFulfillmentModalOpen(false)
+              setOrderToFulfill(null)
+            }}
+            onSubmit={handleFulfillmentSubmit}
+          />
         )}
       </div>
     </SellerLayout>

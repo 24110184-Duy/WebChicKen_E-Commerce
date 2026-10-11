@@ -149,14 +149,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   if (!isOpen) return null
 
-  const handleFiles = (files: FileList | File[]) => {
+  const handleFiles = async (files: FileList | File[]) => {
     setErrorMessage(null)
     const fileArray = Array.from(files)
     if (fileArray.length === 0) return
 
     const remainingSlots = 6 - imageUrls.length
     if (remainingSlots <= 0) {
-      setErrorMessage('Maximum 6 product images allowed. Please remove existing photos first.')
+      setErrorMessage('Tối đa 6 hình ảnh cho mỗi sản phẩm. Vui lòng xóa bớt ảnh cũ trước khi thêm mới.')
       return
     }
 
@@ -168,42 +168,33 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     })
 
     if (validFiles.length < filesToProcess.length) {
-      setErrorMessage('Some files were skipped (only JPG, PNG, WEBP, GIF under 5MB are supported).')
+      setErrorMessage('Một số tệp bị bỏ qua (chỉ hỗ trợ định dạng JPG, PNG, WEBP, GIF dưới 5MB).')
     }
 
     if (validFiles.length === 0) return
 
     setIsUploading(true)
-    let loadedCount = 0
-    const loadedDataUrls: string[] = []
-
-    validFiles.forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (loadEvent) => {
-        const result = loadEvent.target?.result as string
-        if (result) {
-          loadedDataUrls.push(result)
-        }
-        loadedCount++
-        if (loadedCount === validFiles.length) {
-          setImageUrls((prev) => [...prev, ...loadedDataUrls].slice(0, 6))
-          setIsUploading(false)
-        }
-      }
-      reader.onerror = () => {
-        loadedCount++
-        if (loadedCount === validFiles.length) {
-          if (loadedDataUrls.length > 0) {
-            setImageUrls((prev) => [...prev, ...loadedDataUrls].slice(0, 6))
+    try {
+      const uploadedUrls: string[] = []
+      for (const file of validFiles) {
+        try {
+          const fileUrl = await sellerApi.uploadProductImage(file)
+          if (fileUrl) {
+            uploadedUrls.push(fileUrl)
           }
-          setIsUploading(false)
+        } catch (uploadErr: any) {
+          console.error('Lỗi khi tải ảnh lên máy chủ:', uploadErr)
+          setErrorMessage(uploadErr?.message || 'Không thể tải ảnh lên máy chủ. Vui lòng thử lại.')
         }
       }
-      reader.readAsDataURL(file)
-    })
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      if (uploadedUrls.length > 0) {
+        setImageUrls((prev) => [...prev, ...uploadedUrls].slice(0, 6))
+      }
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -325,13 +316,23 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         throw new Error('Không thể xác định gian hàng người bán. Vui lòng thử lại.')
       }
 
+      if (imageUrls.some((url) => url.startsWith('data:'))) {
+        setErrorMessage('Một số hình ảnh chưa tải lên máy chủ hoàn tất. Vui lòng bấm xóa và tải lại ảnh.')
+        return
+      }
+
+      const cleanImageUrls = imageUrls
+        .filter((url) => url && !url.startsWith('data:'))
+        .map((url) => url.trim())
+      const finalImageUrls = cleanImageUrls.length > 0 ? cleanImageUrls : [SAMPLE_PRODUCT_IMAGES[0]]
+
       if (isEditing && initialProduct) {
         const payload: UpdateProductPayload = {
           name: name.trim(),
           categoryId: resolvedCategoryId,
           description: description.trim(),
           status,
-          imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_PRODUCT_IMAGES[0]],
+          imageUrls: finalImageUrls,
           variants,
         }
         const updated = await sellerApi.updateStoreProduct(currentShopId, initialProduct.id, payload)
@@ -344,7 +345,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           categoryId: resolvedCategoryId,
           description: description.trim(),
           status,
-          imageUrls: imageUrls.length > 0 ? imageUrls : [SAMPLE_PRODUCT_IMAGES[0]],
+          imageUrls: finalImageUrls,
           variants,
         }
         const created = await sellerApi.createStoreProduct(currentShopId, payload)

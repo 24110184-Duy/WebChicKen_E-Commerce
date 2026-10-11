@@ -51,10 +51,14 @@ public interface OrderService {
      */
     List<OrderResponse> getStoreOrders(String storeId, OrderStatus status, int page, int size);
 
+    List<OrderResponse> getStoreOrdersInStatuses(String storeId, List<OrderStatus> statuses, int page, int size);
+
     /**
      * Tổng số đơn hàng theo gian hàng của Seller (TASK-59).
      */
     long countStoreOrders(String storeId, OrderStatus status);
+
+    long countStoreOrdersInStatuses(String storeId, List<OrderStatus> statuses);
 
     /**
      * Chi tiết đơn hàng thuộc gian hàng của Seller kèm kiểm tra quyền sở hữu IDOR (TASK-59).
@@ -70,5 +74,11 @@ public interface OrderService {
      * Lấy dữ liệu thống kê tổng hợp hiệu suất bán hàng & doanh thu cho Seller Dashboard (TASK-60).
      */
     com.example.webchicken.modules.order.model.dto.response.SellerDashboardStatsResponse getStoreDashboardStats(String storeId, String period);
+
+    /**
+     * Lấy số lượng đã bán (sold count) theo lô cho các sản phẩm.
+     */
+    java.util.Map<String, Integer> getProductSoldCounts(List<String> productIds);
 }
+
 

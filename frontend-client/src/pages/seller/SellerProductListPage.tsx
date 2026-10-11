@@ -110,6 +110,10 @@ export const SellerProductListPage: React.FC = () => {
             } catch {}
           }
         }
+        if (!currentShopId) {
+          currentShopId = 's0000000-0000-0000-0000-000000000001'
+          setShopId(currentShopId)
+        }
       }
 
       if (currentShopId) {

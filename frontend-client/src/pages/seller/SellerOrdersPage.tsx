@@ -123,6 +123,10 @@ export const SellerOrdersPage: React.FC = () => {
             } catch {}
           }
         }
+        if (!currentShopId) {
+          currentShopId = 's0000000-0000-0000-0000-000000000001'
+          setShopId(currentShopId)
+        }
       }
 
       if (currentShopId) {
@@ -971,15 +975,16 @@ export const SellerOrdersPage: React.FC = () => {
           style={{
             backgroundColor: '#ffffff',
             border: '1px solid #e8e8e8',
-            borderRadius: 4,
-            overflow: 'hidden',
+            borderRadius: 6,
+            overflowX: 'auto',
           }}
         >
           {/* Table Header */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '3fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr',
+              gridTemplateColumns: 'minmax(260px, 3fr) minmax(110px, 1.2fr) minmax(90px, 1fr) minmax(130px, 1.4fr) minmax(160px, 1.6fr) minmax(180px, 1.8fr)',
+              minWidth: 980,
               backgroundColor: '#fafafa',
               padding: '12px 18px',
               borderBottom: '1px solid #e8e8e8',
@@ -1035,7 +1040,8 @@ export const SellerOrdersPage: React.FC = () => {
                     key={order.id}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '3fr 1.5fr 1.5fr 1.5fr 1.5fr 1.5fr',
+                      gridTemplateColumns: 'minmax(260px, 3fr) minmax(110px, 1.2fr) minmax(90px, 1fr) minmax(130px, 1.4fr) minmax(160px, 1.6fr) minmax(180px, 1.8fr)',
+                      minWidth: 980,
                       padding: '16px 18px',
                       borderBottom: '1px solid #f0f0f0',
                       alignItems: 'center',
@@ -1117,17 +1123,23 @@ export const SellerOrdersPage: React.FC = () => {
                     </div>
 
                     {/* Actions */}
-                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexWrap: 'nowrap' }}>
                       <button
                         type="button"
                         style={{
                           backgroundColor: '#ffffff',
                           border: '1px solid #d9d9d9',
                           color: '#595959',
-                          padding: '5px 12px',
+                          padding: '0 12px',
+                          height: 32,
                           borderRadius: 4,
                           fontSize: 12,
                           cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                         onClick={() => handleOpenDetail(order)}
                       >
@@ -1140,15 +1152,23 @@ export const SellerOrdersPage: React.FC = () => {
                             backgroundColor: '#facc15',
                             border: 'none',
                             color: '#0f172a',
-                            padding: '5px 12px',
+                            padding: '0 14px',
+                            height: 32,
                             borderRadius: 4,
                             fontSize: 12,
                             fontWeight: 700,
                             cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4,
                           }}
                           onClick={() => handleOpenFulfillment(order)}
                         >
-                          Giao hàng
+                          <Truck style={{ width: 14, height: 14 }} />
+                          <span>Giao hàng</span>
                         </button>
                       )}
                     </div>

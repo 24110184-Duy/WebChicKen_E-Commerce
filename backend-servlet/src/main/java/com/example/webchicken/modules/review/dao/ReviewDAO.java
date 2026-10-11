@@ -153,4 +153,48 @@ public class ReviewDAO extends BaseDAO {
             return new ReviewSummaryResponse(productId, avg, total, count5, count4, count3, count2, count1);
         });
     }
+
+    public java.util.Map<String, ReviewSummaryResponse> getReviewSummaries(List<String> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return executeQuery(em -> {
+            List<ProductReviewEntity> reviews = em.createQuery(
+                    "SELECT r FROM ProductReviewEntity r WHERE r.productId IN :productIds AND r.status = :status",
+                    ProductReviewEntity.class)
+                    .setParameter("productIds", productIds)
+                    .setParameter("status", ReviewStatus.APPROVED)
+                    .getResultList();
+
+            java.util.Map<String, java.util.List<ProductReviewEntity>> byProduct = reviews.stream()
+                    .collect(java.util.stream.Collectors.groupingBy(ProductReviewEntity::getProductId));
+
+            java.util.Map<String, ReviewSummaryResponse> result = new java.util.HashMap<>();
+            for (String pid : productIds) {
+                java.util.List<ProductReviewEntity> list = byProduct.getOrDefault(pid, java.util.Collections.emptyList());
+                long total = list.size();
+                if (total == 0) {
+                    result.put(pid, new ReviewSummaryResponse(pid, 0.0, 0, 0, 0, 0, 0, 0));
+                    continue;
+                }
+                long sum = 0;
+                long count5 = 0, count4 = 0, count3 = 0, count2 = 0, count1 = 0;
+                for (ProductReviewEntity r : list) {
+                    int rating = Math.max(1, Math.min(5, r.getRating()));
+                    sum += rating;
+                    switch (rating) {
+                        case 5 -> count5++;
+                        case 4 -> count4++;
+                        case 3 -> count3++;
+                        case 2 -> count2++;
+                        case 1 -> count1++;
+                    }
+                }
+                double avg = Math.round(((double) sum / total) * 10.0) / 10.0;
+                result.put(pid, new ReviewSummaryResponse(pid, avg, total, count5, count4, count3, count2, count1));
+            }
+            return result;
+        });
+    }
 }
+

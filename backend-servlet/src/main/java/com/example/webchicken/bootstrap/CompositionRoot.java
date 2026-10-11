@@ -142,11 +142,6 @@ public class CompositionRoot {
         CustomerService  customerService  = new CustomerServiceImpl(customerDAO, userDAO, addressDAO);
         SellerService    sellerService    = new SellerServiceImpl(sellerDAO, userDAO);
 
-        // Catalog
-        CategoryService       categoryService       = new CategoryServiceImpl(categoryDAO);
-        ProductService        productService        = new ProductServiceImpl(productDAO, productImageDAO, productVariantDAO, categoryDAO);
-        ProductVariantService productVariantService = new ProductVariantServiceImpl(productVariantDAO);
-
         // Inventory
         InventoryService inventoryService = new InventoryServiceImpl(inventoryDAO);
 
@@ -174,6 +169,13 @@ public class CompositionRoot {
 
         // Review
         ReviewService reviewService = new ReviewServiceImpl(reviewDAO, orderDAO, orderItemDAO, userDAO);
+
+        // Catalog
+        CategoryService       categoryService       = new CategoryServiceImpl(categoryDAO);
+        ProductService        productService        = new ProductServiceImpl(
+                productDAO, productImageDAO, productVariantDAO, categoryDAO, reviewService, orderService
+        );
+        ProductVariantService productVariantService = new ProductVariantServiceImpl(productVariantDAO);
 
         // Shop
         StoreService             storeService             = new StoreServiceImpl(storeDAO);

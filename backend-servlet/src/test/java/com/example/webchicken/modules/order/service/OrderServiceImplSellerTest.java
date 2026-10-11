@@ -122,4 +122,27 @@ class OrderServiceImplSellerTest {
         assertEquals(OrderStatus.SHIPPING, shipping.status());
         verify(orderDAO).updateStatus("ord-1", OrderStatus.SHIPPING);
     }
+
+    @Test
+    @DisplayName("getStoreOrders supports multiple statuses like TO_SHIP (CONFIRMED + PENDING)")
+    void testGetStoreOrdersWithMultipleStatuses() {
+        String storeId = "store-1";
+        OrderEntity order1 = new OrderEntity("ord-1", "ORD-20261004-0001", "grp-1", "cust-1", storeId,
+                150000, 30000, 0, PaymentMethod.COD, "John Doe", "0901234567", "123 Farm Road", "Keep cool");
+        order1.setStatus(OrderStatus.CONFIRMED);
+
+        OrderEntity order2 = new OrderEntity("ord-2", "ORD-20261004-0002", "grp-2", "cust-2", storeId,
+                200000, 30000, 0, PaymentMethod.COD, "Alice", "0912345678", "456 Market St", null);
+        order2.setStatus(OrderStatus.PENDING);
+
+        List<OrderStatus> toShipStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.PENDING);
+        when(orderDAO.findByStoreIdInStatuses(storeId, toShipStatuses, 0, 10)).thenReturn(List.of(order1, order2));
+        when(orderItemDAO.findByOrderId("ord-1")).thenReturn(List.of());
+        when(orderItemDAO.findByOrderId("ord-2")).thenReturn(List.of());
+
+        List<OrderResponse> results = orderService.getStoreOrdersInStatuses(storeId, toShipStatuses, 1, 10);
+        assertEquals(2, results.size());
+        assertEquals("ORD-20261004-0001", results.get(0).orderCode());
+        assertEquals("ORD-20261004-0002", results.get(1).orderCode());
+    }
 }

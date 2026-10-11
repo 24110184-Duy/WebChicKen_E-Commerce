@@ -149,6 +149,12 @@ export interface SellerOrderStatusCounts {
   shipping: number
   delivered: number
   cancelled: number
+  to_ship?: number
+  completed?: number
+  cancellation?: number
+  returned?: number
+  return_refund?: number
+  unpaid?: number
 }
 
 export interface FulfillOrderPayload {
@@ -331,6 +337,17 @@ export const sellerApi = {
     if (!shopId || !productId) return null
     const res = await httpClient.get<SellerProductItem>(`/shops/${shopId}/products/${productId}`)
     return res.data || null
+  },
+
+  /** Tải lên ảnh sản phẩm lên Media Service (POST /api/v1/media/upload) */
+  uploadProductImage: async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await httpClient.post<{ fileUrl: string }>('/media/upload', formData)
+    if (!res.data?.fileUrl) {
+      throw new Error('Tải ảnh lên máy chủ không thành công.')
+    }
+    return res.data.fileUrl
   },
 
   /** Tạo sản phẩm mới kèm các biến thể (POST /api/v1/shops/{shopId}/products) */

@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   Grid,
   Bell,
+  HelpCircle,
 } from 'lucide-react'
 import { PATHS } from '../app/router/paths'
 import { sellerApi } from '../features/seller/api/sellerApi'
@@ -94,6 +95,10 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
   const isProductActive = location.pathname.startsWith('/seller/products') && !tabParam && !actionParam
   const isAddProductActive = location.pathname.startsWith('/seller/products') && actionParam === 'new'
   const isViolationActive = location.pathname.startsWith('/seller/products') && tabParam === 'VIOLATION'
+
+  const isFeedbackActive = location.pathname.startsWith('/seller/feedback')
+  const isFeedbackNewActive = isFeedbackActive && tabParam !== 'history'
+  const isFeedbackHistoryActive = isFeedbackActive && tabParam === 'history'
 
   const initials = (storeName[0] || 'S').toUpperCase()
 
@@ -233,6 +238,23 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
                     <span>Shop Setting</span>
                   </div>
 
+                  {/* Quick Link: Help & Feedback */}
+                  <div
+                    style={{
+                      padding: '9px 16px',
+                      fontSize: 13,
+                      color: '#334155',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => { setUserDropdownOpen(false); navigate(PATHS.SELLER.FEEDBACK) }}
+                  >
+                    <HelpCircle style={{ width: 15, height: 15, color: '#64748b' }} />
+                    <span>Help & Feedback</span>
+                  </div>
+
                   <Link
                     to={PATHS.HOME}
                     style={{
@@ -358,6 +380,25 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
                 style={{ paddingLeft: 34, fontSize: 12.5 }}
               >
                 <span>Product Violations</span>
+              </Link>
+            </div>
+
+            {/* 5. CUSTOMER SERVICE (Chăm sóc & Phản hồi Admin) */}
+            <div className="seller-nav-group">
+              <div className="seller-nav-group-title">Customer Service</div>
+              <Link
+                to={PATHS.SELLER.FEEDBACK}
+                className={`seller-nav-item ${isFeedbackNewActive ? 'active' : ''}`}
+              >
+                <HelpCircle style={{ width: 17, height: 17 }} />
+                <span>Help & Feedback</span>
+              </Link>
+              <Link
+                to={`${PATHS.SELLER.FEEDBACK}?tab=history`}
+                className={`seller-nav-item ${isFeedbackHistoryActive ? 'active' : ''}`}
+                style={{ paddingLeft: 34, fontSize: 12.5 }}
+              >
+                <span>Ticket History</span>
               </Link>
             </div>
           </div>

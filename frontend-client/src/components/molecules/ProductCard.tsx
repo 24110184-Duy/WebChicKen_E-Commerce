@@ -44,10 +44,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <h3 className="product-card-title">{product.name}</h3>
 
         <div className="product-card-meta">
-          <span className="product-card-rating">★ {product.rating}</span>
-          <span>({product.ratingCount})</span>
+          {product.ratingCount && product.ratingCount > 0 ? (
+            <>
+              <span className="product-card-rating">
+                ★ {Number(product.rating || 5.0).toFixed(1)}
+              </span>
+              <span style={{ fontSize: 11, color: '#64748b' }}>({product.ratingCount})</span>
+            </>
+          ) : (
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>
+              ★ Chưa có đánh giá
+            </span>
+          )}
           <span>•</span>
-          <span className="product-card-sold">{product.soldCount} sold</span>
+          <span className="product-card-sold">
+            {product.soldCount && product.soldCount > 0 ? `${product.soldCount} đã bán` : '0 đã bán'}
+          </span>
         </div>
 
         <div className="product-card-price-row">
