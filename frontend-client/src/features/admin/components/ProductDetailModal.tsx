@@ -525,7 +525,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 }}
               >
                 <Eye size={16} />
-                <span>Gỡ Ẩn & Kích Hoạt Mở Bán Lại</span>
+                <span>Bỏ Ẩn & Kích Hoạt Mở Bán Lại</span>
               </button>
             )}
           </div>

@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { AccountLayout } from '../../../layouts/AccountLayout'
 import { useAuthStore } from '../../../app/store/authStore'
 import { customerApi, type UpdateProfileRequest } from '../../../features/auth/api/customerApi'
-import { httpClient } from '../../../shared/api/httpClient'
+import { mediaApi } from '../../../shared/api/mediaApi'
+import { resolveImageUrl, handleImageFallback } from '../../../shared/utils/imageUrl'
 
 interface ProfileForm {
   username: string
@@ -150,34 +151,32 @@ export const ProfilePage: React.FC = () => {
     if (!e.target.files || !e.target.files[0]) return
     const file = e.target.files[0]
 
-    // Validate type
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      showToast('Only JPEG and PNG file extensions are supported', 'error')
-      return
-    }
-
-    // Validate size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('File size exceeds maximum 5 MB limit', 'error')
-      return
-    }
-
     const previewUrl = URL.createObjectURL(file)
     setForm(prev => ({ ...prev, logoUrl: previewUrl }))
     setIsUploadingPhoto(true)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await httpClient.post<{ fileUrl: string }>('/media/upload', formData)
-      const remoteUrl = res.data?.fileUrl || previewUrl
+      const remoteUrl = await mediaApi.uploadImage(file)
       setForm(prev => ({ ...prev, logoUrl: remoteUrl }))
       updateUser({ avatarUrl: remoteUrl })
+
+      // Tự động đồng bộ hóa lưu vào cơ sở dữ liệu ngay lập tức
+      await customerApi.updateProfile({
+        fullName: form.fullName.trim() || user?.fullName || 'User',
+        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || undefined,
+        logoUrl: remoteUrl,
+        gender: form.gender,
+        dateOfBirth: form.dateOfBirth,
+      })
+
       showToast('Profile photo updated successfully!', 'success')
-    } catch {
-      showToast('Profile photo saved locally', 'success')
+    } catch (err: any) {
+      console.error('Lỗi khi tải ảnh đại diện:', err)
+      showToast(err?.message || 'Failed to upload photo. Please try again.', 'error')
     } finally {
       setIsUploadingPhoto(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -484,7 +483,12 @@ export const ProfilePage: React.FC = () => {
           <div className="shopee-avatar-section">
             <div className="shopee-avatar-circle">
               {form.logoUrl ? (
-                <img src={form.logoUrl} alt="Profile photo" />
+                <img
+                  src={resolveImageUrl(form.logoUrl, 'avatar')}
+                  alt="Profile photo"
+                  onError={(e) => handleImageFallback(e, 'avatar')}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               ) : (
                 <div style={{ color: '#bbb', fontSize: 36, fontWeight: 700 }}>
                   {form.fullName?.[0]?.toUpperCase() || 'U'}
@@ -495,7 +499,7 @@ export const ProfilePage: React.FC = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               style={{ display: 'none' }}
               onChange={handleFileChange}
             />
@@ -520,7 +524,23 @@ export const ProfilePage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setForm(prev => ({ ...prev, logoUrl: undefined }))}
+                  onClick={async () => {
+                    setForm(prev => ({ ...prev, logoUrl: undefined }))
+                    updateUser({ avatarUrl: undefined })
+                    try {
+                      await customerApi.updateProfile({
+                        fullName: form.fullName.trim() || user?.fullName || 'User',
+                        phone: form.phone.trim() || undefined,
+                        email: form.email.trim() || undefined,
+                        logoUrl: '',
+                        gender: form.gender,
+                        dateOfBirth: form.dateOfBirth,
+                      })
+                      showToast('Profile photo removed.', 'success')
+                    } catch {
+                      showToast('Failed to remove photo.', 'error')
+                    }
+                  }}
                   style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 12, cursor: 'pointer', padding: 0 }}
                 >
                   Remove
@@ -730,7 +750,7 @@ export const ProfilePage: React.FC = () => {
               }}
             >
               <img
-                src={form.logoUrl}
+                src={resolveImageUrl(form.logoUrl, 'avatar')}
                 alt="Full size view"
                 style={{
                   maxWidth: '100%',

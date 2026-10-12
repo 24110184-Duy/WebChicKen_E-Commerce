@@ -79,6 +79,47 @@ export const adminProductApi = {
   },
 
   /**
+   * Bỏ ẩn sản phẩm và kích hoạt mở bán lại trên toàn sàn (PUT /api/v1/products/{id}/unhide hoặc /review)
+   */
+  async unhideProduct(id: string, note?: string): Promise<AdminProductItem> {
+    const defaultNote = note || 'Quản trị viên đã bỏ ẩn và mở bán lại sản phẩm trên sàn.'
+    try {
+      const res = await httpClient.put<any>(`/products/${id}/unhide`, {
+        status: 'ACTIVE',
+        moderationNote: defaultNote
+      })
+      if (res && res.data) {
+        const p = res.data
+        return {
+          id: p.id,
+          storeId: p.storeId,
+          storeName: p.storeName || 'Gian Hàng Đối Tác',
+          categoryId: p.categoryId,
+          categoryName: p.categoryName || 'Nông Sản & Thực Phẩm',
+          name: p.name,
+          description: p.description,
+          status: p.status,
+          rejectionReason: p.rejectionReason,
+          moderatedBy: p.moderatedBy,
+          moderationNote: p.moderationNote,
+          thumbnailUrl: p.thumbnailUrl,
+          minPriceMinor: p.minPriceMinor,
+          maxPriceMinor: p.maxPriceMinor,
+          totalStock: p.totalStock,
+          createdAt: p.createdAt
+        }
+      }
+    } catch {
+      // Fallback về endpoint /review chuẩn
+    }
+
+    return this.reviewProduct(id, {
+      status: 'ACTIVE',
+      moderationNote: defaultNote
+    })
+  },
+
+  /**
    * Quản trị viên gỡ bỏ sản phẩm khỏi hệ sinh thái (DELETE /api/v1/products/{id})
    */
   async deleteProduct(id: string): Promise<void> {

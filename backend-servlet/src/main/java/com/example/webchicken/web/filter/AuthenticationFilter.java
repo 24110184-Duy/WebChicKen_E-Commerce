@@ -101,6 +101,11 @@ public class AuthenticationFilter implements Filter {
             return true;
         }
 
+        // Cho phép upload tệp media (kèm token nếu có, hoặc cho phép khách/người dùng tải ảnh)
+        if (path.startsWith("/api/v1/media/upload") || path.startsWith("/api/v1/media/uploads")) {
+            return true;
+        }
+
         // Cho phép duyệt danh mục, sản phẩm, đánh giá sản phẩm, thông tin gian hàng và xem tệp media công khai với method GET
         if ("GET".equalsIgnoreCase(method)) {
             if (path.startsWith("/api/v1/products")

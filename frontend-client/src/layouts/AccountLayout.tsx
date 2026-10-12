@@ -7,6 +7,7 @@ import { authApi } from '../features/auth/api/authApi'
 import { PATHS } from '../app/router/paths'
 import chickenMascotImg from '../assets/chicken-mascot.png'
 import { toast } from '../components/feedback/Toast'
+import { resolveImageUrl, handleImageFallback } from '../shared/utils/imageUrl'
 
 interface AccountLayoutProps {
   children: React.ReactNode
@@ -163,8 +164,17 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
               className="account-topbar-user"
               style={{ textDecoration: 'none', color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}
             >
-              <div className="account-topbar-avatar">
-                {initials}
+              <div className="account-topbar-avatar" style={{ overflow: 'hidden' }}>
+                {user?.avatarUrl ? (
+                  <img
+                    src={resolveImageUrl(user.avatarUrl, 'avatar')}
+                    alt={displayName}
+                    onError={(e) => handleImageFallback(e, 'avatar')}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  initials
+                )}
               </div>
               <span style={{ maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 700 }}>
                 {displayName}
@@ -187,8 +197,17 @@ export const AccountLayout: React.FC<AccountLayoutProps> = ({ children }) => {
         <aside className="shopee-sidebar">
           {/* User profile header */}
           <div className="shopee-sidebar-user">
-            <div className="shopee-sidebar-avatar">
-              {initials}
+            <div className="shopee-sidebar-avatar" style={{ overflow: 'hidden' }}>
+              {user?.avatarUrl ? (
+                <img
+                  src={resolveImageUrl(user.avatarUrl, 'avatar')}
+                  alt={displayName}
+                  onError={(e) => handleImageFallback(e, 'avatar')}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div className="shopee-sidebar-info">
               <span className="shopee-sidebar-username">{displayName}</span>

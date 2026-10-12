@@ -19,10 +19,12 @@ import {
   type SellerProductItem,
   type ProductCategoryOption,
 } from '../../features/seller/api/sellerApi'
+import { adminProductApi } from '../../features/admin/api/adminProductApi'
 import { ProductFormModal } from '../../features/seller/components/ProductFormModal'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { toast } from '../../components/feedback/Toast'
 import { useAuthStore } from '../../app/store/authStore'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export const SellerProductListPage: React.FC = () => {
   const { user } = useAuthStore()
@@ -283,6 +285,21 @@ export const SellerProductListPage: React.FC = () => {
       loadProducts()
     } catch {
       toast.error('Không thể xóa sản phẩm.')
+    }
+  }
+
+  const handleUnhideProduct = async (product: SellerProductItem) => {
+    try {
+      if (user?.roles.some((r) => ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(r))) {
+        await adminProductApi.unhideProduct(product.id)
+      } else {
+        let currentShopId = shopId || product.storeId || 's0000000-0000-0000-0000-000000000001'
+        await sellerApi.changeProductStatus(currentShopId, product.id, 'ACTIVE')
+      }
+      toast.success(`Đã bỏ ẩn và mở bán lại sản phẩm "${product.name}" thành công!`)
+      loadProducts()
+    } catch (err: any) {
+      toast.error(err?.message || 'Không thể bỏ ẩn sản phẩm.')
     }
   }
 
@@ -790,7 +807,7 @@ export const SellerProductListPage: React.FC = () => {
                   p.minPriceMinor === p.maxPriceMinor
                     ? formatMoney(p.minPriceMinor || 0)
                     : `${formatMoney(p.minPriceMinor || 0)} - ${formatMoney(p.maxPriceMinor || 0)}`
-                const img = p.thumbnailUrl || p.imageUrls?.[0] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'
+                const img = resolveImageUrl(p.thumbnailUrl || p.imageUrls?.[0])
 
                 return (
                   <div
@@ -809,6 +826,7 @@ export const SellerProductListPage: React.FC = () => {
                       <img
                         src={img}
                         alt={p.name}
+                        onError={handleImageFallback}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                       <div style={{ position: 'absolute', top: 8, left: 8 }}>
@@ -846,7 +864,27 @@ export const SellerProductListPage: React.FC = () => {
                         Kho: <strong>{p.totalStock}</strong>
                       </div>
 
-                      <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+                      <div style={{ marginTop: 'auto', display: 'flex', gap: 6, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+                        {p.status === 'INACTIVE' && (
+                          <button
+                            type="button"
+                            onClick={() => handleUnhideProduct(p)}
+                            title="Bỏ ẩn và mở bán lại sản phẩm trên sàn"
+                            style={{
+                              flex: 1,
+                              padding: '6px 0',
+                              borderRadius: 4,
+                              border: '1px solid #16a34a',
+                              backgroundColor: '#f0fdf4',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: '#16a34a',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Bỏ Ẩn
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(p)}
@@ -929,7 +967,7 @@ export const SellerProductListPage: React.FC = () => {
                     p.minPriceMinor === p.maxPriceMinor
                       ? formatMoney(p.minPriceMinor || 0)
                       : `${formatMoney(p.minPriceMinor || 0)} - ${formatMoney(p.maxPriceMinor || 0)}`
-                  const img = p.thumbnailUrl || p.imageUrls?.[0] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'
+                  const img = resolveImageUrl(p.thumbnailUrl || p.imageUrls?.[0])
 
                   return (
                     <div
@@ -959,6 +997,7 @@ export const SellerProductListPage: React.FC = () => {
                         <img
                           src={img}
                           alt={p.name || ''}
+                          onError={handleImageFallback}
                           style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
                         />
                         <div>
@@ -1018,6 +1057,15 @@ export const SellerProductListPage: React.FC = () => {
 
                       {/* Options */}
                       <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+                        {p.status === 'INACTIVE' && (
+                          <span
+                            style={{ color: '#16a34a', cursor: 'pointer', fontWeight: 700 }}
+                            title="Bỏ ẩn và mở bán lại sản phẩm trên sàn"
+                            onClick={() => handleUnhideProduct(p)}
+                          >
+                            Bỏ Ẩn
+                          </span>
+                        )}
                         <span
                           style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
                           onClick={() => handleOpenEditModal(p)}

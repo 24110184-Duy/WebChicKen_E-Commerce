@@ -17,22 +17,23 @@ import { formatMoney } from '../../shared/lib/formatMoney'
 import { toast } from '../../components/feedback/Toast'
 import { useAuthStore } from '../../app/store/authStore'
 import { PATHS } from '../../app/router/paths'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
+
+const ORDER_TABS = [
+  { id: 'ALL', label: 'All' },
+  { id: 'UNPAID', label: 'Unpaid' },
+  { id: 'TO_SHIP', label: 'To ship' },
+  { id: 'SHIPPING', label: 'Shipping' },
+  { id: 'COMPLETED', label: 'Completed' },
+  { id: 'CANCELLATION', label: 'Cancellation' },
+  { id: 'RETURN_REFUND', label: 'Return/Refund' },
+]
 
 export const SellerOrdersPage: React.FC = () => {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
-
-  const ORDER_TABS = [
-    { id: 'ALL', label: 'All' },
-    { id: 'UNPAID', label: 'Unpaid' },
-    { id: 'TO_SHIP', label: 'To ship' },
-    { id: 'SHIPPING', label: 'Shipping' },
-    { id: 'COMPLETED', label: 'Completed' },
-    { id: 'CANCELLATION', label: 'Cancellation' },
-    { id: 'RETURN_REFUND', label: 'Return/Refund' },
-  ]
 
   const [activeTab, setActiveTab] = useState<string>(
     tabParam && ORDER_TABS.some((t) => t.id === tabParam) ? tabParam : 'ALL'
@@ -1061,8 +1062,9 @@ export const SellerOrdersPage: React.FC = () => {
                         <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                           {item.imageUrl ? (
                             <img
-                              src={item.imageUrl}
+                              src={resolveImageUrl(item.imageUrl)}
                               alt=""
+                              onError={handleImageFallback}
                               style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4 }}
                             />
                           ) : (

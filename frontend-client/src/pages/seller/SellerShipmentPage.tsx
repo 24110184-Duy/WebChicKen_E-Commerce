@@ -29,6 +29,7 @@ import { SellerOrderDetailModal } from '../../features/seller/components/SellerO
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { toast } from '../../components/feedback/Toast'
 import { useAuthStore } from '../../app/store/authStore'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export const SellerShipmentPage: React.FC = () => {
   const { user } = useAuthStore()
@@ -491,7 +492,7 @@ export const SellerShipmentPage: React.FC = () => {
                     <tr>
                       <td>${it.productName}</td>
                       <td style="text-align: center;">${it.quantity}</td>
-                      <td style="text-align: right;">${new Intl.NumberFormat('vi-VN').format(it.unitPriceMinor || 0)} đ</td>
+                      <td style="text-align: right;">${formatMoney(it.unitPriceMinor || 0)}</td>
                     </tr>
                   `
                     )
@@ -501,7 +502,7 @@ export const SellerShipmentPage: React.FC = () => {
               <div class="footer">
                 <div>
                   <strong>Tiền thu hộ COD: </strong>
-                  <span class="cod">${o.paymentMethod === 'COD' && o.paymentStatus !== 'PAID' ? new Intl.NumberFormat('vi-VN').format(o.totalAmountMinor) + ' đ' : '0 đ (Đã thanh toán)'}</span>
+                  <span class="cod">${o.paymentMethod === 'COD' && o.paymentStatus !== 'PAID' ? formatMoney(o.totalAmountMinor) : '0 đ (Đã thanh toán)'}</span>
                 </div>
                 <div style="text-align: right; color: #64748b;">
                   Ngày in: ${new Date().toLocaleString('vi-VN')}
@@ -1046,8 +1047,9 @@ export const SellerShipmentPage: React.FC = () => {
                             <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                               {item.imageUrl && (
                                 <img
-                                  src={item.imageUrl}
+                                  src={resolveImageUrl(item.imageUrl)}
                                   alt=""
+                                  onError={handleImageFallback}
                                   style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4 }}
                                 />
                               )}
@@ -1644,8 +1646,9 @@ export const SellerShipmentPage: React.FC = () => {
                           <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                             {item.imageUrl && (
                               <img
-                                src={item.imageUrl}
+                                src={resolveImageUrl(item.imageUrl)}
                                 alt=""
+                                onError={handleImageFallback}
                                 style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4 }}
                               />
                             )}

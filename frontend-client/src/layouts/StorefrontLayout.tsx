@@ -10,6 +10,7 @@ import { catalogApi } from '../features/catalog/api/catalogApi'
 import type { Category } from '../features/catalog/types/catalogTypes'
 import { CustomerFloatingChat } from '../features/shop/components/CustomerFloatingChat'
 import { ShieldCheck } from 'lucide-react'
+import { resolveImageUrl, handleImageFallback } from '../shared/utils/imageUrl'
 
 interface StorefrontLayoutProps {
   children: React.ReactNode
@@ -200,8 +201,19 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
                     justifyContent: 'center',
                     fontSize: 11,
                     fontWeight: 800,
+                    overflow: 'hidden',
+                    flexShrink: 0,
                   }}>
-                    {initials}
+                    {user.avatarUrl ? (
+                      <img
+                        src={resolveImageUrl(user.avatarUrl, 'avatar')}
+                        alt="Avatar"
+                        onError={(e) => handleImageFallback(e, 'avatar')}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      initials
+                    )}
                   </span>
                   <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user.fullName || user.username || (user.email ? user.email.split('@')[0] : user.phone) || 'User'}

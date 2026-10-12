@@ -171,7 +171,7 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: isInactive ? '#15803d' : '#991b1b', margin: 0 }}>
                 {isInactive
-                  ? 'Quản Trị Viên: Gỡ Ẩn / Mở Lại Sản Phẩm'
+                  ? 'Quản Trị Viên: Bỏ Ẩn / Mở Lại Sản Phẩm'
                   : 'Quản Trị Viên: Can Thiệp Sản Phẩm Trên Sàn'}
               </h3>
               <p style={{ fontSize: 12, color: isInactive ? '#166534' : '#b91c1c', margin: '2px 0 0' }}>
@@ -364,7 +364,7 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
                   }}
                 >
                   {loading ? <RefreshCw size={15} className="animate-spin" /> : <Eye size={15} />}
-                  <span>Gỡ Ẩn & Mở Bán Lại</span>
+                  <span>Bỏ Ẩn & Mở Bán Lại</span>
                 </button>
               ) : (
                 /* Nút Tạm Ẩn Sản Phẩm */

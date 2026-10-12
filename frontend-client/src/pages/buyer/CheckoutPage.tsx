@@ -16,6 +16,7 @@ import { AddressSelectModal } from '../../features/orders/components/AddressSele
 import { customerApi, type AddressResponse } from '../../features/auth/api/customerApi'
 import { Ticket, X, Copy, Check, Clock } from 'lucide-react'
 import { toast } from '../../components/feedback/Toast'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
@@ -428,13 +429,10 @@ export const CheckoutPage: React.FC = () => {
                     <div key={item.skuId} className="checkout-item-row">
                       <div className="checkout-item-info">
                         <img
-                          src={item.imageUrl}
+                          src={resolveImageUrl(item.imageUrl)}
                           alt={item.name}
                           className="checkout-item-thumb"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            target.src = 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=150&q=80'
-                          }}
+                          onError={handleImageFallback}
                         />
                         <div>
                           <div className="checkout-item-name">{item.name}</div>

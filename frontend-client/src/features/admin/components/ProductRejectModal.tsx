@@ -4,6 +4,7 @@ import { AlertTriangle, X, ShieldAlert } from 'lucide-react'
 export interface ProductRejectModalProps {
   isOpen: boolean
   productName: string
+  actionType?: 'REJECT' | 'HIDE'
   onClose: () => void
   onConfirm: (reason: string) => void
   isSubmitting?: boolean
@@ -20,6 +21,7 @@ const PRESET_PRODUCT_REASONS = [
 export const ProductRejectModal: React.FC<ProductRejectModalProps> = ({
   isOpen,
   productName,
+  actionType = 'REJECT',
   onClose,
   onConfirm,
   isSubmitting = false,
@@ -99,10 +101,12 @@ export const ProductRejectModal: React.FC<ProductRejectModalProps> = ({
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#991b1b' }}>
-                Từ Chối Phê Duyệt Sản Phẩm
+                {actionType === 'HIDE' ? 'Tạm Ẩn Sản Phẩm Khỏi Sàn' : 'Từ Chối Phê Duyệt Sản Phẩm'}
               </h3>
               <p style={{ margin: 0, fontSize: 13, color: '#b91c1c' }}>
-                Sản phẩm sẽ bị chuyển về trạng thái <b>INACTIVE</b> và thông báo cho gian hàng
+                {actionType === 'HIDE'
+                  ? 'Sản phẩm sẽ bị tạm ẩn khỏi sàn (INACTIVE). Admin có thể Bỏ Ẩn để mở bán lại bất kỳ lúc nào.'
+                  : 'Sản phẩm sẽ bị chuyển về trạng thái INACTIVE và thông báo lý do cho gian hàng.'}
               </p>
             </div>
           </div>
@@ -270,7 +274,11 @@ export const ProductRejectModal: React.FC<ProductRejectModalProps> = ({
                 opacity: isSubmitting ? 0.7 : 1,
               }}
             >
-              {isSubmitting ? 'Đang xử lý...' : 'Xác Nhận Từ Chối'}
+              {isSubmitting
+                ? 'Đang xử lý...'
+                : actionType === 'HIDE'
+                  ? 'Xác Nhận Tạm Ẩn'
+                  : 'Xác Nhận Từ Chối'}
             </button>
           </div>
         </form>

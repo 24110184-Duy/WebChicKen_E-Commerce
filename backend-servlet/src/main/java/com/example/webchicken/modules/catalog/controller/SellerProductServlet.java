@@ -179,8 +179,21 @@ public class SellerProductServlet extends BaseApiServlet {
             verifyOwnership(req, path.shopId());
 
             ProductDetailResponse existing = productService().getProductDetail(path.productId());
-            if (!path.shopId().equals(existing.storeId())) {
-                throw new AuthorizationException("Product does not belong to this shop");
+            AuthenticatedUser currentUser = getAuthenticatedUser(req);
+            boolean isAdmin = currentUser != null && currentUser.isAdmin();
+            if (!isAdmin && !path.shopId().equals(existing.storeId())) {
+                boolean ownsProductStore = false;
+                if (currentUser != null) {
+                    try {
+                        StoreResponse prodStore = storeService().getStoreById(existing.storeId());
+                        if (prodStore != null && currentUser.userId().equals(prodStore.sellerId())) {
+                            ownsProductStore = true;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                if (!ownsProductStore) {
+                    throw new AuthorizationException("Product does not belong to this shop");
+                }
             }
 
             // PUT /api/v1/shops/{shopId}/products/{productId}/publication
@@ -193,8 +206,8 @@ public class SellerProductServlet extends BaseApiServlet {
                 ProductStatus newStatus = ProductStatus.valueOf(statusStr.toUpperCase());
 
                 // KIỂM SOÁT PHÊ DUYỆT ADMIN:
-                // Người bán không thể tự ý kích hoạt ACTIVE nếu chưa được Admin duyệt
-                if (newStatus == ProductStatus.ACTIVE) {
+                // Người bán không thể tự ý kích hoạt ACTIVE nếu chưa được Admin duyệt (nhưng Admin có toàn quyền)
+                if (!isAdmin && newStatus == ProductStatus.ACTIVE) {
                     ProductDetailResponse current = productService().getProductDetail(path.productId());
                     if (current.status() == ProductStatus.PENDING_APPROVAL) {
                         throw new ValidationException("Sản phẩm đang chờ Quản trị viên (Admin) phê duyệt, bạn không thể tự kích hoạt mở bán.");

@@ -10,6 +10,7 @@ import type { Voucher } from '../../features/cart/types/cartTypes'
 import { VoucherModal } from '../../features/cart/components/VoucherModal'
 import { toast } from '../../components/feedback/Toast'
 import { ConfirmModal } from '../../components/feedback/ConfirmModal'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate()
@@ -199,13 +200,10 @@ export const CartPage: React.FC = () => {
                         {/* Product Info */}
                         <div className="cart-item-info">
                           <img
-                            src={item.imageUrl}
+                            src={resolveImageUrl(item.imageUrl)}
                             alt={item.name}
                             className="cart-item-img"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement
-                              target.src = 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=150&q=80'
-                            }}
+                            onError={handleImageFallback}
                           />
                           <div className="cart-item-details">
                             <Link to={`/products/${item.productId}`} className="cart-item-title">

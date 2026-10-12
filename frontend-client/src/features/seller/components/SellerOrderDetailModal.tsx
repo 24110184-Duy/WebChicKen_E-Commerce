@@ -16,6 +16,8 @@ import {
   Clock,
 } from 'lucide-react'
 import type { SellerOrder } from '../api/sellerApi'
+import { formatMoney as formatVND } from '../../../shared/lib/formatMoney'
+import { resolveImageUrl, handleImageFallback } from '../../../shared/utils/imageUrl'
 
 
 export interface SellerOrderDetailModalProps {
@@ -45,11 +47,6 @@ export const SellerOrderDetailModal: React.FC<SellerOrderDetailModalProps> = ({
     navigator.clipboard.writeText(order.orderCode)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
-
-  const formatVND = (minor: number | undefined | null) => {
-    const val = typeof minor === 'number' && !isNaN(minor) ? minor : Number(minor) || 0
-    return new Intl.NumberFormat('vi-VN').format(val) + ' ₫'
   }
 
   // Stepper calculations
@@ -272,8 +269,9 @@ export const SellerOrderDetailModal: React.FC<SellerOrderDetailModalProps> = ({
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <img
-                              src={item.imageUrl || 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=100'}
+                              src={resolveImageUrl(item.imageUrl)}
                               alt={item.productName}
+                              onError={handleImageFallback}
                               style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }}
                             />
                             <div>

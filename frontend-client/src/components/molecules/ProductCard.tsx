@@ -5,6 +5,7 @@ import type { Product } from '../../features/catalog/types/catalogTypes'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { useAuthStore } from '../../app/store/authStore'
 import { AdminProductActionModal } from '../../features/admin/components/AdminProductActionModal'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 interface ProductCardProps {
   product: Product
@@ -13,17 +14,17 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }) => {
   const { isAdmin } = useAuthStore()
-  const [imgSrc, setImgSrc] = useState(product.thumbnailUrl)
+  const [imgSrc, setImgSrc] = useState(() => resolveImageUrl(product.thumbnailUrl))
+
+  React.useEffect(() => {
+    setImgSrc(resolveImageUrl(product.thumbnailUrl))
+  }, [product.thumbnailUrl])
+
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
   const [isModerated, setIsModerated] = useState(false)
   const [moderatedAction, setModeratedAction] = useState<'HIDE' | 'DELETE' | 'UNHIDE' | null>(null)
 
   const isInactive = product.status === 'INACTIVE' || (isModerated && moderatedAction === 'HIDE')
-
-  const handleImageError = () => {
-    // Fallback image if remote url fails
-    setImgSrc('https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80')
-  }
 
   const handleModerationSuccess = (action: 'HIDE' | 'DELETE' | 'UNHIDE') => {
     if (action === 'UNHIDE') {
@@ -50,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
             <img
               src={imgSrc}
               alt={product.name}
-              onError={handleImageError}
+              onError={handleImageFallback}
               loading="lazy"
               className="product-card-img"
             />
@@ -106,7 +107,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
                 {isInactive ? (
                   <>
                     <Eye style={{ width: 12, height: 12 }} />
-                    <span>Gỡ Ẩn</span>
+                    <span>Bỏ Ẩn</span>
                   </>
                 ) : (
                   <>

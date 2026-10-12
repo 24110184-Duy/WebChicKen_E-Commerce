@@ -416,6 +416,12 @@ public class ProductServiceImpl implements ProductService {
         ProductEntity product = productDAO.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
         product.setStatus(newStatus);
+        if (newStatus == ProductStatus.ACTIVE) {
+            product.setRejectionReason(null);
+            if (product.getModerationNote() == null || product.getModerationNote().isBlank()) {
+                product.setModerationNote("Đã bỏ ẩn và kích hoạt mở bán lại trên toàn sàn.");
+            }
+        }
         product.setUpdatedAt(LocalDateTime.now());
         productDAO.update(product);
     }

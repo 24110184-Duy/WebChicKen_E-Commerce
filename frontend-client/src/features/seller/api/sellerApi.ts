@@ -1,4 +1,5 @@
 import { httpClient } from '../../../shared/api/httpClient'
+import { mediaApi } from '../../../shared/api/mediaApi'
 
 export type ProductStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL' | 'OUT_OF_STOCK'
 
@@ -362,13 +363,7 @@ export const sellerApi = {
 
   /** Tải lên ảnh sản phẩm lên Media Service (POST /api/v1/media/upload) */
   uploadProductImage: async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append('file', file)
-    const res = await httpClient.post<{ fileUrl: string }>('/media/upload', formData)
-    if (!res.data?.fileUrl) {
-      throw new Error('Tải ảnh lên máy chủ không thành công.')
-    }
-    return res.data.fileUrl
+    return mediaApi.uploadImage(file)
   },
 
   /** Tạo sản phẩm mới kèm các biến thể (POST /api/v1/shops/{shopId}/products) */
@@ -404,6 +399,15 @@ export const sellerApi = {
     )
     if (!res.data) throw new Error('Không thể thay đổi trạng thái đăng bán.')
     return res.data
+  },
+
+  /** Thay đổi trạng thái sản phẩm (Bỏ ẩn / Tạm ẩn) */
+  changeProductStatus: async (
+    shopId: string,
+    productId: string,
+    status: ProductStatus
+  ): Promise<SellerProductItem> => {
+    return sellerApi.setProductPublication(shopId, productId, status)
   },
 
   /** Xóa mềm sản phẩm (DELETE /api/v1/shops/{shopId}/products/{productId}) */

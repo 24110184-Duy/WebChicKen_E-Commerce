@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
-import { httpClient } from '../../shared/api/httpClient'
+import { mediaApi } from '../../shared/api/mediaApi'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export interface ImageUploaderProps {
   value?: string
@@ -11,15 +12,6 @@ export interface ImageUploaderProps {
   disabled?: boolean
   className?: string
   aspectRatio?: 'square' | 'video' | 'auto'
-}
-
-interface UploadResponse {
-  id: string
-  fileName: string
-  fileUrl: string
-  contentType: string
-  fileSize: number
-  createdAt: string
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -58,20 +50,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       return
     }
 
-    const previewUrl = URL.createObjectURL(file)
-    setLocalPreview(previewUrl)
     setIsUploading(true)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await httpClient.post<UploadResponse>('/media/upload', formData)
-      const uploadedUrl = res.data?.fileUrl || previewUrl
+      const uploadedUrl = await mediaApi.uploadImage(file)
+      setLocalPreview(uploadedUrl)
       onChange?.(uploadedUrl)
     } catch (err: any) {
-      console.warn('[ImageUploader] Upload failed, falling back to local preview:', err)
-      onChange?.(previewUrl)
+      console.error('[ImageUploader] Upload failed:', err)
+      setError(err?.message || 'Không thể tải ảnh lên máy chủ. Vui lòng thử lại.')
     } finally {
       setIsUploading(false)
     }
@@ -136,7 +123,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
         {currentImage ? (
           <div className="image-uploader-preview">
-            <img src={currentImage} alt="Uploaded preview" className="image-uploader-img" />
+            <img
+              src={resolveImageUrl(currentImage)}
+              alt="Uploaded preview"
+              className="image-uploader-img"
+              onError={handleImageFallback}
+            />
             <div className="image-uploader-overlay">
               <button
                 type="button"
@@ -229,8 +221,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               }}
             >
               <img
-                src={currentImage}
+                src={resolveImageUrl(currentImage)}
                 alt="Full size view"
+                onError={handleImageFallback}
                 style={{
                   maxWidth: '100%',
                   maxHeight: '75vh',

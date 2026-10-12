@@ -97,7 +97,7 @@ export const ProductUnhideModal: React.FC<ProductUnhideModalProps> = ({
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#15803d' }}>
-                Gỡ Ẩn & Kích Hoạt Mở Bán Lại
+                Bỏ Ẩn & Kích Hoạt Mở Bán Lại
               </h3>
               <span style={{ fontSize: 12, color: '#166534' }}>
                 Sản phẩm sẽ xuất hiện công khai trở lại trên sàn thương mại điện tử
@@ -331,7 +331,7 @@ export const ProductUnhideModal: React.FC<ProductUnhideModalProps> = ({
               ) : (
                 <>
                   <CheckCircle2 size={15} />
-                  <span>Xác Nhận Gỡ Ẩn & Mở Bán</span>
+                  <span>Xác Nhận Bỏ Ẩn & Mở Bán</span>
                 </>
               )}
             </button>

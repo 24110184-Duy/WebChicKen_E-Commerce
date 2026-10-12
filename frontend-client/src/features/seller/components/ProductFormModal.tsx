@@ -24,6 +24,7 @@ import {
 import { formatMoney } from '../../../shared/lib/formatMoney'
 import { useAuthStore } from '../../../app/store/authStore'
 import { toast } from '../../../components/feedback/Toast'
+import { resolveImageUrl, handleImageFallback } from '../../../shared/utils/imageUrl'
 
 export interface ProductFormModalProps {
   isOpen: boolean
@@ -104,39 +105,42 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         )
         setIsLoadingDetail(false)
       } else if (initialProduct.id) {
-        // Biến thể hoặc mô tả chi tiết chưa có sẵn trong danh sách tóm tắt, tự động tải chi tiết sản phẩm
-        setIsLoadingDetail(true)
-        const currentShopId = shopId || initialProduct.storeId
-        sellerApi
-          .getStoreProductDetail(currentShopId, initialProduct.id)
-          .then((detail) => {
-            if (detail) {
-              setName(detail.name || '')
-              if (detail.categoryId) setCategoryId(detail.categoryId)
-              setDescription(detail.description || '')
-              setStatus(detail.status || 'PENDING_APPROVAL')
-              if (detail.imageUrls && detail.imageUrls.length > 0) {
-                setImageUrls(detail.imageUrls)
-              } else if (detail.thumbnailUrl) {
-                setImageUrls([detail.thumbnailUrl])
+        const currentShopId = initialProduct.storeId || shopId
+        if (currentShopId) {
+          setIsLoadingDetail(true)
+          sellerApi
+            .getStoreProductDetail(currentShopId, initialProduct.id)
+            .then((detail) => {
+              if (detail) {
+                setName(detail.name || '')
+                if (detail.categoryId) setCategoryId(detail.categoryId)
+                setDescription(detail.description || '')
+                setStatus(detail.status || 'PENDING_APPROVAL')
+                if (detail.imageUrls && detail.imageUrls.length > 0) {
+                  setImageUrls(detail.imageUrls)
+                } else if (detail.thumbnailUrl) {
+                  setImageUrls([detail.thumbnailUrl])
+                }
+                if (detail.variants && detail.variants.length > 0) {
+                  setVariants(
+                    detail.variants.map((v) => ({
+                      attribute: v.attribute,
+                      basePriceMinor: v.basePriceMinor,
+                      stockQuantity: v.stockQuantity,
+                    }))
+                  )
+                }
               }
-              if (detail.variants && detail.variants.length > 0) {
-                setVariants(
-                  detail.variants.map((v) => ({
-                    attribute: v.attribute,
-                    basePriceMinor: v.basePriceMinor,
-                    stockQuantity: v.stockQuantity,
-                  }))
-                )
-              }
-            }
-          })
-          .catch((err) => {
-            console.error('Lỗi khi tải chi tiết sản phẩm:', err)
-          })
-          .finally(() => {
-            setIsLoadingDetail(false)
-          })
+            })
+            .catch((err) => {
+              console.error('Lỗi khi tải chi tiết sản phẩm:', err)
+            })
+            .finally(() => {
+              setIsLoadingDetail(false)
+            })
+        } else {
+          setIsLoadingDetail(false)
+        }
       }
     } else {
       setName('')
@@ -310,7 +314,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
     setIsSubmitting(true)
     try {
-      let currentShopId = shopId || initialProduct?.storeId
+      let currentShopId = (isEditing && initialProduct?.storeId) ? initialProduct.storeId : (shopId || initialProduct?.storeId)
       if (!currentShopId) {
         const myStore = await sellerApi.getMyStore().catch(() => null)
         if (myStore?.id) {
@@ -491,22 +495,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       onChange={(e) => setStatus(e.target.value as any)}
                       className="seller-form-select"
                     >
-                      {isEditing && (initialProduct?.status === 'ACTIVE' || initialProduct?.status === 'OUT_OF_STOCK' || (initialProduct?.status === 'INACTIVE' && !initialProduct?.rejectionReason)) ? (
-                        <>
-                          <option value="ACTIVE">Đang mở bán (Live on Storefront)</option>
-                          <option value="INACTIVE">Tạm ẩn sản phẩm (Hidden)</option>
-                        </>
-                      ) : isEditing && initialProduct?.status === 'PENDING_APPROVAL' ? (
-                        <>
-                          <option value="PENDING_APPROVAL">Chờ duyệt mở bán (Pending Review)</option>
-                          <option value="INACTIVE">Lưu bản nháp (Tạm ẩn)</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="PENDING_APPROVAL">Gửi duyệt mở bán (Chờ Admin phê duyệt)</option>
-                          <option value="INACTIVE">Lưu bản nháp (Ẩn sản phẩm)</option>
-                        </>
-                      )}
+                      <option value="ACTIVE">Đang mở bán / Bỏ ẩn (Live on Storefront)</option>
+                      <option value="INACTIVE">Tạm ẩn sản phẩm (Hidden)</option>
+                      <option value="PENDING_APPROVAL">Chờ duyệt mở bán (Pending Review)</option>
                     </select>
                     {!isEditing && (
                       <span style={{ fontSize: 12, color: '#f59e0b', marginTop: 4, display: 'block' }}>
@@ -582,8 +573,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   }}
                 >
                   <img
-                    src={url}
+                    src={resolveImageUrl(url)}
                     alt={`Product ${idx + 1}`}
+                    onError={handleImageFallback}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
 

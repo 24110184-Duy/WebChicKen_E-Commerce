@@ -7,6 +7,7 @@ import { Star, CheckCircle2, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { ReviewModal } from '../../../features/reviews/components/ReviewModal'
 import type { ReviewResponse } from '../../../features/reviews/types'
 import { toast } from '../../../components/feedback/Toast'
+import { resolveImageUrl, handleImageFallback } from '../../../shared/utils/imageUrl'
 
 const CANCEL_REASONS = [
   'Changed my mind / No longer needed',
@@ -377,8 +378,9 @@ export const OrdersPage: React.FC = () => {
                         }}
                       >
                         <img
-                          src={item.imageUrl || '/placeholder-product.png'}
+                          src={resolveImageUrl(item.imageUrl)}
                           alt={item.productName}
+                          onError={handleImageFallback}
                           style={{
                             width: '56px',
                             height: '56px',

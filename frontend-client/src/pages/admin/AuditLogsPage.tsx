@@ -19,8 +19,10 @@ import type {
   AuditLogActionFilter,
   AuditLogTargetFilter
 } from '../../features/admin/types'
+import { getAuditActionBadge as getActionBadge } from '../../features/admin/types'
 import { fetchAuditLogs } from '../../features/admin/api/adminAuditApi'
 import { AuditLogDetailModal } from '../../features/admin/components/AuditLogDetailModal'
+import { formatDateTime, formatTimeAgo } from '../../shared/lib/formatDate'
 
 export const AdminAuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLogItem[]>([])
@@ -97,50 +99,6 @@ export const AdminAuditLogsPage: React.FC = () => {
     setSearchQuery('')
     setPage(1)
     showToast('Đã làm mới và đặt lại toàn bộ bộ lọc', 'success')
-  }
-
-  const formatDateTime = (isoString?: string) => {
-    if (!isoString) return 'N/A'
-    const d = new Date(isoString)
-    if (isNaN(d.getTime())) return isoString
-    return d.toLocaleString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
-
-  const formatTimeAgo = (isoString?: string) => {
-    if (!isoString) return ''
-    const d = new Date(isoString)
-    const now = new Date()
-    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000)
-    if (diffSec < 60) return 'Vừa xong'
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} phút trước`
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} giờ trước`
-    return `${Math.floor(diffSec / 86400)} ngày trước`
-  }
-
-  const getActionBadge = (action: string) => {
-    switch (action) {
-      case 'BAN_USER':
-        return { label: 'Khóa tài khoản', bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' }
-      case 'UNBAN_USER':
-        return { label: 'Mở khóa tài khoản', bg: '#ecfdf5', color: '#065f46', border: '#a7f3d0' }
-      case 'APPROVE_PRODUCT':
-        return { label: 'Duyệt sản phẩm', bg: '#ecfdf5', color: '#065f46', border: '#a7f3d0' }
-      case 'REJECT_PRODUCT':
-        return { label: 'Từ chối sản phẩm', bg: '#fef2f2', color: '#991b1b', border: '#fecaca' }
-      case 'APPROVE_SELLER':
-        return { label: 'Duyệt người bán', bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' }
-      case 'REJECT_SELLER':
-        return { label: 'Từ chối người bán', bg: '#fff7ed', color: '#9a3412', border: '#ffedd5' }
-      default:
-        return { label: action, bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' }
-    }
   }
 
   return (

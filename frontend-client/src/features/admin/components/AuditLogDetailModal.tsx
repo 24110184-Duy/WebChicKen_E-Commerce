@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { X, Copy, Check, ShieldCheck, ScrollText, Calendar, Globe, User, Tag, FileText } from 'lucide-react'
 import type { AuditLogItem } from '../types'
+import { getAuditActionBadge as getActionBadge } from '../types'
+import { formatDateTime } from '../../../shared/lib/formatDate'
 
 export interface AuditLogDetailModalProps {
   log: AuditLogItem | null
@@ -21,39 +23,6 @@ export const AuditLogDetailModal: React.FC<AuditLogDetailModalProps> = ({
     navigator.clipboard.writeText(text)
     setCopiedField(field)
     setTimeout(() => setCopiedField(null), 2000)
-  }
-
-  const formatDateTime = (isoString?: string) => {
-    if (!isoString) return 'Chưa ghi nhận'
-    const d = new Date(isoString)
-    if (isNaN(d.getTime())) return isoString
-    return d.toLocaleString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
-
-  const getActionBadge = (action: string) => {
-    switch (action) {
-      case 'BAN_USER':
-        return { label: 'Khóa tài khoản', bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' }
-      case 'UNBAN_USER':
-        return { label: 'Mở khóa tài khoản', bg: '#ecfdf5', color: '#065f46', border: '#a7f3d0' }
-      case 'APPROVE_PRODUCT':
-        return { label: 'Duyệt sản phẩm', bg: '#ecfdf5', color: '#065f46', border: '#a7f3d0' }
-      case 'REJECT_PRODUCT':
-        return { label: 'Từ chối sản phẩm', bg: '#fef2f2', color: '#991b1b', border: '#fecaca' }
-      case 'APPROVE_SELLER':
-        return { label: 'Duyệt người bán', bg: '#ecfdf5', color: '#065f46', border: '#a7f3d0' }
-      case 'REJECT_SELLER':
-        return { label: 'Từ chối người bán', bg: '#fff7ed', color: '#9a3412', border: '#ffedd5' }
-      default:
-        return { label: action, bg: '#f1f5f9', color: '#334155', border: '#cbd5e1' }
-    }
   }
 
   const badge = getActionBadge(log.action)

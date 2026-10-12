@@ -30,6 +30,8 @@ import {
 } from '../../features/admin/api/adminOrderApi'
 import { adminCategoryApi, type CategoryItem } from '../../features/admin/api/adminCategoryApi'
 import { adminProductApi } from '../../features/admin/api/adminProductApi'
+import { formatMoney as formatVnd } from '../../shared/lib/formatMoney'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export const AdminOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<AdminOrder[]>([])
@@ -166,10 +168,6 @@ export const AdminOrdersPage: React.FC = () => {
     } finally {
       setSubmittingDelete(false)
     }
-  }
-
-  const formatVnd = (minor: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(minor || 0)
   }
 
   const getStatusBadge = (status: string) => {
@@ -936,8 +934,9 @@ export const AdminOrdersPage: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             {item.imageUrl ? (
                               <img
-                                src={item.imageUrl}
+                                src={resolveImageUrl(item.imageUrl)}
                                 alt={item.productName}
+                                onError={handleImageFallback}
                                 style={{
                                   width: 48,
                                   height: 48,

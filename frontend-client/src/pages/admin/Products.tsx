@@ -29,7 +29,7 @@ export const AdminProductsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activeTab, setActiveTab] = useState<ProductModerationFilterTab>('PENDING_APPROVAL')
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [showHiddenInAll, setShowHiddenInAll] = useState<boolean>(false)
+  const [showHiddenInAll, setShowHiddenInAll] = useState<boolean>(true)
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<AdminProductItem | null>(null)
@@ -129,12 +129,9 @@ export const AdminProductsPage: React.FC = () => {
     if (!unhidingProduct) return
     setIsSubmitting(true)
     try {
-      await adminProductApi.reviewProduct(unhidingProduct.id, {
-        status: 'ACTIVE',
-        moderationNote: note || 'Quản trị viên đã kiểm tra và gỡ ẩn / mở bán lại sản phẩm trên sàn.'
-      })
+      await adminProductApi.unhideProduct(unhidingProduct.id, note)
       showToast(
-        `Đã gỡ ẩn thành công sản phẩm "${unhidingProduct.name}" và cho phép mở bán lại trên toàn sàn!`,
+        `Đã bỏ ẩn thành công sản phẩm "${unhidingProduct.name}" và cho phép mở bán lại trên toàn sàn!`,
         'success'
       )
       setIsUnhideModalOpen(false)
@@ -704,11 +701,11 @@ export const AdminProductsPage: React.FC = () => {
                               <button
                                 onClick={() => handleOpenUnhide(p)}
                                 disabled={isSubmitting}
-                                title="Gỡ ẩn và cho phép mở bán lại trên toàn sàn"
+                                title="Bỏ ẩn và cho phép mở bán lại trên toàn sàn"
                                 className="mod-btn-action unhide"
                               >
                                 <Eye size={13} />
-                                <span>Gỡ Ẩn Sản Phẩm</span>
+                                <span>Bỏ Ẩn (Mở Bán)</span>
                               </button>
                             )}
                           </div>
@@ -745,6 +742,7 @@ export const AdminProductsPage: React.FC = () => {
         <ProductRejectModal
           isOpen={isRejectModalOpen}
           productName={rejectingProduct?.name || ''}
+          actionType={rejectingProduct?.status === 'ACTIVE' ? 'HIDE' : 'REJECT'}
           onClose={() => setIsRejectModalOpen(false)}
           onConfirm={handleConfirmReject}
           isSubmitting={isSubmitting}

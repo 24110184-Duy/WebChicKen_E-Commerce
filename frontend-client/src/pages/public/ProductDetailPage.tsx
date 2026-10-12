@@ -12,6 +12,7 @@ import { ProductShopCard } from '../../features/shop'
 import { toast } from '../../components/feedback/Toast'
 import { ShieldAlert, EyeOff, Eye } from 'lucide-react'
 import { AdminProductActionModal } from '../../features/admin/components/AdminProductActionModal'
+import { resolveImageUrl, handleImageFallback } from '../../shared/utils/imageUrl'
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -39,7 +40,7 @@ export const ProductDetailPage: React.FC = () => {
     } else if (action === 'UNHIDE') {
       setIsModeratedByAdmin(false)
       setModerationReason('')
-      toast.success('Đã gỡ ẩn và mở bán lại sản phẩm trên sàn thành công!')
+      toast.success('Đã bỏ ẩn và mở bán lại sản phẩm trên sàn thành công!')
       if (product) {
         setProduct({ ...product, status: 'ACTIVE' })
       }
@@ -233,7 +234,7 @@ export const ProductDetailPage: React.FC = () => {
                     }}
                   >
                     <Eye size={15} />
-                    <span>Gỡ Ẩn / Mở Bán Lại</span>
+                    <span>Bỏ Ẩn / Mở Bán Lại</span>
                   </button>
                 ) : (
                   <button
@@ -269,9 +270,10 @@ export const ProductDetailPage: React.FC = () => {
           <div className="pdp-gallery">
             <div className="pdp-main-img-box">
               <img
-                src={selectedImage}
+                src={resolveImageUrl(selectedImage)}
                 alt={product.name}
                 className="pdp-main-img"
+                onError={handleImageFallback}
               />
             </div>
 
@@ -284,7 +286,11 @@ export const ProductDetailPage: React.FC = () => {
                     onClick={() => setSelectedImage(img)}
                     className={`pdp-thumb-btn ${selectedImage === img ? 'active' : ''}`}
                   >
-                    <img src={img} alt={`Thumb ${idx + 1}`} />
+                    <img
+                      src={resolveImageUrl(img)}
+                      alt={`Thumb ${idx + 1}`}
+                      onError={handleImageFallback}
+                    />
                   </button>
                 ))}
               </div>

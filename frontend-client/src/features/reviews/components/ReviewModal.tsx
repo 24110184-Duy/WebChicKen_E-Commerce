@@ -11,6 +11,8 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { reviewApi } from '../api/reviewApi'
+import { mediaApi } from '../../../shared/api/mediaApi'
+import { resolveImageUrl, handleImageFallback } from '../../../shared/utils/imageUrl'
 import type { ReviewResponse } from '../types'
 
 export interface ReviewModalProps {
@@ -67,6 +69,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   const [mediaUrls, setMediaUrls] = useState<string[]>([])
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // File input ref for local OS file picking
@@ -78,7 +81,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   const isOverWordLimit = wordCount > MAX_WORDS
 
   // Handle local image file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
@@ -100,26 +103,30 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       setErrorMessage('Some files are invalid (only JPG, PNG, WEBP, GIF under 5MB allowed).')
     }
 
-    let loadedCount = 0
-    const loadedDataUrls: string[] = []
+    if (validFiles.length === 0) return
 
-    validFiles.forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (loadEvent) => {
-        const result = loadEvent.target?.result as string
-        if (result) {
-          loadedDataUrls.push(result)
-        }
-        loadedCount++
-        if (loadedCount === validFiles.length) {
-          setMediaUrls((prev) => [...prev, ...loadedDataUrls].slice(0, 5))
+    setIsUploadingMedia(true)
+    try {
+      const uploadedUrls: string[] = []
+      for (const file of validFiles) {
+        try {
+          const fileUrl = await mediaApi.uploadImage(file)
+          if (fileUrl) {
+            uploadedUrls.push(fileUrl)
+          }
+        } catch (uploadErr: any) {
+          console.error('Lỗi khi tải ảnh đánh giá:', uploadErr)
+          setErrorMessage(uploadErr?.message || 'Không thể tải ảnh lên máy chủ.')
         }
       }
-      reader.readAsDataURL(file)
-    })
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      if (uploadedUrls.length > 0) {
+        setMediaUrls((prev) => [...prev, ...uploadedUrls].slice(0, 5))
+      }
+    } finally {
+      setIsUploadingMedia(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -225,9 +232,10 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         {/* 3. Product Info Bar */}
         <div className="review-product-bar">
           <img
-            src={productImage || '/placeholder-product.png'}
+            src={resolveImageUrl(productImage)}
             alt={productName}
             className="review-product-img"
+            onError={handleImageFallback}
           />
           <div className="review-product-info">
             <h4 className="review-product-name">{productName}</h4>
@@ -330,7 +338,11 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               {/* Existing Uploaded Thumbnails */}
               {mediaUrls.map((url, idx) => (
                 <div key={idx} className="review-media-thumb">
-                  <img src={url} alt={`Photo ${idx + 1}`} />
+                  <img
+                    src={resolveImageUrl(url)}
+                    alt={`Photo ${idx + 1}`}
+                    onError={handleImageFallback}
+                  />
                   <button
                     type="button"
                     onClick={() => handleRemoveMedia(idx)}
@@ -346,13 +358,20 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               {mediaUrls.length < 5 && (
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => !isUploadingMedia && fileInputRef.current?.click()}
                   className="review-upload-box"
                   title="Click to select photos from your device"
+                  disabled={isUploadingMedia}
                 >
-                  <Camera style={{ width: 24, height: 24, color: '#f59e0b' }} />
-                  <span>{mediaUrls.length}/5</span>
-                  <span style={{ fontSize: 10, color: '#64748b' }}>Add Photos</span>
+                  {isUploadingMedia ? (
+                    <Loader2 style={{ width: 24, height: 24, color: '#f59e0b', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <Camera style={{ width: 24, height: 24, color: '#f59e0b' }} />
+                  )}
+                  <span>{isUploadingMedia ? '...' : `${mediaUrls.length}/5`}</span>
+                  <span style={{ fontSize: 10, color: '#64748b' }}>
+                    {isUploadingMedia ? 'Đang tải...' : 'Add Photos'}
+                  </span>
                 </button>
               )}
             </div>

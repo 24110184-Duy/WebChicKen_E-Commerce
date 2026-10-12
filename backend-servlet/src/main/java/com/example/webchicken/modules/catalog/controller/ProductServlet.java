@@ -129,11 +129,12 @@ public class ProductServlet extends BaseApiServlet {
             return;
         }
 
-        // Xử lý kiểm duyệt sản phẩm cho Admin: PUT /{id}/review hoặc PUT /{id}/moderation
-        if (pathInfo.contains("/review") || pathInfo.contains("/moderation")) {
+        // Xử lý kiểm duyệt / bỏ ẩn sản phẩm cho Admin: PUT /{id}/review, /{id}/moderation, /{id}/unhide, /{id}/restore
+        boolean isUnhideAction = pathInfo.contains("/unhide") || pathInfo.contains("/restore");
+        if (pathInfo.contains("/review") || pathInfo.contains("/moderation") || isUnhideAction) {
             com.example.webchicken.common.model.AuthenticatedUser user = getAuthenticatedUser(req);
             if (user == null || !user.isAdmin()) {
-                forbidden(resp, "Chỉ Quản trị viên mới có quyền kiểm duyệt sản phẩm.");
+                forbidden(resp, "Chỉ Quản trị viên mới có quyền kiểm duyệt hoặc bỏ ẩn sản phẩm.");
                 return;
             }
 
@@ -143,6 +144,10 @@ public class ProductServlet extends BaseApiServlet {
                 productId = productId.substring(0, productId.length() - "/review".length());
             } else if (productId.endsWith("/moderation")) {
                 productId = productId.substring(0, productId.length() - "/moderation".length());
+            } else if (productId.endsWith("/unhide")) {
+                productId = productId.substring(0, productId.length() - "/unhide".length());
+            } else if (productId.endsWith("/restore")) {
+                productId = productId.substring(0, productId.length() - "/restore".length());
             }
             if (productId.contains("/")) {
                 String[] segments = productId.split("/");
@@ -152,18 +157,23 @@ public class ProductServlet extends BaseApiServlet {
 
             if (!productId.isBlank()) {
                 try {
-                    com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest body =
-                            readBody(req, com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest.class);
+                    com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest body = null;
+                    try {
+                        body = readBody(req, com.example.webchicken.modules.catalog.model.dto.request.ReviewProductRequest.class);
+                    } catch (Exception ignored) {}
 
-                    if (body == null || body.status() == null || body.status().isBlank()) {
+                    String rawStatus = (body != null && body.status() != null && !body.status().isBlank())
+                            ? body.status().trim().toUpperCase()
+                            : (isUnhideAction ? "ACTIVE" : null);
+
+                    if (rawStatus == null) {
                         badRequest(resp, "VALIDATION_ERROR", "Trạng thái kiểm duyệt không được để trống.");
                         return;
                     }
 
-                    String rawStatus = body.status().trim().toUpperCase();
-                    if ("REJECTED".equals(rawStatus) || "REJECT".equals(rawStatus)) {
+                    if ("REJECTED".equals(rawStatus) || "REJECT".equals(rawStatus) || "HIDE".equals(rawStatus)) {
                         rawStatus = "INACTIVE";
-                    } else if ("APPROVE".equals(rawStatus) || "APPROVED".equals(rawStatus)) {
+                    } else if ("APPROVE".equals(rawStatus) || "APPROVED".equals(rawStatus) || "UNHIDE".equals(rawStatus)) {
                         rawStatus = "ACTIVE";
                     }
 
@@ -176,21 +186,26 @@ public class ProductServlet extends BaseApiServlet {
                     }
 
                     String adminName = (user.email() != null && !user.email().isBlank()) ? user.email() : user.userId();
+                    String moderationNote = (body != null && body.moderationNote() != null && !body.moderationNote().isBlank())
+                            ? body.moderationNote().trim()
+                            : (targetStatus == ProductStatus.ACTIVE ? "Quản trị viên đã bỏ ẩn và mở bán lại sản phẩm trên sàn." : null);
+                    String rejectionReason = (body != null) ? body.rejectionReason() : null;
+
                     ProductDetailResponse reviewed = service().reviewProduct(
                             productId,
                             targetStatus,
-                            body.rejectionReason(),
+                            rejectionReason,
                             "ADMIN: " + adminName,
-                            body.moderationNote()
+                            moderationNote
                     );
 
                     try {
                         com.example.webchicken.modules.backoffice.service.AuditLogService auditService = getService("auditLogService");
                         if (auditService != null) {
-                            String act = (targetStatus == ProductStatus.ACTIVE) ? "APPROVE_PRODUCT" : "REJECT_PRODUCT";
+                            String act = (targetStatus == ProductStatus.ACTIVE) ? "UNHIDE_PRODUCT" : "HIDE_PRODUCT";
                             String detail = (targetStatus == ProductStatus.ACTIVE)
-                                    ? "Duyệt mở bán sản phẩm: " + reviewed.name()
-                                    : "Từ chối sản phẩm (" + reviewed.name() + "). Lý do: " + body.rejectionReason();
+                                    ? "Bỏ ẩn và mở bán lại sản phẩm: " + reviewed.name()
+                                    : "Tạm ẩn sản phẩm (" + reviewed.name() + "). Lý do: " + rejectionReason;
                             auditService.log(user.userId(), act, "PRODUCT", productId, detail, req.getRemoteAddr());
                         }
                     } catch (Exception ignored) {}
