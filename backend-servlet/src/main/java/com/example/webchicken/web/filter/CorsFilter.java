@@ -40,7 +40,13 @@ public class CorsFilter implements Filter {
         }
 
         if (configuredOrigins != null && !configuredOrigins.isBlank()) {
-            allowedOrigins = new HashSet<>(Arrays.asList(configuredOrigins.split(",")));
+            allowedOrigins = new HashSet<>();
+            for (String o : configuredOrigins.split(",")) {
+                String clean = cleanOrigin(o);
+                if (!clean.isEmpty()) {
+                    allowedOrigins.add(clean);
+                }
+            }
         } else {
             allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
         }
@@ -79,7 +85,20 @@ public class CorsFilter implements Filter {
         if (allowedOrigins == null) {
             allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
         }
-        return allowedOrigins.contains(origin.trim());
+        String clean = cleanOrigin(origin);
+        return allowedOrigins.contains(clean);
+    }
+
+    private static String cleanOrigin(String origin) {
+        if (origin == null) return "";
+        String s = origin.trim();
+        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
+            s = s.substring(1, s.length() - 1).trim();
+        }
+        while (s.endsWith("/")) {
+            s = s.substring(0, s.length() - 1).trim();
+        }
+        return s;
     }
 }
 
