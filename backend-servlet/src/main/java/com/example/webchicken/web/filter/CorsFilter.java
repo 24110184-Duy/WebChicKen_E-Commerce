@@ -13,11 +13,14 @@ import java.util.Set;
  * <p>
  * Xử lý chính sách CORS cho môi trường Dev và Production:
  * <ul>
- *   <li>Kiểm tra Origin theo danh sách trắng (whitelist), tuyệt đối không dùng {@code *} vì có {@code credentials: true}.</li>
- *   <li>Cho phép các method: GET, POST, PUT, PATCH, DELETE, OPTIONS.</li>
- *   <li>Cho phép các headers: Authorization, Content-Type, Accept-Language, Idempotency-Key, X-Request-Id.</li>
- *   <li>Expose các headers: X-Request-Id, Location, ETag, Retry-After.</li>
- *   <li>Preflight (OPTIONS) trả {@code 204 No Content} ngay lập tức (không chạy tiếp filter chain).</li>
+ * <li>Kiểm tra Origin theo danh sách trắng (whitelist), tuyệt đối không dùng
+ * {@code *} vì có {@code credentials: true}.</li>
+ * <li>Cho phép các method: GET, POST, PUT, PATCH, DELETE, OPTIONS.</li>
+ * <li>Cho phép các headers: Authorization, Content-Type, Accept-Language,
+ * Idempotency-Key, X-Request-Id.</li>
+ * <li>Expose các headers: X-Request-Id, Location, ETag, Retry-After.</li>
+ * <li>Preflight (OPTIONS) trả {@code 204 No Content} ngay lập tức (không chạy
+ * tiếp filter chain).</li>
  * </ul>
  * </p>
  */
@@ -27,8 +30,7 @@ public class CorsFilter implements Filter {
             "http://localhost:5173",
             "http://127.0.0.1:5173",
             "http://localhost:3000",
-            "http://localhost:8080"
-    ));
+            "http://localhost:8080"));
 
     private Set<String> allowedOrigins;
 
@@ -43,9 +45,7 @@ public class CorsFilter implements Filter {
             allowedOrigins = new HashSet<>();
             for (String o : configuredOrigins.split(",")) {
                 String clean = cleanOrigin(o);
-                if (!clean.isEmpty()) {
-                    allowedOrigins.add(clean);
-                }
+                if (!clean.isEmpty()) allowedOrigins.add(clean);
             }
         } else {
             allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
@@ -85,20 +85,15 @@ public class CorsFilter implements Filter {
         if (allowedOrigins == null) {
             allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
         }
-        String clean = cleanOrigin(origin);
-        return allowedOrigins.contains(clean);
+        return allowedOrigins.contains(cleanOrigin(origin));
     }
 
     private static String cleanOrigin(String origin) {
         if (origin == null) return "";
         String s = origin.trim();
-        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
-            s = s.substring(1, s.length() - 1).trim();
-        }
         while (s.endsWith("/")) {
             s = s.substring(0, s.length() - 1).trim();
         }
         return s;
     }
 }
-

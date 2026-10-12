@@ -70,109 +70,14 @@ export const OrdersPage: React.FC = () => {
   const fetchOrders = async () => {
     setLoading(true)
     const statusParam = activeTab === 'ALL' ? undefined : (activeTab as OrderStatus)
-    let list = await orderApi.getOrders(statusParam)
-
-    // Fallback if user just placed an order or testing client-side
-    if (list.length === 0) {
-      try {
-        const stored = sessionStorage.getItem('webchicken_last_order')
-        const currentLocalStatus = (sessionStorage.getItem('webchicken_last_order_status') as OrderStatus) || 'PENDING'
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          const fallbackOrder: OrderResponse = {
-            id: parsed.orderCode || 'ORD-20261004-583099',
-            orderCode: parsed.orderCode || 'ORD-20261004-583099',
-            orderGroupId: 'grp-001',
-            customerId: 'cust-001',
-            storeId: 'store-001',
-            storeName: 'TechZone Official Store',
-            orderDate: parsed.createdAt || new Date().toISOString(),
-            status: currentLocalStatus,
-            paymentStatus: (parsed.paymentStatus as any) || 'UNPAID',
-            paymentMethod: parsed.paymentMethod || 'COD',
-            totalAmountMinor: parsed.grandTotalMinor || 499000,
-            shippingFeeMinor: parsed.shippingTotalMinor || 25000,
-            discountAmountMinor: parsed.voucherDiscountMinor || 25000,
-            recipientName: parsed.recipient?.recipientName || 'John Doe',
-            recipientPhone: parsed.recipient?.phoneNumber || '0901234567',
-            shippingAddress: parsed.recipient ? `${parsed.recipient.streetAddress}, ${parsed.recipient.district}, ${parsed.recipient.city}` : '123 Nguyen Hue, District 1, HCMC',
-            items: parsed.items ? parsed.items.map((it: any) => ({
-              id: it.id || 'item-1',
-              productId: it.productId,
-              productName: it.name,
-              variantName: it.skuName,
-              imageUrl: it.imageUrl,
-              quantity: it.quantity,
-              unitPriceMinor: it.priceMinor,
-              subtotalMinor: it.priceMinor * it.quantity,
-            })) : [
-              {
-                id: 'item-1',
-                productId: 'prod-1',
-                productName: 'Tai Nghe Bluetooth Không Dây Chống Ồn ANC',
-                variantName: 'Màu Đen Nhám (Matte Black)',
-                imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
-                quantity: 1,
-                unitPriceMinor: 499000,
-                subtotalMinor: 499000,
-              }
-            ]
-          }
-          if (!statusParam || fallbackOrder.status === statusParam) {
-            list = [fallbackOrder]
-          }
-        }
-      } catch {}
+    try {
+      const list = await orderApi.getOrders(statusParam)
+      setOrders(list || [])
+    } catch {
+      setOrders([])
+    } finally {
+      setLoading(false)
     }
-
-    // Auto-create a DELIVERED order for instant review testing when DB is empty
-    if (list.length === 0 && (!statusParam || statusParam === 'DELIVERED')) {
-      list = [
-        {
-          id: 'ord-demo-01',
-          orderCode: 'ORD-20261004-998822',
-          orderGroupId: 'grp-demo-01',
-          customerId: 'cust-demo-01',
-          storeId: 'store-1',
-          storeName: 'TechZone Official Store',
-          orderDate: '2026-10-02T09:30:00Z',
-          status: 'DELIVERED',
-          paymentStatus: 'PAID',
-          paymentMethod: 'COD',
-          totalAmountMinor: 628000,
-          shippingFeeMinor: 20000,
-          discountAmountMinor: 20000,
-          recipientName: 'You (Valued Customer)',
-          recipientPhone: '0909123456',
-          shippingAddress: 'Bitexco Financial Tower, 2 Hai Trieu, Ben Nghe, District 1, HCMC',
-          items: [
-            {
-              id: 'item-demo-01',
-              productId: 'prod-1',
-              productName: 'Tai Nghe Bluetooth Không Dây Chống Ồn ANC',
-              variantName: 'Màu Đen Nhám (Matte Black)',
-              imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
-              quantity: 1,
-              unitPriceMinor: 499000,
-              subtotalMinor: 499000,
-            },
-            {
-              id: 'item-demo-02',
-              productId: 'prod-2',
-              productName: 'Cáp Sạc Nhanh Type-C to Lightning 20W Bọc Dù',
-              variantName: 'Chiều Dài 1.2m',
-              imageUrl: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80',
-              quantity: 1,
-              unitPriceMinor: 149000,
-              subtotalMinor: 149000,
-            },
-          ],
-        },
-      ]
-    }
-
-    setOrders(list)
-    setLoading(false)
   }
 
   useEffect(() => {
