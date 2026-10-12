@@ -5,6 +5,7 @@ import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import { orderApi } from '../../features/orders/api/orderApi'
 import { cartStore } from '../../app/store/cartStore'
+import { httpClient } from '../../shared/api/httpClient'
 
 interface OrderItem {
   id?: string
@@ -98,36 +99,42 @@ export const PaymentResultPage: React.FC = () => {
           }
         } catch {}
 
-        // Tải thông tin đơn hàng thật từ server nếu sessionStorage rỗng
-        if (vnpTxnRef) {
-          orderApi.getOrderByCode(vnpTxnRef).then((backendOrder) => {
-            if (backendOrder) {
-              setOrder({
-                orderCode: backendOrder.orderCode,
-                createdAt: backendOrder.orderDate,
-                recipient: {
-                  recipientName: backendOrder.recipientName,
-                  phoneNumber: backendOrder.recipientPhone,
-                  streetAddress: backendOrder.shippingAddress,
-                },
-                shippingMethod: {
-                  name: 'Tiêu chuẩn',
-                  estimatedTime: '1 - 2 ngày làm việc',
-                },
-                paymentMethod: backendOrder.paymentMethod || 'VNPAY',
-                items: backendOrder.items?.map((it: any) => ({
-                  productId: it.productId,
-                  name: it.productName,
-                  skuName: it.skuName || it.variantName,
-                  priceMinor: it.unitPriceAtPurchaseMinor || it.unitPriceMinor || it.priceMinor || 0,
-                  imageUrl: it.imageUrl,
-                  quantity: it.quantity,
-                })),
-                grandTotalMinor: backendOrder.totalAmountMinor,
-              })
-            }
-          }).catch(() => {})
-        }
+        // Đồng bộ kết quả thanh toán với Backend để xác thực chữ ký và cập nhật trạng thái đơn hàng (PAID / CONFIRMED)
+        const syncPromise = searchParams.toString()
+          ? httpClient.get(`/payments/vnpay/ipn?${searchParams.toString()}`).catch(() => {})
+          : Promise.resolve()
+
+        syncPromise.finally(() => {
+          if (vnpTxnRef) {
+            orderApi.getOrderByCode(vnpTxnRef).then((backendOrder) => {
+              if (backendOrder) {
+                setOrder({
+                  orderCode: backendOrder.orderCode,
+                  createdAt: backendOrder.orderDate,
+                  recipient: {
+                    recipientName: backendOrder.recipientName,
+                    phoneNumber: backendOrder.recipientPhone,
+                    streetAddress: backendOrder.shippingAddress,
+                  },
+                  shippingMethod: {
+                    name: 'Tiêu chuẩn',
+                    estimatedTime: '1 - 2 ngày làm việc',
+                  },
+                  paymentMethod: backendOrder.paymentMethod || 'VNPAY',
+                  items: backendOrder.items?.map((it: any) => ({
+                    productId: it.productId,
+                    name: it.productName,
+                    skuName: it.skuName || it.variantName,
+                    priceMinor: it.unitPriceAtPurchaseMinor || it.unitPriceMinor || it.priceMinor || 0,
+                    imageUrl: it.imageUrl,
+                    quantity: it.quantity,
+                  })),
+                  grandTotalMinor: backendOrder.totalAmountMinor,
+                })
+              }
+            }).catch(() => {})
+          }
+        })
       }
     }
   }, [isVNPayCallback, isVNPaySuccess, vnpTxnRef, vnpResponseCode])
