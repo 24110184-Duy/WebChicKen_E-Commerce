@@ -3,10 +3,15 @@ package com.example.webchicken.modules.order.policy;
 import com.example.webchicken.common.enums.OrderStatus;
 import com.example.webchicken.common.enums.PaymentStatus;
 import com.example.webchicken.common.exception.IllegalOrderStateTransitionException;
+import com.example.webchicken.infrastructure.mail.EmailService;
+import com.example.webchicken.modules.identity.dao.UserDAO;
+import com.example.webchicken.modules.identity.model.entity.UserEntity;
 import com.example.webchicken.modules.inventory.service.InventoryService;
 import com.example.webchicken.modules.order.dao.OrderDAO;
+import com.example.webchicken.modules.order.dao.OrderItemDAO;
 import com.example.webchicken.modules.order.dao.OrderStatusHistoryDAO;
 import com.example.webchicken.modules.order.model.entity.OrderEntity;
+import com.example.webchicken.modules.order.model.entity.OrderItemEntity;
 import com.example.webchicken.modules.order.model.entity.OrderStatusHistoryEntity;
 import com.example.webchicken.modules.order.model.enums.OrderActorType;
 import com.example.webchicken.modules.order.model.enums.PaymentMethod;
@@ -32,6 +37,9 @@ public class OrderStateMachine {
     private final OrderStatusHistoryDAO orderStatusHistoryDAO;
     private final InventoryService inventoryService;
     private final PaymentDAO paymentDAO;
+    private final UserDAO userDAO;
+    private final OrderItemDAO orderItemDAO;
+    private final EmailService emailService;
 
     public OrderStateMachine(
             OrderDAO orderDAO,
@@ -39,10 +47,25 @@ public class OrderStateMachine {
             InventoryService inventoryService,
             PaymentDAO paymentDAO
     ) {
+        this(orderDAO, orderStatusHistoryDAO, inventoryService, paymentDAO, null, null, null);
+    }
+
+    public OrderStateMachine(
+            OrderDAO orderDAO,
+            OrderStatusHistoryDAO orderStatusHistoryDAO,
+            InventoryService inventoryService,
+            PaymentDAO paymentDAO,
+            UserDAO userDAO,
+            OrderItemDAO orderItemDAO,
+            EmailService emailService
+    ) {
         this.orderDAO = Objects.requireNonNull(orderDAO, "orderDAO must not be null");
         this.orderStatusHistoryDAO = Objects.requireNonNull(orderStatusHistoryDAO, "orderStatusHistoryDAO must not be null");
         this.inventoryService = inventoryService;
         this.paymentDAO = paymentDAO;
+        this.userDAO = userDAO;
+        this.orderItemDAO = orderItemDAO;
+        this.emailService = emailService;
     }
 
     /**
@@ -189,6 +212,7 @@ public class OrderStateMachine {
             handlePaymentOnCancellation(order);
         } else if (to == OrderStatus.DELIVERED) {
             handlePaymentOnDelivered(order);
+            sendDeliveredEmailIfCustomerHasEmail(order);
         } else if (to == OrderStatus.RETURNED) {
             handlePaymentOnReturned(order);
         }
@@ -228,6 +252,58 @@ public class OrderStateMachine {
             orderDAO.updatePaymentStatus(order.getId(), PaymentStatus.PAID);
             order.setPaymentStatus(PaymentStatus.PAID);
             log.info("COD Order [{}] marked as PAID upon successful delivery.", order.getOrderCode());
+        }
+    }
+
+    /**
+     * Gửi email xác nhận giao hàng cho khách hàng nếu tài khoản khách hàng đã có email trong cơ sở dữ liệu.
+     * Nếu không có email hoặc user không tồn tại, bỏ qua và không làm gián đoạn luồng xử lý.
+     */
+    private void sendDeliveredEmailIfCustomerHasEmail(OrderEntity order) {
+        if (emailService == null || userDAO == null) {
+            log.debug("EmailService or UserDAO is not configured. Skip delivery confirmation email for order [{}].",
+                    order.getOrderCode());
+            return;
+        }
+
+        try {
+            String customerId = order.getCustomerId();
+            if (customerId == null || customerId.isBlank()) {
+                log.info("Order [{}] has no customer ID. Skipping email notification.", order.getOrderCode());
+                return;
+            }
+
+            Optional<UserEntity> userOpt = userDAO.findById(customerId);
+            if (userOpt.isEmpty()) {
+                log.info("Customer [{}] not found for order [{}]. Skip sending delivery confirmation email.",
+                        customerId, order.getOrderCode());
+                return;
+            }
+
+            UserEntity user = userOpt.get();
+            String email = user.getEmail();
+            if (email == null || email.trim().isEmpty()) {
+                log.info("Customer [{}] ({}) does not have an email registered in database. Skip sending delivery confirmation email for order [{}].",
+                        customerId, user.getFullName(), order.getOrderCode());
+                return;
+            }
+
+            List<OrderItemEntity> items = Collections.emptyList();
+            if (orderItemDAO != null) {
+                items = orderItemDAO.findByOrderId(order.getId());
+            }
+
+            String customerName = (user.getFullName() != null && !user.getFullName().isBlank())
+                    ? user.getFullName()
+                    : ((order.getRecipientName() != null && !order.getRecipientName().isBlank())
+                            ? order.getRecipientName() : "Quý khách");
+
+            emailService.sendOrderDeliveredConfirmationAsync(email.trim(), customerName, order, items);
+            log.info("Triggered asynchronous delivery confirmation email for order [{}] to [{}] ({})",
+                    order.getOrderCode(), email.trim(), customerName);
+        } catch (Exception e) {
+            // Bao bọc an toàn tuyệt đối: lỗi email không bao giờ được phép làm ảnh hưởng trạng thái đơn hàng
+            log.error("Failed to trigger delivery email for order [{}]: {}", order.getOrderCode(), e.getMessage(), e);
         }
     }
 

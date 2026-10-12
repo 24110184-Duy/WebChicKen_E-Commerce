@@ -29,6 +29,9 @@ public class OrderStateMachineTest {
     private OrderStatusHistoryDAO orderStatusHistoryDAO;
     private InventoryService inventoryService;
     private PaymentDAO paymentDAO;
+    private com.example.webchicken.modules.identity.dao.UserDAO userDAO;
+    private com.example.webchicken.modules.order.dao.OrderItemDAO orderItemDAO;
+    private com.example.webchicken.infrastructure.mail.EmailService emailService;
     private OrderStateMachine stateMachine;
 
     private OrderEntity sampleOrder;
@@ -39,8 +42,14 @@ public class OrderStateMachineTest {
         orderStatusHistoryDAO = mock(OrderStatusHistoryDAO.class);
         inventoryService = mock(InventoryService.class);
         paymentDAO = mock(PaymentDAO.class);
+        userDAO = mock(com.example.webchicken.modules.identity.dao.UserDAO.class);
+        orderItemDAO = mock(com.example.webchicken.modules.order.dao.OrderItemDAO.class);
+        emailService = mock(com.example.webchicken.infrastructure.mail.EmailService.class);
 
-        stateMachine = new OrderStateMachine(orderDAO, orderStatusHistoryDAO, inventoryService, paymentDAO);
+        stateMachine = new OrderStateMachine(
+                orderDAO, orderStatusHistoryDAO, inventoryService, paymentDAO,
+                userDAO, orderItemDAO, emailService
+        );
 
         sampleOrder = new OrderEntity();
         sampleOrder.setId("ord-uuid-001");
@@ -214,5 +223,66 @@ public class OrderStateMachineTest {
         verify(orderDAO, never()).updateStatus(any(), any());
         verify(inventoryService, never()).commitReservationByOrder(any());
         verify(orderStatusHistoryDAO, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Giao hàng thành công (SHIPPING -> DELIVERED) khi user có email: kích hoạt gửi email xác nhận")
+    void testTransition_ShippingToDelivered_WithEmail_SendsConfirmationEmail() {
+        sampleOrder.setStatus(OrderStatus.SHIPPING);
+        sampleOrder.setCustomerId("cust-email-123");
+
+        com.example.webchicken.modules.identity.model.entity.UserEntity mockUser =
+                mock(com.example.webchicken.modules.identity.model.entity.UserEntity.class);
+        when(mockUser.getEmail()).thenReturn("customer@gmail.com");
+        when(mockUser.getFullName()).thenReturn("Le Van Cuong");
+        when(userDAO.findById("cust-email-123")).thenReturn(Optional.of(mockUser));
+
+        stateMachine.transition(sampleOrder, OrderStatus.DELIVERED, OrderActorType.SELLER, "seller-123", "Giao hang thanh cong");
+
+        assertEquals(OrderStatus.DELIVERED, sampleOrder.getStatus());
+        verify(emailService, times(1)).sendOrderDeliveredConfirmationAsync(
+                eq("customer@gmail.com"), eq("Le Van Cuong"), eq(sampleOrder), any()
+        );
+    }
+
+    @Test
+    @DisplayName("Giao hàng thành công (SHIPPING -> DELIVERED) khi user KHÔNG có email trong database: bỏ qua gửi email")
+    void testTransition_ShippingToDelivered_WithoutEmail_SkipsEmail() {
+        sampleOrder.setStatus(OrderStatus.SHIPPING);
+        sampleOrder.setCustomerId("cust-no-email-456");
+
+        com.example.webchicken.modules.identity.model.entity.UserEntity mockUser =
+                mock(com.example.webchicken.modules.identity.model.entity.UserEntity.class);
+        when(mockUser.getEmail()).thenReturn(null); // Không có email trong DB
+        when(mockUser.getFullName()).thenReturn("Tran Khong Email");
+        when(userDAO.findById("cust-no-email-456")).thenReturn(Optional.of(mockUser));
+
+        stateMachine.transition(sampleOrder, OrderStatus.DELIVERED, OrderActorType.SELLER, "seller-123", "Giao hang thanh cong");
+
+        assertEquals(OrderStatus.DELIVERED, sampleOrder.getStatus());
+        verify(emailService, never()).sendOrderDeliveredConfirmationAsync(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Giao hàng thành công (SHIPPING -> DELIVERED) khi emailService ném lỗi: chuyển trạng thái vẫn thành công an toàn (fail-safe)")
+    void testTransition_ShippingToDelivered_EmailServiceError_DoesNotBreakTransition() {
+        sampleOrder.setStatus(OrderStatus.SHIPPING);
+        sampleOrder.setCustomerId("cust-err-789");
+
+        com.example.webchicken.modules.identity.model.entity.UserEntity mockUser =
+                mock(com.example.webchicken.modules.identity.model.entity.UserEntity.class);
+        when(mockUser.getEmail()).thenReturn("err@gmail.com");
+        when(mockUser.getFullName()).thenReturn("Nguyen Van Error");
+        when(userDAO.findById("cust-err-789")).thenReturn(Optional.of(mockUser));
+
+        when(emailService.sendOrderDeliveredConfirmationAsync(any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("Simulated network timeout"));
+
+        assertDoesNotThrow(() ->
+                stateMachine.transition(sampleOrder, OrderStatus.DELIVERED, OrderActorType.SELLER, "seller-123", "Giao hang thanh cong")
+        );
+
+        assertEquals(OrderStatus.DELIVERED, sampleOrder.getStatus());
+        verify(orderDAO).updateStatus(sampleOrder.getId(), OrderStatus.DELIVERED);
     }
 }

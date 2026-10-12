@@ -7,7 +7,33 @@
 
 ## 📅 Bản cập nhật: 12/10/2026
 
-### 0. Khắc phục Xung đột Bộ lọc Tài khoản Bị Cấm & Trung hòa Thẻ Chỉ số KPI (Admin Users & Products)
+### 0. Chức năng Gửi Email Xác nhận Giao hàng Thành công (DELIVERED) & Giải pháp Render HTTPS Port 443
+- **Tệp nguồn sửa đổi/tạo mới:**
+  - `backend-servlet/src/main/java/com/example/webchicken/infrastructure/mail/EmailService.java` (Interface)
+  - `backend-servlet/src/main/java/com/example/webchicken/infrastructure/mail/HttpEmailServiceImpl.java` (Cài đặt gửi email qua HTTPS REST API)
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/policy/OrderStateMachine.java` (Kích hoạt gửi email khi chuyển sang `DELIVERED`)
+  - `backend-servlet/src/main/java/com/example/webchicken/bootstrap/CompositionRoot.java` (Khởi tạo và inject EmailService)
+  - `backend-servlet/src/test/java/com/example/webchicken/infrastructure/mail/HttpEmailServiceImplTest.java` (Unit tests)
+  - `backend-servlet/src/test/java/com/example/webchicken/modules/order/policy/OrderStateMachineTest.java` (Unit tests)
+- **Yêu cầu & Giải pháp nghiệp vụ:**
+  1. **Tự động gửi email khi đơn hàng chuyển sang `DELIVERED`:**
+     - Khi đơn hàng hoàn tất giao hàng (dù do Seller xác nhận, Admin cập nhật, hay `ShippingSimulationWorker` tự động cập nhật), hệ thống kích hoạt gửi email thông báo xác nhận món hàng đã đến nơi an toàn.
+  2. **Chỉ gửi cho tài khoản khách hàng có email trong database:**
+     - Truy vấn `UserEntity` của khách hàng từ `userDAO.findById(order.getCustomerId())`.
+     - Nếu `user.getEmail() == null` hoặc để trống (ví dụ tài khoản chỉ dùng số điện thoại/chưa cập nhật email): Hệ thống ghi log info nhẹ nhàng và bỏ qua, tuyệt đối không gửi và không làm gián đoạn luồng vận hành.
+  3. **Giải pháp vượt qua tường lửa chặn cổng SMTP trên Render (Render Port 25, 465, 587 Block):**
+     - Máy chủ Render chặn toàn bộ outbound SMTP sockets (cổng 25, 465, 587, 2525) chống spam. Mọi nỗ lực kết nối JavaMail SMTP thông thường sẽ bị timeout và treo request.
+     - **Giải pháp:** Sử dụng `java.net.http.HttpClient` gửi HTTP POST payload JSON qua **cổng HTTPS tiêu chuẩn (Port 443)** đến các Email API Gateways như **Resend** (`https://api.resend.com/emails`) hoặc **Brevo** (`https://api.brevo.com/v3/smtp/email`). Cổng 443 là cổng web an toàn không bao giờ bị chặn trên Render.
+     - **Cơ chế Fail-safe & Non-blocking:** Gửi bất đồng bộ (`CompletableFuture.runAsync` trên worker thread chuyên biệt). Nếu chưa cấu hình API key trên Render, hệ thống ghi log mô phỏng an toàn (Simulated) trong console để test mà không phát sinh lỗi 500 hoặc gián đoạn transaction.
+  4. **Nội dung Email HTML chuyên nghiệp:**
+     - Header thương hiệu WebChicKen Marketplace với gradient cam hiện đại.
+     - Thông báo trạng thái giao hàng thành công kèm mã đơn hàng `#orderCode`.
+     - Bảng thông tin người nhận, địa chỉ giao hàng, phương thức thanh toán.
+     - Danh sách chi tiết các sản phẩm đã giao (hình ảnh, tên, phân loại variant, số lượng, đơn giá, thành tiền định dạng VND chuẩn).
+     - Bảng tóm tắt phí vận chuyển, giảm giá voucher, tổng thanh toán.
+     - Lời cảm ơn và nút CTA (Call To Action) mời khách hàng đánh giá sản phẩm trên ứng dụng.
+
+### 0.1 Khắc phục Xung đột Bộ lọc Tài khoản Bị Cấm & Trung hòa Thẻ Chỉ số KPI (Admin Users & Products)
 - **Tệp nguồn sửa đổi:**
   - `frontend-client/src/pages/admin/Users.tsx`
   - `frontend-client/src/pages/admin/Products.tsx`

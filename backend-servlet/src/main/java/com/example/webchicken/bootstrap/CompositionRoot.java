@@ -48,6 +48,8 @@ import jakarta.persistence.Persistence;
 import jakarta.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.example.webchicken.infrastructure.mail.EmailService;
+import com.example.webchicken.infrastructure.mail.HttpEmailServiceImpl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -71,6 +73,7 @@ public class CompositionRoot {
 
     private EntityManagerFactory emf;
     private com.example.webchicken.infrastructure.event.SimpleEventBus eventBus;
+    private EmailService emailService;
 
     public void initialize(ServletContext ctx) {
         // ── 0. EventBus ──────────────────────────────────────────────────────
@@ -159,8 +162,15 @@ public class CompositionRoot {
         PaymentService       paymentService       = new PaymentServiceImpl(paymentDAO, orderDAO, vnPayGateway);
         PaymentMethodService paymentMethodService = new PaymentMethodServiceImpl(paymentMethodDAO);
 
+        // Email Service (HTTPS REST API qua cổng 443 — tương thích 100% với hạ tầng Render không bị chặn SMTP)
+        this.emailService = new HttpEmailServiceImpl();
+        ctx.setAttribute("emailService", this.emailService);
+
         // Order
-        OrderStateMachine orderStateMachine = new OrderStateMachine(orderDAO, orderStatusHistoryDAO, inventoryService, paymentDAO);
+        OrderStateMachine orderStateMachine = new OrderStateMachine(
+                orderDAO, orderStatusHistoryDAO, inventoryService, paymentDAO,
+                userDAO, orderItemDAO, emailService
+        );
         OrderService orderService = new OrderServiceImpl(
                 orderDAO, orderItemDAO, orderCancellationDAO,
                 cartDAO, cartItemDAO, productDAO, productVariantDAO, productImageDAO,
@@ -246,7 +256,11 @@ public class CompositionRoot {
     }
 
     public void shutdown() {
-        log.info("Closing JPA EntityManagerFactory & EventBus");
+        log.info("Closing JPA EntityManagerFactory, EventBus & EmailService");
+        if (emailService != null) {
+            try { emailService.shutdown(); }
+            catch (Exception e) { log.error("Error shutting down EmailService: {}", e.getMessage(), e); }
+        }
         if (eventBus != null) {
             try { eventBus.shutdown(); }
             catch (Exception e) { log.error("Error shutting down EventBus: {}", e.getMessage(), e); }
