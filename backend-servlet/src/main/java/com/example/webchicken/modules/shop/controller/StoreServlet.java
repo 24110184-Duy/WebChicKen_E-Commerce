@@ -15,12 +15,13 @@ import java.io.IOException;
 /**
  * Servlet quản lý gian hàng (Store): /api/v1/stores/*
  * <ul>
- *   <li>GET /me: Người bán xem thông tin gian hàng của mình</li>
- *   <li>PUT /me: Người bán cập nhật tên gian hàng</li>
- *   <li>GET /{id}: Công khai xem thông tin gian hàng theo ID</li>
+ * <li>GET /me: Người bán xem thông tin gian hàng của mình</li>
+ * <li>PUT /me: Người bán cập nhật tên gian hàng</li>
+ * <li>GET /{id}: Công khai xem thông tin gian hàng theo ID</li>
  * </ul>
  */
-@WebServlet(name = "StoreServlet", urlPatterns = {"/api/v1/stores/*"})
+
+@WebServlet(name = "StoreServlet", urlPatterns = { "/api/v1/stores/*" })
 public class StoreServlet extends BaseApiServlet {
 
     public StoreServlet() {
@@ -38,7 +39,8 @@ public class StoreServlet extends BaseApiServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String pathInfo = req.getPathInfo();
-        if (pathInfo == null) pathInfo = "";
+        if (pathInfo == null)
+            pathInfo = "";
 
         try {
             if ("/me".equalsIgnoreCase(pathInfo)) {
@@ -65,8 +67,10 @@ public class StoreServlet extends BaseApiServlet {
             writeJson(resp, e.getHttpStatus(), com.example.webchicken.common.model.ApiResponse.fail(
                     com.example.webchicken.common.model.ApiError.of(e.getErrorCode(), e.getMessage())));
         } catch (Exception e) {
-            writeJson(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, com.example.webchicken.common.model.ApiResponse.fail(
-                    com.example.webchicken.common.model.ApiError.of("INTERNAL_SERVER_ERROR", "Lỗi truy vấn gian hàng: " + e.getMessage())));
+            writeJson(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    com.example.webchicken.common.model.ApiResponse.fail(
+                            com.example.webchicken.common.model.ApiError.of("INTERNAL_SERVER_ERROR",
+                                    "Lỗi truy vấn gian hàng: " + e.getMessage())));
         }
     }
 
@@ -79,7 +83,8 @@ public class StoreServlet extends BaseApiServlet {
         }
 
         String pathInfo = req.getPathInfo();
-        if (pathInfo == null) pathInfo = "";
+        if (pathInfo == null)
+            pathInfo = "";
 
         UpdateStoreRequest body = readBody(req, UpdateStoreRequest.class);
 

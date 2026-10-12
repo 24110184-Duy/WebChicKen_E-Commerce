@@ -15,7 +15,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Listener quản lý vòng đời các tác vụ chạy ngầm định kỳ (Background Jobs) (TASK-55).
+ * Listener quản lý vòng đời các tác vụ chạy ngầm định kỳ (Background Jobs)
+ * (TASK-55).
  * Tuân thủ quy chuẩn ARCHITECTURE.md 8.5 và CODE_PRINCIPLES.md RES-06:
  * - Thread pool có tên rõ ràng và giới hạn kích thước
  * - Shutdown an toàn và giải phóng tài nguyên trong contextDestroyed
@@ -41,10 +42,12 @@ public class ScheduledJobsListener implements ServletContextListener {
 
         scheduler = Executors.newScheduledThreadPool(3, threadFactory);
 
-        // 1. Chu kỳ quét kho hết hạn: bắt đầu sau 15 giây, lặp lại mỗi 60 giây (TASK-55)
+        // 1. Chu kỳ quét kho hết hạn: bắt đầu sau 15 giây, lặp lại mỗi 60 giây
+        // (TASK-55)
         scheduler.scheduleWithFixedDelay(() -> {
             try {
-                ExpiredReservationWorker worker = (ExpiredReservationWorker) ctx.getAttribute("expiredReservationWorker");
+                ExpiredReservationWorker worker = (ExpiredReservationWorker) ctx
+                        .getAttribute("expiredReservationWorker");
                 if (worker != null) {
                     worker.runCleanup();
                 }
@@ -53,11 +56,12 @@ public class ScheduledJobsListener implements ServletContextListener {
             }
         }, 15, 60, TimeUnit.SECONDS);
 
-        // 2. Chu kỳ mô phỏng vận chuyển đơn hàng: bắt đầu sau 20 giây, lặp lại mỗi 30 giây (TASK-68)
+        // 2. Chu kỳ mô phỏng vận chuyển đơn hàng: bắt đầu sau 20 giây, lặp lại mỗi 30
+        // giây (TASK-68)
         scheduler.scheduleWithFixedDelay(() -> {
             try {
-                com.example.webchicken.modules.order.worker.ShippingSimulationWorker worker =
-                        (com.example.webchicken.modules.order.worker.ShippingSimulationWorker) ctx.getAttribute("shippingSimulationWorker");
+                com.example.webchicken.modules.order.worker.ShippingSimulationWorker worker = (com.example.webchicken.modules.order.worker.ShippingSimulationWorker) ctx
+                        .getAttribute("shippingSimulationWorker");
                 if (worker != null) {
                     worker.runSimulation();
                 }
@@ -66,11 +70,12 @@ public class ScheduledJobsListener implements ServletContextListener {
             }
         }, 20, 30, TimeUnit.SECONDS);
 
-        // 3. Chu kỳ quét và vô hiệu hóa voucher hết hạn: bắt đầu sau 25 giây, lặp lại mỗi 60 giây (TASK-70)
+        // 3. Chu kỳ quét và vô hiệu hóa voucher hết hạn: bắt đầu sau 25 giây, lặp lại
+        // mỗi 60 giây (TASK-70)
         scheduler.scheduleWithFixedDelay(() -> {
             try {
-                com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker worker =
-                        (com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker) ctx.getAttribute("voucherExpiryWorker");
+                com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker worker = (com.example.webchicken.modules.promotion.worker.VoucherExpiryWorker) ctx
+                        .getAttribute("voucherExpiryWorker");
                 if (worker != null) {
                     worker.runScanAndDeactivate();
                 }
@@ -79,7 +84,8 @@ public class ScheduledJobsListener implements ServletContextListener {
             }
         }, 25, 60, TimeUnit.SECONDS);
 
-        log.info("ScheduledJobsListener initialized successfully (Workers: ExpiredReservationWorker, ShippingSimulationWorker & VoucherExpiryWorker).");
+        log.info(
+                "ScheduledJobsListener initialized successfully (Workers: ExpiredReservationWorker, ShippingSimulationWorker & VoucherExpiryWorker).");
     }
 
     @Override

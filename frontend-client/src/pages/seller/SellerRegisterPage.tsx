@@ -241,7 +241,7 @@ export const SellerRegisterPage: React.FC = () => {
       if (store && store.storeName) {
         if (user?.id) localStorage.setItem(`seller_registered_${user.id}`, 'true')
         authStore.updateUser({ roles: Array.from(new Set([...(user?.roles || []), 'SELLER'])) })
-        authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => {})
+        authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => { })
         setAlreadySeller(true)
         setExistingStoreName(store.storeName)
         setApplication(null)
@@ -255,7 +255,7 @@ export const SellerRegisterPage: React.FC = () => {
         if (app.status === 'APPROVED') {
           if (user?.id) localStorage.setItem(`seller_registered_${user.id}`, 'true')
           authStore.updateUser({ roles: Array.from(new Set([...(user?.roles || []), 'SELLER'])) })
-          authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => {})
+          authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => { })
           setAlreadySeller(true)
           setExistingStoreName(app.shopName)
         } else {
@@ -410,8 +410,8 @@ export const SellerRegisterPage: React.FC = () => {
   const selectedLocationText = selectedWard
     ? `${selectedProvince}, ${selectedWard}`
     : selectedProvince
-    ? `${selectedProvince}`
-    : ''
+      ? `${selectedProvince}`
+      : ''
 
   const fullAddressQuery = useMemo(() => {
     const parts = [modalDetailAddress.trim(), selectedWard, selectedProvince, 'Việt Nam'].filter(Boolean)

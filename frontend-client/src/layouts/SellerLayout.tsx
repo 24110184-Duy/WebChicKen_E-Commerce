@@ -47,7 +47,7 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
             const parsed = JSON.parse(cached)
             if (parsed.storeName) setStoreName(parsed.storeName)
             return
-          } catch {}
+          } catch { }
         }
         setStoreName(user.username || user.fullName || 'sellershopname')
       }
@@ -58,7 +58,7 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
           try {
             const parsed = JSON.parse(cached)
             if (parsed.storeName) setStoreName(parsed.storeName)
-          } catch {}
+          } catch { }
         }
       }
     })
