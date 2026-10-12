@@ -202,11 +202,23 @@
   line-height: 1.5;
 }
 
-/* ── Bento Metrics Grid (5 Columns) ── */
+/* ── Bento Metrics Grid (6 Columns) ── */
 .mod-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1400px) {
+  .mod-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .mod-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .mod-kpi-card {
@@ -214,19 +226,13 @@
   background-color: #ffffff;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
-  cursor: pointer;
+  cursor: default;
+  user-select: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.mod-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.06);
-  border-color: #cbd5e1;
 }
 
 .mod-kpi-header {
@@ -265,10 +271,7 @@
   color: #64748b;
 }
 
-/* KPI Variant Themes */
-.mod-kpi-card.pending {
-  border-left: 4px solid #f59e0b;
-}
+/* KPI Subtle Accents (Icons & Text Colors only - No Colorful Card Borders) */
 .mod-kpi-card.pending .mod-kpi-icon {
   background-color: #fef3c7;
   color: #d97706;
@@ -276,15 +279,15 @@
 .mod-kpi-card.pending .mod-kpi-value {
   color: #d97706;
 }
-.mod-kpi-card.pending.active {
-  border-color: #f59e0b;
-  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
-  box-shadow: 0 0 0 1px #f59e0b, 0 4px 12px rgba(245, 158, 11, 0.12);
+
+.mod-kpi-card.live .mod-kpi-icon {
+  background-color: #d1fae5;
+  color: #059669;
+}
+.mod-kpi-card.live .mod-kpi-value {
+  color: #059669;
 }
 
-.mod-kpi-card.bot {
-  border-left: 4px solid #8b5cf6;
-}
 .mod-kpi-card.bot .mod-kpi-icon {
   background-color: #ede9fe;
   color: #7c3aed;
@@ -292,15 +295,7 @@
 .mod-kpi-card.bot .mod-kpi-value {
   color: #7c3aed;
 }
-.mod-kpi-card.bot.active {
-  border-color: #8b5cf6;
-  background: linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%);
-  box-shadow: 0 0 0 1px #8b5cf6, 0 4px 12px rgba(139, 92, 246, 0.12);
-}
 
-.mod-kpi-card.approved {
-  border-left: 4px solid #10b981;
-}
 .mod-kpi-card.approved .mod-kpi-icon {
   background-color: #d1fae5;
   color: #059669;
@@ -308,15 +303,7 @@
 .mod-kpi-card.approved .mod-kpi-value {
   color: #059669;
 }
-.mod-kpi-card.approved.active {
-  border-color: #10b981;
-  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
-  box-shadow: 0 0 0 1px #10b981, 0 4px 12px rgba(16, 185, 129, 0.12);
-}
 
-.mod-kpi-card.rejected {
-  border-left: 4px solid #ef4444;
-}
 .mod-kpi-card.rejected .mod-kpi-icon {
   background-color: #fee2e2;
   color: #dc2626;
@@ -324,26 +311,13 @@
 .mod-kpi-card.rejected .mod-kpi-value {
   color: #dc2626;
 }
-.mod-kpi-card.rejected.active {
-  border-color: #ef4444;
-  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
-  box-shadow: 0 0 0 1px #ef4444, 0 4px 12px rgba(239, 68, 68, 0.12);
-}
 
-.mod-kpi-card.total {
-  border-left: 4px solid #3b82f6;
-}
 .mod-kpi-card.total .mod-kpi-icon {
   background-color: #dbeafe;
   color: #2563eb;
 }
 .mod-kpi-card.total .mod-kpi-value {
   color: #0f172a;
-}
-.mod-kpi-card.total.active {
-  border-color: #3b82f6;
-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
-  box-shadow: 0 0 0 1px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.12);
 }
 
 /* ── Filter Card & Table Container ── */
@@ -386,6 +360,8 @@
   align-items: center;
   gap: 7px;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .mod-tab-btn:hover {
@@ -446,15 +422,61 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
+.mod-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mod-toggle-hidden {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+  padding: 7px 12px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  transition: all 0.2s ease;
+}
+
+.mod-toggle-hidden:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.mod-toggle-hidden input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #0f172a;
+  width: 15px;
+  height: 15px;
+}
+
 /* ── Modern Product Table ── */
 .mod-table-responsive {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mod-table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mod-table-responsive::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
 }
 
 .mod-table {
   width: 100%;
-  table-layout: fixed;
+  min-width: 1140px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -465,7 +487,7 @@
 }
 
 .mod-th {
-  padding: 12px 12px;
+  padding: 12px 14px;
   font-size: 11.5px;
   font-weight: 700;
   color: #64748b;
@@ -474,13 +496,13 @@
   white-space: nowrap;
 }
 
-.mod-th:nth-child(1), .mod-td:nth-child(1) { width: 24%; }
-.mod-th:nth-child(2), .mod-td:nth-child(2) { width: 18%; }
-.mod-th:nth-child(3), .mod-td:nth-child(3) { width: 12%; }
-.mod-th:nth-child(4), .mod-td:nth-child(4) { width: 12%; }
-.mod-th:nth-child(5), .mod-td:nth-child(5) { width: 13%; }
-.mod-th:nth-child(6), .mod-td:nth-child(6) { width: 10%; }
-.mod-th:nth-child(7), .mod-td:nth-child(7) { width: 11%; }
+.mod-th:nth-child(1), .mod-td:nth-child(1) { width: 27%; min-width: 270px; }
+.mod-th:nth-child(2), .mod-td:nth-child(2) { width: 17%; min-width: 170px; }
+.mod-th:nth-child(3), .mod-td:nth-child(3) { width: 12%; min-width: 130px; white-space: nowrap; }
+.mod-th:nth-child(4), .mod-td:nth-child(4) { width: 13%; min-width: 140px; white-space: nowrap; }
+.mod-th:nth-child(5), .mod-td:nth-child(5) { width: 15%; min-width: 165px; }
+.mod-th:nth-child(6), .mod-td:nth-child(6) { width: 8%; min-width: 95px; white-space: nowrap; }
+.mod-th:nth-child(7), .mod-td:nth-child(7) { width: 180px; min-width: 180px; text-align: right; }
 
 .mod-th.right {
   text-align: right;
@@ -496,7 +518,7 @@
 }
 
 .mod-td {
-  padding: 12px 12px;
+  padding: 14px 14px;
   font-size: 13px;
   vertical-align: middle;
 }
@@ -566,12 +588,14 @@
   font-size: 13px;
   font-weight: 700;
   color: #1e293b;
+  white-space: nowrap;
 }
 
 .mod-origin-sub {
   font-size: 12px;
   color: #64748b;
   margin-top: 3px;
+  white-space: nowrap;
 }
 
 .mod-standard-tag {
@@ -586,19 +610,23 @@
   padding: 1px 6px;
   border-radius: 4px;
   margin-top: 3px;
+  white-space: nowrap;
 }
 
 /* Price & Stock Cell */
 .mod-price-val {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   color: #ea580c;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .mod-stock-val {
   font-size: 12px;
   color: #64748b;
-  margin-top: 2px;
+  margin-top: 3px;
+  white-space: nowrap;
 }
 
 /* Status Badges */
@@ -675,32 +703,39 @@
   font-size: 11px;
   color: #64748b;
   margin-top: 3px;
+  white-space: nowrap;
 }
 
 .mod-mode-sub.danger {
   color: #dc2626;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Actions */
 .mod-actions-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   justify-content: flex-end;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .mod-btn-action {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 11px;
+  padding: 6px 12px;
   border-radius: 7px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.2;
 }
 
 .mod-btn-action.detail {
@@ -735,6 +770,29 @@
 .mod-btn-action.reject:hover {
   background-color: #fecaca;
   color: #b91c1c;
+}
+
+.mod-btn-action.unhide {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #ffffff;
+  border-color: #15803d;
+  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.25);
+}
+
+.mod-btn-action.unhide:hover {
+  background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+  box-shadow: 0 3px 8px rgba(22, 163, 74, 0.35);
+}
+
+.mod-btn-action.pause {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.mod-btn-action.pause:hover {
+  background-color: #ffedd5;
+  color: #9a3412;
 }
 
 /* ── Modern Empty State ── */

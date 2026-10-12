@@ -14,7 +14,7 @@ import { paymentApi } from '../../features/payment/api/paymentApi'
 import { VoucherModal } from '../../features/cart/components/VoucherModal'
 import { AddressSelectModal } from '../../features/orders/components/AddressSelectModal'
 import { customerApi, type AddressResponse } from '../../features/auth/api/customerApi'
-import { Ticket } from 'lucide-react'
+import { Ticket, X, Copy, Check, Clock } from 'lucide-react'
 import { toast } from '../../components/feedback/Toast'
 
 export const CheckoutPage: React.FC = () => {
@@ -84,6 +84,106 @@ export const CheckoutPage: React.FC = () => {
 
   // Order Placement Loading State
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // VietQR Modal State
+  const [vietQrModal, setVietQrModal] = useState<{
+    isOpen: boolean
+    orderCode: string
+    amountMinor: number
+    orderSummary: any
+    countdown: number
+    isCancelling: boolean
+  }>({
+    isOpen: false,
+    orderCode: '',
+    amountMinor: 0,
+    orderSummary: null,
+    countdown: 900,
+    isCancelling: false,
+  })
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const activeQrOrderCodeRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    activeQrOrderCodeRef.current = vietQrModal.isOpen ? vietQrModal.orderCode : null
+  }, [vietQrModal.isOpen, vietQrModal.orderCode])
+
+  // Tự động hủy đơn hàng QR chưa quét nếu người dùng điều hướng rời trang hoặc quay lại Home/Cart
+  useEffect(() => {
+    return () => {
+      const code = activeQrOrderCodeRef.current
+      if (code && !isOrderPlacedRef.current) {
+        orderApi.cancelOrder(code, 'Khách hàng rời khỏi trang khi chưa quét mã QR').catch(() => {})
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!vietQrModal.isOpen) return
+    if (vietQrModal.countdown <= 0) {
+      handleCancelVietQr()
+      toast.warning('Đã hết hạn thời gian quét mã QR. Đơn hàng đã được tự động hủy.')
+      return
+    }
+    const timer = setInterval(() => {
+      setVietQrModal((prev) => {
+        if (prev.countdown <= 1) {
+          clearInterval(timer)
+          return { ...prev, countdown: 0 }
+        }
+        return { ...prev, countdown: prev.countdown - 1 }
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [vietQrModal.isOpen, vietQrModal.countdown])
+
+  const handleCopyText = (text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const handleCancelVietQr = async () => {
+    const code = vietQrModal.orderCode
+    activeQrOrderCodeRef.current = null
+    setVietQrModal((prev) => ({ ...prev, isCancelling: true }))
+    try {
+      if (code) {
+        await orderApi.cancelOrder(code, 'Khách hàng hủy quét mã VietQR')
+      }
+    } catch (e) {
+      console.warn('Cancel order error:', e)
+    } finally {
+      setVietQrModal({
+        isOpen: false,
+        orderCode: '',
+        amountMinor: 0,
+        orderSummary: null,
+        countdown: 900,
+        isCancelling: false,
+      })
+      toast.info('Đã hủy quét mã QR. Các sản phẩm vẫn nằm trong giỏ hàng của bạn.')
+    }
+  }
+
+  const handleConfirmVietQrPaid = () => {
+    isOrderPlacedRef.current = true
+    activeQrOrderCodeRef.current = null
+    if (vietQrModal.orderSummary) {
+      sessionStorage.setItem('webchicken_last_order', JSON.stringify(vietQrModal.orderSummary))
+    }
+    selectedItems.forEach((i) => removeItem(i.skuId))
+    sessionStorage.removeItem('webchicken_checkout_voucher')
+    setVietQrModal({
+      isOpen: false,
+      orderCode: '',
+      amountMinor: 0,
+      orderSummary: null,
+      countdown: 900,
+      isCancelling: false,
+    })
+    navigate(PATHS.PAYMENT_RESULT, { replace: true })
+  }
 
   // Load voucher from cart session on mount
   useEffect(() => {
@@ -197,13 +297,25 @@ export const CheckoutPage: React.FC = () => {
         grandTotalMinor,
       }
 
-      isOrderPlacedRef.current = true
-      sessionStorage.setItem('webchicken_last_order', JSON.stringify(orderSummary))
-      selectedItems.forEach((i) => removeItem(i.skuId))
-      sessionStorage.removeItem('webchicken_checkout_voucher')
+      // 1. If BANK_TRANSFER (VietQR), open interactive VietQR payment modal without clearing cart yet
+      if (paymentMethod === 'BANK_TRANSFER') {
+        setIsSubmitting(false)
+        setVietQrModal({
+          isOpen: true,
+          orderCode: primaryOrderCode,
+          amountMinor: grandTotalMinor,
+          orderSummary,
+          countdown: 900,
+          isCancelling: false,
+        })
+        return
+      }
 
-      // If VNPAY is selected, request VNPay gateway URL
+      // 2. If VNPAY is selected, request VNPay gateway URL and back up pending items
       if (paymentMethod === 'VNPAY') {
+        sessionStorage.setItem('webchicken_pending_qr_items', JSON.stringify(selectedItems))
+        sessionStorage.setItem('webchicken_last_order', JSON.stringify(orderSummary))
+        sessionStorage.removeItem('webchicken_checkout_voucher')
         const vnpayUrl = await paymentApi.createVNPayUrl(primaryOrderCode, grandTotalMinor)
         if (vnpayUrl) {
           setIsSubmitting(false)
@@ -211,6 +323,12 @@ export const CheckoutPage: React.FC = () => {
           return
         }
       }
+
+      // 3. COD payment: finalize immediately
+      isOrderPlacedRef.current = true
+      sessionStorage.setItem('webchicken_last_order', JSON.stringify(orderSummary))
+      selectedItems.forEach((i) => removeItem(i.skuId))
+      sessionStorage.removeItem('webchicken_checkout_voucher')
 
       setIsSubmitting(false)
       navigate(PATHS.PAYMENT_RESULT, { replace: true })
@@ -575,6 +693,235 @@ export const CheckoutPage: React.FC = () => {
         onSelectAddress={handleSelectAddress}
         onAddressCreated={handleAddressCreated}
       />
+
+      {/* Interactive VietQR Payment Modal */}
+      {vietQrModal.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={handleCancelVietQr}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 16,
+              maxWidth: 480,
+              width: '100%',
+              padding: '24px 28px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              animation: 'fadeIn 0.2s ease',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>📲</span>
+                <div>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                    Quét Mã VietQR Thanh Toán
+                  </h3>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>
+                    Mở app Ngân hàng hoặc MoMo quét mã QR bên dưới
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelVietQr}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: 4,
+                  borderRadius: 6,
+                }}
+                title="Đóng / Hủy quét mã"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Countdown notice */}
+            <div
+              style={{
+                backgroundColor: '#fffbeb',
+                border: '1px solid #fef08a',
+                borderRadius: 8,
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: 12,
+                color: '#854d0e',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={14} />
+                <span>Thời gian giữ đơn để quét mã:</span>
+              </div>
+              <strong style={{ fontSize: 13, fontFamily: 'monospace' }}>
+                {Math.floor(vietQrModal.countdown / 60)
+                  .toString()
+                  .padStart(2, '0')}
+                :{(vietQrModal.countdown % 60).toString().padStart(2, '0')}
+              </strong>
+            </div>
+
+            {/* QR Code Image Container */}
+            <div
+              style={{
+                textAlign: 'center',
+                padding: 16,
+                backgroundColor: '#f8fafc',
+                borderRadius: 12,
+                border: '1px solid #e2e8f0',
+                marginBottom: 16,
+              }}
+            >
+              <img
+                src={`https://img.vietqr.io/image/MB-0901234567-compact2.png?amount=${vietQrModal.amountMinor}&addInfo=${encodeURIComponent(
+                  vietQrModal.orderCode
+                )}&accountName=CHICKYMART`}
+                alt="VietQR Code"
+                style={{
+                  width: 240,
+                  height: 240,
+                  objectFit: 'contain',
+                  margin: '0 auto',
+                  display: 'block',
+                  borderRadius: 8,
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=CHICKYMART_PAYMENT_' + vietQrModal.orderCode
+                }}
+              />
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>
+                Mã đơn: <strong>{vietQrModal.orderCode}</strong> • MB Bank
+              </div>
+            </div>
+
+            {/* Account Details Box */}
+            <div
+              style={{
+                backgroundColor: '#f1f5f9',
+                borderRadius: 10,
+                padding: '12px 14px',
+                fontSize: 12.5,
+                color: '#334155',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                marginBottom: 20,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Ngân hàng:</span>
+                <strong>MB Bank (Ngân Hàng Quân Đội)</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Số tài khoản:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <strong style={{ fontFamily: 'monospace', fontSize: 13 }}>0901234567</strong>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyText('0901234567', 'stk')}
+                    style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#2563eb', padding: 0 }}
+                  >
+                    {copiedField === 'stk' ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Chủ tài khoản:</span>
+                <strong>CHICKYMART CO LTD</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Số tiền thanh toán:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <strong style={{ color: '#b45309', fontSize: 14 }}>{formatMoney(vietQrModal.amountMinor)}</strong>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyText(vietQrModal.amountMinor.toString(), 'amount')}
+                    style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#2563eb', padding: 0 }}
+                  >
+                    {copiedField === 'amount' ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#64748b' }}>Nội dung chuyển khoản:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <strong style={{ color: '#0f172a', fontFamily: 'monospace' }}>{vietQrModal.orderCode}</strong>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyText(vietQrModal.orderCode, 'content')}
+                    style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#2563eb', padding: 0 }}
+                  >
+                    {copiedField === 'content' ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                onClick={handleCancelVietQr}
+                disabled={vietQrModal.isCancelling}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {vietQrModal.isCancelling ? 'Đang hủy...' : 'Hủy thanh toán / Quay lại'}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmVietQrPaid}
+                style={{
+                  flex: 1.2,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  border: 'none',
+                  backgroundColor: '#f59e0b',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)',
+                }}
+              >
+                Tôi đã chuyển khoản xong
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </StorefrontLayout>
   )
 }

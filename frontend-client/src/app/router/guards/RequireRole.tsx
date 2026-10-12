@@ -33,12 +33,20 @@ export const RequireRole: React.FC<RequireRoleProps> = ({
   }
 
   const userRoles = user?.roles || []
+  const isRegisteredSeller = user?.id
+    ? localStorage.getItem(`seller_registered_${user.id}`) === 'true'
+    : false
+
   const hasRequiredRole = allowedRoles.some((role) => {
     if (role === 'ADMIN') {
       return userRoles.some((r) => ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(r))
     }
     if (role === 'SELLER') {
-      return userRoles.includes('SELLER') || userRoles.some((r) => ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(r))
+      return (
+        userRoles.includes('SELLER') ||
+        isRegisteredSeller ||
+        userRoles.some((r) => ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(r))
+      )
     }
     return userRoles.includes(role)
   })

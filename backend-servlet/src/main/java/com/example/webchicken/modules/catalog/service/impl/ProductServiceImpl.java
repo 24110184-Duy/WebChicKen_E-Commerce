@@ -456,12 +456,21 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public void deleteProduct(String id) {
-        if (!productDAO.existsById(id)) {
-            throw new NotFoundException("Product not found with id: " + id);
+        ProductEntity product = productDAO.findById(id)
+                .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
+        try {
+            productVariantDAO.deleteByProductId(id);
+            productImageDAO.deleteByProductId(id);
+            productDAO.deleteById(id);
+            log.info("Đã xóa vĩnh viễn sản phẩm [{}] khỏi CSDL.", id);
+        } catch (Exception e) {
+            log.warn("Không thể xóa cứng sản phẩm [{}] do ràng buộc khóa ngoại (đơn hàng/giỏ hàng). Chuyển sang gỡ mềm (INACTIVE).", id, e);
+            product.setStatus(ProductStatus.INACTIVE);
+            product.setRejectionReason("Quản trị viên đã gỡ bỏ sản phẩm khỏi sàn.");
+            product.setModerationNote("Đã gỡ vĩnh viễn khỏi danh mục hiển thị.");
+            product.setUpdatedAt(LocalDateTime.now());
+            productDAO.update(product);
         }
-        productVariantDAO.deleteByProductId(id);
-        productImageDAO.deleteByProductId(id);
-        productDAO.deleteById(id);
     }
 
     private ProductSummaryResponse toSummary(ProductEntity p) {

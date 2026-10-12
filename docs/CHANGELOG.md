@@ -5,6 +5,74 @@
 
 ---
 
+## 📅 Bản cập nhật: 12/10/2026
+
+### 0. Khắc phục Xung đột Bộ lọc Tài khoản Bị Cấm & Trung hòa Thẻ Chỉ số KPI (Admin Users & Products)
+- **Tệp nguồn sửa đổi:**
+  - `frontend-client/src/pages/admin/Users.tsx`
+  - `frontend-client/src/pages/admin/Products.tsx`
+  - `frontend-client/src/styles/product-moderation.css`
+  - `backend-servlet/src/main/webapp/`
+- **Nguyên nhân cốt lõi:**
+  1. **Xung đột bộ lọc phân quyền & trạng thái (`Users.tsx`):**
+     - Khi quản trị viên xem tài khoản bị cấm, trạng thái bộ lọc `activeTab` chuyển sang `'BANNED'`.
+     - Nếu tiếp tục đổi dropdown "Vai trò" sang "Khách hàng (Buyer)" hoặc "Gian hàng (Seller)", hệ thống truy vấn đồng thời `role=CUSTOMER&status=BANNED`. Do sàn không có tài khoản khách hàng nào bị cấm (`stats.banned = 0`), bảng dữ liệu trả về 0 kết quả kèm thông báo rỗng gây nhầm tưởng hệ thống bị lỗi dữ liệu.
+     - Hàm `loadUsers()` trước đây có logic tự cập nhật `stats` dựa trên `data.total` của kết quả truy vấn đang bị lọc, làm sai lệch số liệu thống kê tổng thể sàn.
+  2. **Trải nghiệm thẻ chỉ số Bento (KPI Cards) bị nhiễu:**
+     - Các khối ô to thống kê số liệu trên đầu trang (`Users.tsx` và `Products.tsx`) vừa làm nhiệm vụ thống kê vừa gắn sự kiện `onClick` để lọc, kèm viền màu sắc tương phản nổi bật (xanh lá, cam, đỏ, tím) và nhãn "Đang xem".
+     - Người dùng dễ bấm nhầm vào các ô thẻ to này làm thay đổi trạng thái bộ lọc ngầm, dẫn đến bảng bên dưới bị lọc ngoài ý muốn.
+- **Giải pháp triển khai:**
+  1. **Vô hiệu hóa click & trung hòa viền màu các thẻ KPI ("Block ô to màu sắc"):**
+     - Loại bỏ toàn bộ sự kiện `onClick` và trạng thái active trên các thẻ KPI ở cả 2 trang Quản lý Người dùng (`Users.tsx`) và Kiểm duyệt Sản phẩm (`Products.tsx`).
+     - Đặt thuộc tính `cursor: default; user-select: none;`, chuyển viền thẻ sang màu xám nhạt trung tính chuẩn mực `border: 1px solid #e2e8f0`, giữ lại màu sắc nhẹ ở icon và con số để đảm bảo tính trực quan và thẩm mỹ cao mà không gây nhầm lẫn là nút bấm.
+  2. **Đồng bộ hóa & giải phóng xung đột bộ lọc (`Users.tsx`):**
+     - Khi thay đổi dropdown "Vai trò" (`roleFilter`), nếu `activeTab` đang là `'BANNED'`, hệ thống tự động đưa `activeTab` về `'ALL'` để hiển thị ngay danh sách tài khoản thuộc vai trò đó.
+     - Tách biệt hoàn toàn `loadStats()` (lấy dữ liệu tổng thể từ backend) và `loadUsers()` (lấy danh sách phân trang), đảm bảo các chỉ số tổng quan không bị biến dạng khi người dùng lọc bảng.
+  3. **Giao diện Trạng thái Rỗng thông minh (Smart Empty State):**
+     - Nếu người dùng chủ động chọn tab "🔴 Đang bị cấm" và không có tài khoản vi phạm nào, giao diện hiển thị thông báo rõ ràng: "Không có khách hàng / gian hàng nào đang bị cấm. Tất cả tài khoản đều đang hoạt động an toàn và tuân thủ chuẩn mực."
+     - Cung cấp nút bấm tiện ích 1-chạm: `[Xem tất cả Khách hàng / Gian hàng]` để quay về xem toàn bộ danh bạ ngay tức thì mà không bị kẹt.
+
+### 1. Cách ly Triệt để Sản phẩm Đã Ẩn / Khóa trên Trang Quản trị Admin (Hướng A)
+- **Tệp nguồn sửa đổi:**
+  - `frontend-client/src/pages/admin/Products.tsx`
+  - `frontend-client/src/styles/product-moderation.css`
+  - `backend-servlet/src/main/webapp/`
+- **Nguyên nhân cốt lõi:**
+  - Trang storefront / người mua chỉ hiển thị sản phẩm `ACTIVE`, do đó khi sản phẩm chuyển sang `INACTIVE` thì phía người mua đã được ẩn đúng.
+  - Phía Admin (`/admin/products`), trước đây bảng chỉ lọc theo các tab: Chờ duyệt, Bot duyệt, Admin duyệt, Sản phẩm đã ẩn, và Tất cả. Do tab Tất cả gom toàn bộ sản phẩm và chưa có tab chuyên biệt cho "Đang mở bán" (`ACTIVE`), sản phẩm khi bấm "Tạm Ẩn" vẫn xuất hiện trong tab Tất cả và khiến Admin hiểu lầm là cơ chế ẩn chưa hoạt động.
+- **Giải pháp triển khai (Hướng A):**
+  - **Bổ sung Tab & Thẻ KPI "Đang mở bán" (`ACTIVE`)**: Thêm thẻ chỉ số KPI màu xanh ngọc bích (`.mod-kpi-card.live`) hiển thị chính xác số lượng sản phẩm đang lưu hành kinh doanh trên sàn (`stats.active`), nâng hệ thống chỉ số Bento thành 6 thẻ cân đối.
+  - **Cách ly sản phẩm Đã Ẩn / Khóa (`INACTIVE`)**: Sản phẩm bị ẩn chỉ hiển thị độc quyền tại tab "Sản phẩm đã ẩn / Khóa", tuyệt đối không xuất hiện trong các tab "Đang mở bán", "Bot AI duyệt", "Admin đã duyệt".
+  - **Bộ lọc thông minh cho Tab "Tất cả kho" (`ALL`)**: Tab "Tất cả kho" mặc định ẩn các sản phẩm `INACTIVE` và cung cấp checkbox toggle "Hiện cả sản phẩm đã ẩn" để Admin chỉ xem khi có nhu cầu rà soát toàn bộ kho sàn.
+  - **Phản hồi tức thì khi Thao tác**: Khi Admin bấm "Tạm Ẩn", sản phẩm lập tức biến mất khỏi danh sách đang bán và chuyển vào tab Ẩn kèm toast thông báo chi tiết. Khi bấm "Gỡ Ẩn Sản Phẩm", sản phẩm quay trở lại trạng thái `ACTIVE` ngay lập tức.
+  - **Giao diện Trạng thái Rỗng (Empty States)**: Bổ sung empty state riêng biệt cho tab "Đang mở bán" và tab "Sản phẩm đã ẩn / Khóa".
+
+### 1. Khắc phục Lỗi Thanh toán Mã QR (VietQR / VNPay): Đơn hàng chưa quét mã bị tính là đã mua
+- **Tệp nguồn sửa đổi:**
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/dao/OrderItemDAO.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/service/impl/OrderServiceImpl.java`
+  - `backend-servlet/src/main/java/com/example/webchicken/modules/order/controller/SellerOrderServlet.java`
+  - `frontend-client/src/pages/buyer/CheckoutPage.tsx`
+  - `frontend-client/src/pages/buyer/PaymentResultPage.tsx`
+  - `frontend-client/src/pages/buyer/account/OrdersPage.tsx`
+  - `frontend-client/src/pages/seller/SellerOrdersPage.tsx`
+  - `frontend-client/src/pages/seller/SellerShipmentPage.tsx`
+- **Nguyên nhân cốt lõi:**
+  1. `OrderItemDAO.getSoldCounts`: Trước đây tính tổng số lượng bán từ tất cả đơn hàng phát sinh trong bảng `order_items` mà không kiểm tra trạng thái thanh toán (`paymentStatus`). Khi khách hàng chọn phương thức QR nhưng chưa thanh toán, sản phẩm đã bị cộng dồn số lượng "Đã bán".
+  2. `OrderServiceImpl.getStoreDashboardStats`: Thống kê doanh thu và "Top sản phẩm bán chạy" của Shop tính cả các đơn hàng chưa thanh toán (`UNPAID`).
+  3. `SellerOrderServlet.java`: Phân loại toàn bộ đơn hàng `PENDING` vào số đếm chờ giao hàng (`toShipCount`), khiến Người bán thấy đơn hàng chưa thanh toán trong tab "Chờ giao hàng".
+  4. `OrderServiceImpl.checkout`: Xóa sản phẩm khỏi giỏ hàng database ngay khi khởi tạo đơn hàng trực tuyến, khiến giỏ hàng bị mất khi người dùng rời khỏi modal thanh toán QR.
+  5. `CheckoutPage.tsx`: Thiếu cơ chế tự động hủy đơn và hoàn trả giỏ hàng khi người dùng đóng modal QR hoặc rời trang điều hướng về Home/Cart.
+- **Giải pháp triệt để:**
+  - **Chỉ tính đã bán khi đã thanh toán**: `OrderItemDAO.getSoldCounts` liên kết với bảng `orders` và chỉ đếm các đơn hàng có `paymentStatus = PAID` hoặc (COD và trạng thái `CONFIRMED`/`SHIPPING`/`DELIVERED`). Loại trừ hoàn toàn `CANCELLED`, `RETURNED` và `UNPAID`.
+  - **Bảo vệ Doanh thu & Thống kê Shop**: Thống kê doanh thu ngày và Top bán chạy trong `OrderServiceImpl` chỉ ghi nhận khi `isValidSale = true` (đã thanh toán hoặc COD được duyệt).
+  - **Phân loại chính xác cho Kênh Người Bán**: `SellerOrderServlet` và `SellerOrdersPage` chuyển các đơn trực tuyến chưa thanh toán vào tab `UNPAID` (Chờ thanh toán), không đưa vào `TO_SHIP`.
+  - **Giữ lại giỏ hàng cho đơn thanh toán Online**: `checkout()` trong backend chỉ xóa sản phẩm khỏi giỏ hàng đối với hình thức `COD`. Các hình thức trực tuyến (VietQR/VNPay) bảo lưu giỏ hàng cho đến khi xác nhận thanh toán thành công.
+  - **Tự động hủy đơn hàng bỏ dở và khôi phục**: `CheckoutPage.tsx` tích hợp modal VietQR có đếm ngược 15 phút; nếu người dùng bấm "Hủy thanh toán / Quay lại", hết thời gian, hoặc rời trang (unmount) mà chưa thanh toán, hệ thống tự động hủy đơn hàng, nhả tồn kho giữ chỗ và giữ nguyên giỏ hàng.
+  - **Giao diện Đơn Mua minh bạch**: `OrdersPage.tsx` hiển thị huy hiệu `⏳ Chờ quét mã QR thanh toán` cho các đơn hàng chưa quét mã, cung cấp nút hủy đơn rõ ràng.
+
+---
+
 ## 📅 Bản cập nhật: 11/10/2026
 
 ### 0. Nâng cấp Thống kê Toàn diện trên Admin UI & Phân quyền Mở Shop / Tạo Sản Phẩm cho Admin

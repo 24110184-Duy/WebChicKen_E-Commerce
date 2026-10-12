@@ -14,9 +14,9 @@ export const adminProductApi = {
     try {
       const response = await httpClient.get<any>('/products', {
         params: {
-          status: params?.status && params.status !== 'ALL' ? params.status : undefined,
+          status: params?.status ? params.status : 'ALL',
           page: params?.page ?? 1,
-          size: params?.size ?? 50,
+          size: params?.size ?? 100,
           q: params?.q
         }
       })

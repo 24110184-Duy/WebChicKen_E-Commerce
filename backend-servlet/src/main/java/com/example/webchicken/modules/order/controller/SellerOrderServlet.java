@@ -2,6 +2,7 @@ package com.example.webchicken.modules.order.controller;
 
 import com.example.webchicken.common.enums.OrderStatus;
 import com.example.webchicken.common.enums.PaymentStatus;
+import com.example.webchicken.modules.order.model.enums.PaymentMethod;
 import com.example.webchicken.common.exception.AppException;
 import com.example.webchicken.common.exception.AuthorizationException;
 import com.example.webchicken.common.exception.NotFoundException;
@@ -106,9 +107,14 @@ public class SellerOrderServlet extends BaseApiServlet {
 
             List<OrderResponse> orders = orderService().getStoreOrdersInStatuses(path.shopId(), statuses, page, size);
 
-            if (filterUnpaid) {
+            if ("TO_SHIP".equalsIgnoreCase(statusParam)) {
                 orders = orders.stream()
-                        .filter(o -> o.paymentStatus() == PaymentStatus.UNPAID)
+                        .filter(o -> o.paymentStatus() == PaymentStatus.PAID
+                                || (o.paymentMethod() == PaymentMethod.COD && o.status() != OrderStatus.CANCELLED))
+                        .toList();
+            } else if (filterUnpaid) {
+                orders = orders.stream()
+                        .filter(o -> o.paymentStatus() == PaymentStatus.UNPAID && o.status() != OrderStatus.CANCELLED)
                         .toList();
             }
 
@@ -123,10 +129,20 @@ public class SellerOrderServlet extends BaseApiServlet {
                         .toList();
             }
 
-            long totalCount = filterUnpaid ? orders.size() : orderService().countStoreOrdersInStatuses(path.shopId(), statuses);
+            long totalCount = (filterUnpaid || "TO_SHIP".equalsIgnoreCase(statusParam))
+                    ? orders.size()
+                    : orderService().countStoreOrdersInStatuses(path.shopId(), statuses);
 
             // Tab badge breakdown counts
-            long allCount = orderService().countStoreOrders(path.shopId(), (OrderStatus) null);
+            List<OrderResponse> allStoreOrders = orderService().getStoreOrders(path.shopId(), (OrderStatus) null, 1, 500);
+            long allCount = allStoreOrders.size();
+            long unpaidCount = allStoreOrders.stream()
+                    .filter(o -> o.paymentStatus() == PaymentStatus.UNPAID && o.status() != OrderStatus.CANCELLED)
+                    .count();
+            long toShipCount = allStoreOrders.stream()
+                    .filter(o -> (o.status() == OrderStatus.CONFIRMED || (o.status() == OrderStatus.PENDING && o.paymentMethod() == PaymentMethod.COD))
+                            && o.paymentStatus() != PaymentStatus.UNPAID)
+                    .count();
             long pendingCount = orderService().countStoreOrders(path.shopId(), OrderStatus.PENDING);
             long confirmedCount = orderService().countStoreOrders(path.shopId(), OrderStatus.CONFIRMED);
             long shippingCount = orderService().countStoreOrders(path.shopId(), OrderStatus.SHIPPING);
@@ -138,7 +154,7 @@ public class SellerOrderServlet extends BaseApiServlet {
             statusCounts.put("all", allCount);
             statusCounts.put("pending", pendingCount);
             statusCounts.put("confirmed", confirmedCount);
-            statusCounts.put("to_ship", confirmedCount + pendingCount);
+            statusCounts.put("to_ship", toShipCount);
             statusCounts.put("shipping", shippingCount);
             statusCounts.put("delivered", deliveredCount);
             statusCounts.put("completed", deliveredCount);
@@ -146,7 +162,7 @@ public class SellerOrderServlet extends BaseApiServlet {
             statusCounts.put("cancellation", cancelledCount);
             statusCounts.put("returned", returnedCount);
             statusCounts.put("return_refund", returnedCount);
-            statusCounts.put("unpaid", 0L);
+            statusCounts.put("unpaid", unpaidCount);
 
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("items", orders);

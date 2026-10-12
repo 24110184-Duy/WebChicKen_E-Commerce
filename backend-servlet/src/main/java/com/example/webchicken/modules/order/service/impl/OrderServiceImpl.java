@@ -1,6 +1,7 @@
 package com.example.webchicken.modules.order.service.impl;
 
 import com.example.webchicken.common.enums.OrderStatus;
+import com.example.webchicken.common.enums.PaymentStatus;
 import com.example.webchicken.common.exception.NotFoundException;
 import com.example.webchicken.common.exception.ValidationException;
 import com.example.webchicken.modules.cart.dao.CartDAO;
@@ -330,8 +331,9 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        // (4) Xóa các sản phẩm đã đặt khỏi giỏ hàng của khách
-        if (cartOpt.isPresent()) {
+        // (4) Xóa các sản phẩm đã đặt khỏi giỏ hàng của khách (đối với đơn COD thanh toán khi nhận hàng)
+        // Đối với thanh toán qua mã QR / VNPay / Banking, giữ lại giỏ hàng cho đến khi xác nhận thanh toán thành công
+        if (cartOpt.isPresent() && request.paymentMethod() == PaymentMethod.COD) {
             for (CheckoutItemRequest reqItem : request.items()) {
                 cartItemDAO.deleteByCartAndVariant(cartOpt.get().getId(), reqItem.productId(), reqItem.variantId());
             }
@@ -674,22 +676,34 @@ public class OrderServiceImpl implements OrderService {
             OrderStatus status = o.getStatus();
             long amount = o.getTotalAmountMinor();
 
+            boolean isPaid = o.getPaymentStatus() == PaymentStatus.PAID;
+            boolean isCodConfirmed = o.getPaymentMethod() == PaymentMethod.COD
+                    && (status == OrderStatus.CONFIRMED || status == OrderStatus.SHIPPING || status == OrderStatus.DELIVERED);
+            boolean isValidSale = (isPaid || isCodConfirmed)
+                    && status != OrderStatus.CANCELLED && status != OrderStatus.RETURNED;
+
             switch (status) {
                 case PENDING -> pendingOrders++;
                 case CONFIRMED -> {
                     confirmedOrders++;
-                    totalRevenueMinor += amount;
-                    pendingSettlementMinor += (long) (amount * 0.95);
+                    if (isValidSale) {
+                        totalRevenueMinor += amount;
+                        pendingSettlementMinor += (long) (amount * 0.95);
+                    }
                 }
                 case SHIPPING -> {
                     shippingOrders++;
-                    totalRevenueMinor += amount;
-                    pendingSettlementMinor += (long) (amount * 0.95);
+                    if (isValidSale) {
+                        totalRevenueMinor += amount;
+                        pendingSettlementMinor += (long) (amount * 0.95);
+                    }
                 }
                 case DELIVERED -> {
                     deliveredOrders++;
-                    totalRevenueMinor += amount;
-                    deliveredRevenueMinor += (long) (amount * 0.95);
+                    if (isValidSale) {
+                        totalRevenueMinor += amount;
+                        deliveredRevenueMinor += (long) (amount * 0.95);
+                    }
                 }
                 case CANCELLED, RETURNED -> cancelledOrders++;
             }
@@ -697,7 +711,7 @@ public class OrderServiceImpl implements OrderService {
             if (o.getOrderDate() != null) {
                 String orderDateStr = o.getOrderDate().toLocalDate().toString();
                 DailyAccumulator dayAcc = dailyMap.get(orderDateStr);
-                if (dayAcc != null && status != OrderStatus.CANCELLED && status != OrderStatus.RETURNED) {
+                if (dayAcc != null && isValidSale) {
                     dayAcc.revenueMinor += amount;
                     dayAcc.orderCount++;
                     if (status == OrderStatus.DELIVERED) {
@@ -707,7 +721,7 @@ public class OrderServiceImpl implements OrderService {
             }
 
             List<OrderItemEntity> items = orderItemDAO.findByOrderId(o.getId());
-            if (status != OrderStatus.CANCELLED && status != OrderStatus.RETURNED) {
+            if (isValidSale) {
                 for (OrderItemEntity item : items) {
                     ProductSalesAccumulator acc = productSales.computeIfAbsent(
                             item.getProductId(),

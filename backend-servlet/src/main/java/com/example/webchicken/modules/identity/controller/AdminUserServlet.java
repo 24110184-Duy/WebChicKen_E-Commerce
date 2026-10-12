@@ -81,6 +81,10 @@ public class AdminUserServlet extends BaseApiServlet {
 
         if (parts.length == 1) {
             String userId = parts[0];
+            if ("stats".equalsIgnoreCase(userId)) {
+                ok(resp, service().getUserStats());
+                return;
+            }
             AdminUserResponse response = service().getUserDetail(userId);
             ok(resp, response);
             return;

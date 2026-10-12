@@ -83,6 +83,7 @@ export const AppRouter = () => {
         }
       />
       <Route path={PATHS.PAYMENT_RESULT} element={<PaymentResultPage />} />
+      <Route path="/buyer/payment/result" element={<PaymentResultPage />} />
 
       {/* Buyer Account Routes (Must Be Authenticated) */}
       <Route element={<RequireAuth />}>

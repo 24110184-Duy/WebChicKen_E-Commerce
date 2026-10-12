@@ -177,7 +177,7 @@ export const SellerShipmentPage: React.FC = () => {
   const MAIN_TABS = [
     { id: 'ALL', label: 'All', count: statusCounts.all },
     { id: 'UNPAID', label: 'Unpaid', count: statusCounts.unpaid || 0 },
-    { id: 'TO_SHIP', label: 'To ship', count: (statusCounts.confirmed || 0) + (statusCounts.pending || 0) },
+    { id: 'TO_SHIP', label: 'To ship', count: (statusCounts as any).to_ship ?? (statusCounts.confirmed || 0) },
     { id: 'SHIPPING', label: 'Shipping', count: statusCounts.shipping || 0 },
     { id: 'COMPLETED', label: 'Completed', count: statusCounts.delivered || 0 },
     { id: 'CANCELLATION', label: 'Cancellation', count: statusCounts.cancelled || 0 },

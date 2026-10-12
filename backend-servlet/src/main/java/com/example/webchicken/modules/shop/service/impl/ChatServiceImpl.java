@@ -71,7 +71,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatMessageResponse> getMessages(String storeId, String customerId, int limit) {
-        if (storeId == null || customerId == null) return List.of();
+        if (storeId == null || customerId == null)
+            return List.of();
         List<ChatMessageEntity> entities = chatMessageDAO.getMessages(storeId, customerId, limit);
         List<ChatMessageResponse> res = new ArrayList<>();
         for (ChatMessageEntity e : entities) {
@@ -82,7 +83,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatConversationResponse> getConversationsForStore(String storeId) {
-        if (storeId == null || storeId.isBlank()) return List.of();
+        if (storeId == null || storeId.isBlank())
+            return List.of();
 
         String resolvedStoreName = "Gian hàng của bạn";
         if (storeDAO != null) {
@@ -90,7 +92,8 @@ public class ChatServiceImpl implements ChatService {
                 resolvedStoreName = storeDAO.findById(storeId)
                         .map(StoreEntity::getStoreName)
                         .orElse("Gian hàng của bạn");
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         List<String> customerIds = chatMessageDAO.getCustomerIdsByStore(storeId);
@@ -104,7 +107,8 @@ public class ChatServiceImpl implements ChatService {
 
             // Tên và Avatar khách hàng
             userDAO.findById(cId).ifPresentOrElse(u -> {
-                conv.setCustomerName(u.getFullName() != null && !u.getFullName().isBlank() ? u.getFullName() : (u.getUsername() != null ? u.getUsername() : u.getEmail()));
+                conv.setCustomerName(u.getFullName() != null && !u.getFullName().isBlank() ? u.getFullName()
+                        : (u.getUsername() != null ? u.getUsername() : u.getEmail()));
                 conv.setCustomerAvatar(u.getLogoUrl());
             }, () -> {
                 conv.setCustomerName("Khách hàng");
@@ -129,9 +133,12 @@ public class ChatServiceImpl implements ChatService {
 
         // Sắp xếp theo tin nhắn mới nhất giảm dần
         result.sort((a, b) -> {
-            if (a.getLastMessageAt() == null && b.getLastMessageAt() == null) return 0;
-            if (a.getLastMessageAt() == null) return 1;
-            if (b.getLastMessageAt() == null) return -1;
+            if (a.getLastMessageAt() == null && b.getLastMessageAt() == null)
+                return 0;
+            if (a.getLastMessageAt() == null)
+                return 1;
+            if (b.getLastMessageAt() == null)
+                return -1;
             return b.getLastMessageAt().compareTo(a.getLastMessageAt());
         });
 
@@ -140,7 +147,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatConversationResponse> getConversationsForCustomer(String customerId) {
-        if (customerId == null || customerId.isBlank()) return List.of();
+        if (customerId == null || customerId.isBlank())
+            return List.of();
         List<String> storeIds = chatMessageDAO.getStoreIdsByCustomer(customerId);
         List<ChatConversationResponse> result = new ArrayList<>();
 
@@ -174,9 +182,12 @@ public class ChatServiceImpl implements ChatService {
         }
 
         result.sort((a, b) -> {
-            if (a.getLastMessageAt() == null && b.getLastMessageAt() == null) return 0;
-            if (a.getLastMessageAt() == null) return 1;
-            if (b.getLastMessageAt() == null) return -1;
+            if (a.getLastMessageAt() == null && b.getLastMessageAt() == null)
+                return 0;
+            if (a.getLastMessageAt() == null)
+                return 1;
+            if (b.getLastMessageAt() == null)
+                return -1;
             return b.getLastMessageAt().compareTo(a.getLastMessageAt());
         });
 

@@ -14,7 +14,25 @@ public class SellerDAO extends BaseDAO {
 
     /** Tìm seller theo ID (cũng là user_id). */
     public Optional<SellerEntity> findById(String sellerId) {
-        return executeQuery(em -> Optional.ofNullable(em.find(SellerEntity.class, sellerId)));
+        if (sellerId == null || sellerId.isBlank()) return Optional.empty();
+        return executeQuery(em -> {
+            try {
+                SellerEntity seller = em.find(SellerEntity.class, sellerId);
+                if (seller != null) return Optional.of(seller);
+            } catch (Exception ignored) {}
+            try {
+                Number count = (Number) em.createNativeQuery(
+                        "SELECT COUNT(*) FROM sellers WHERE id = ?")
+                        .setParameter(1, sellerId)
+                        .getSingleResult();
+                if (count != null && count.longValue() > 0) {
+                    SellerEntity fallback = new SellerEntity();
+                    fallback.setUserId(sellerId);
+                    return Optional.of(fallback);
+                }
+            } catch (Exception ignored) {}
+            return Optional.empty();
+        });
     }
 
     /** Lưu seller mới. Nếu bản ghi trong users đã tồn tại, chèn an toàn vào bảng sellers */

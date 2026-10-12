@@ -22,7 +22,7 @@ import java.io.IOException;
  * Controller xử lý tìm kiếm, chi tiết và CRUD sản phẩm (SPU/SKU).
  * URL Pattern: /api/v1/products, /api/v1/products/*
  */
-@WebServlet(name = "ProductServlet", urlPatterns = {"/api/v1/products", "/api/v1/products/*", "/api/v1/admin/products/*"})
+@WebServlet(name = "ProductServlet", urlPatterns = {"/api/v1/products", "/api/v1/products/*", "/api/v1/admin/products", "/api/v1/admin/products/*"})
 public class ProductServlet extends BaseApiServlet {
 
     public ProductServlet() {
@@ -67,15 +67,21 @@ public class ProductServlet extends BaseApiServlet {
             Long maxPrice = req.getParameter("maxPrice") != null ? getLongParam(req, "maxPrice", Long.MAX_VALUE) : null;
             String statusParam = getStringParam(req, "status", null);
 
+            String servletPath = req.getServletPath();
+            String requestUri = req.getRequestURI();
+            boolean isAdminPath = (servletPath != null && servletPath.contains("/admin/"))
+                    || (requestUri != null && requestUri.contains("/admin/"));
+            boolean hasExplicitStatus = statusParam != null && !statusParam.isBlank();
+
             ProductStatus status = null;
-            if (isAdmin) {
-                if (statusParam != null && !statusParam.equalsIgnoreCase("ALL")) {
+            if (isAdmin && (isAdminPath || hasExplicitStatus)) {
+                if (!"ALL".equalsIgnoreCase(statusParam) && statusParam != null) {
                     try {
                         status = ProductStatus.valueOf(statusParam.toUpperCase());
                     } catch (IllegalArgumentException ignored) {}
                 }
             } else {
-                // Khách mua và công chúng chỉ xem các sản phẩm ACTIVE (đã được Admin phê duyệt)
+                // Khách mua, công chúng và storefront mặc định CHỈ xem các sản phẩm ACTIVE (đang mở bán)
                 status = ProductStatus.ACTIVE;
             }
 
@@ -124,18 +130,25 @@ public class ProductServlet extends BaseApiServlet {
         }
 
         // Xử lý kiểm duyệt sản phẩm cho Admin: PUT /{id}/review hoặc PUT /{id}/moderation
-        if (pathInfo.endsWith("/review") || pathInfo.endsWith("/moderation")) {
+        if (pathInfo.contains("/review") || pathInfo.contains("/moderation")) {
             com.example.webchicken.common.model.AuthenticatedUser user = getAuthenticatedUser(req);
             if (user == null || !user.isAdmin()) {
                 forbidden(resp, "Chỉ Quản trị viên mới có quyền kiểm duyệt sản phẩm.");
                 return;
             }
 
-            String productId = pathInfo.replaceFirst("^/", "").replace("/review", "").replace("/moderation", "").trim();
+            String clean = pathInfo.replaceAll("/+$", "");
+            String productId = clean.startsWith("/") ? clean.substring(1) : clean;
+            if (productId.endsWith("/review")) {
+                productId = productId.substring(0, productId.length() - "/review".length());
+            } else if (productId.endsWith("/moderation")) {
+                productId = productId.substring(0, productId.length() - "/moderation".length());
+            }
             if (productId.contains("/")) {
                 String[] segments = productId.split("/");
                 productId = segments[segments.length - 1];
             }
+            productId = productId.trim();
 
             if (!productId.isBlank()) {
                 try {

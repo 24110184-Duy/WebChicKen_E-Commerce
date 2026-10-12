@@ -10,7 +10,7 @@ import { PATHS } from '../../app/router/paths'
 import { ProductReviews } from '../../features/reviews/components/ProductReviews'
 import { ProductShopCard } from '../../features/shop'
 import { toast } from '../../components/feedback/Toast'
-import { ShieldAlert, EyeOff } from 'lucide-react'
+import { ShieldAlert, EyeOff, Eye } from 'lucide-react'
 import { AdminProductActionModal } from '../../features/admin/components/AdminProductActionModal'
 
 export const ProductDetailPage: React.FC = () => {
@@ -28,15 +28,24 @@ export const ProductDetailPage: React.FC = () => {
   const [isModeratedByAdmin, setIsModeratedByAdmin] = useState(false)
   const [moderationReason, setModerationReason] = useState('')
 
-  const handleModerationSuccess = (action: 'HIDE' | 'DELETE', reason: string) => {
-    setIsModeratedByAdmin(true)
-    setModerationReason(reason)
+  const handleModerationSuccess = (action: 'HIDE' | 'DELETE' | 'UNHIDE', reason: string) => {
     if (action === 'DELETE') {
+      setIsModeratedByAdmin(true)
+      setModerationReason(reason)
       toast.success('Đã gỡ bỏ vĩnh viễn sản phẩm khỏi sàn!')
       setTimeout(() => {
         navigate(PATHS.HOME)
       }, 1200)
+    } else if (action === 'UNHIDE') {
+      setIsModeratedByAdmin(false)
+      setModerationReason('')
+      toast.success('Đã gỡ ẩn và mở bán lại sản phẩm trên sàn thành công!')
+      if (product) {
+        setProduct({ ...product, status: 'ACTIVE' })
+      }
     } else {
+      setIsModeratedByAdmin(true)
+      setModerationReason(reason)
       toast.success('Đã tạm ẩn sản phẩm khỏi sàn thành công!')
       if (product) {
         setProduct({ ...product, status: 'INACTIVE' })
@@ -145,91 +154,114 @@ export const ProductDetailPage: React.FC = () => {
         </div>
 
         {/* Admin Quick Action Banner khi lướt sàn */}
-        {isAdmin && (
-          <div
-            style={{
-              marginBottom: 18,
-              padding: '14px 20px',
-              backgroundColor: isModeratedByAdmin ? '#fef2f2' : '#fffbeb',
-              border: isModeratedByAdmin ? '1px solid #fecaca' : '1px solid #fde68a',
-              borderRadius: 12,
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  backgroundColor: isModeratedByAdmin ? '#dc2626' : '#f59e0b',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <ShieldAlert size={20} />
-              </div>
-              <div>
-                <span
+        {isAdmin && (() => {
+          const isInactive = product.status === 'INACTIVE' || isModeratedByAdmin
+          return (
+            <div
+              style={{
+                marginBottom: 18,
+                padding: '14px 20px',
+                backgroundColor: isInactive ? '#fef2f2' : '#fffbeb',
+                border: isInactive ? '1px solid #fecaca' : '1px solid #fde68a',
+                borderRadius: 12,
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
                   style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: isModeratedByAdmin ? '#991b1b' : '#92400e',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Quyền Hạn Quản Trị Viên: Kiểm Soát Sản Phẩm Trên Sàn
-                </span>
-                <p style={{ fontSize: 13, color: isModeratedByAdmin ? '#b91c1c' : '#78350f', margin: '2px 0 0' }}>
-                  {isModeratedByAdmin ? (
-                    <span style={{ fontWeight: 700 }}>
-                      ⚠️ Sản phẩm này vừa bị bạn tạm ẩn / gỡ khỏi sàn ({moderationReason || 'Vi phạm chính sách'})
-                    </span>
-                  ) : (
-                    `Trạng thái: ${product.status} • Phát hiện sản phẩm không đạt chuẩn? Bạn có thể tạm ẩn hoặc gỡ bỏ ngay tại đây.`
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {!isModeratedByAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setIsAdminActionModalOpen(true)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: '1px solid #d97706',
-                    backgroundColor: '#f59e0b',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: isInactive ? '#dc2626' : '#f59e0b',
                     color: '#ffffff',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    justifyContent: 'center',
+                    flexShrink: 0,
                   }}
                 >
-                  <EyeOff size={15} />
-                  <span>Tạm Ẩn / Gỡ Sản Phẩm</span>
-                </button>
-              )}
+                  <ShieldAlert size={20} />
+                </div>
+                <div>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 800,
+                      color: isInactive ? '#991b1b' : '#92400e',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Quyền Hạn Quản Trị Viên: Kiểm Soát Sản Phẩm Trên Sàn
+                  </span>
+                  <p style={{ fontSize: 13, color: isInactive ? '#b91c1c' : '#78350f', margin: '2px 0 0' }}>
+                    {isInactive ? (
+                      <span style={{ fontWeight: 700 }}>
+                        ⚠️ Sản phẩm này hiện đang bị TẠM ẨN khỏi sàn ({moderationReason || product.rejectionReason || 'Chỉ Quản trị viên mới thấy'}). Khách mua thông thường sẽ không nhìn thấy sản phẩm này.
+                      </span>
+                    ) : (
+                      `Trạng thái: ${product.status} • Phát hiện sản phẩm không đạt chuẩn? Bạn có thể tạm ẩn hoặc gỡ bỏ ngay tại đây.`
+                    )}
+                  </p>
+                </div>
+              </div>
 
-
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {isInactive ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsAdminActionModalOpen(true)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      border: '1px solid #16a34a',
+                      backgroundColor: '#16a34a',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    <Eye size={15} />
+                    <span>Gỡ Ẩn / Mở Bán Lại</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsAdminActionModalOpen(true)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      border: '1px solid #d97706',
+                      backgroundColor: '#f59e0b',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    <EyeOff size={15} />
+                    <span>Tạm Ẩn / Gỡ Sản Phẩm</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* Main PDP Card */}
         <div className="pdp-main-card">

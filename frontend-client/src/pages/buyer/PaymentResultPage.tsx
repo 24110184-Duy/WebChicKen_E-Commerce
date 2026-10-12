@@ -37,6 +37,9 @@ interface OrderData {
   grandTotalMinor: number
 }
 
+import { orderApi } from '../../features/orders/api/orderApi'
+import { cartStore } from '../../app/store/cartStore'
+
 export const PaymentResultPage: React.FC = () => {
   const [searchParams] = useSearchParams()
   const [order, setOrder] = useState<OrderData | null>(null)
@@ -62,7 +65,42 @@ export const PaymentResultPage: React.FC = () => {
     } catch {
       // Ignore
     }
-  }, [])
+
+    if (isVNPayCallback) {
+      const codeToCancel = vnpTxnRef || (order && order.orderCode)
+      if (!isVNPaySuccess) {
+        // Khách hàng hủy quét mã QR hoặc giao dịch VNPay thất bại
+        if (codeToCancel) {
+          orderApi.cancelOrder(codeToCancel, `Khách hàng hủy quét mã QR VNPay (Mã phản hồi: ${vnpResponseCode})`).catch(() => {})
+        }
+        // Xóa lưu trữ đơn hàng chưa hoàn tất
+        sessionStorage.removeItem('webchicken_last_order')
+        // Khôi phục lại giỏ hàng nếu cần
+        try {
+          const pendingRaw = sessionStorage.getItem('webchicken_pending_qr_items')
+          if (pendingRaw) {
+            const items = JSON.parse(pendingRaw)
+            if (Array.isArray(items)) {
+              items.forEach((it: any) => cartStore.addItem(it))
+            }
+            sessionStorage.removeItem('webchicken_pending_qr_items')
+          }
+        } catch {}
+      } else {
+        // Thanh toán VNPay thành công: dọn dẹp các sản phẩm khỏi giỏ hàng
+        try {
+          const pendingRaw = sessionStorage.getItem('webchicken_pending_qr_items')
+          if (pendingRaw) {
+            const items = JSON.parse(pendingRaw)
+            if (Array.isArray(items)) {
+              items.forEach((it: any) => cartStore.removeItem(it.skuId))
+            }
+            sessionStorage.removeItem('webchicken_pending_qr_items')
+          }
+        } catch {}
+      }
+    }
+  }, [isVNPayCallback, isVNPaySuccess, vnpTxnRef, vnpResponseCode])
 
   const defaultOrder: OrderData = {
     orderCode: vnpTxnRef || `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-583099`,
@@ -132,10 +170,10 @@ export const PaymentResultPage: React.FC = () => {
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               </div>
-              <span className="result-badge danger">Payment Incomplete</span>
-              <h1 className="result-title">Online Payment Was Not Completed</h1>
+              <span className="result-badge danger">Chưa hoàn tất thanh toán</span>
+              <h1 className="result-title">Giao dịch quét mã QR chưa hoàn tất</h1>
               <p className="result-desc">
-                The transaction was cancelled or declined by the payment gateway (Code: {vnpResponseCode}). Your items are safely saved in your shopping cart.
+                Bạn chưa quét mã QR hoặc giao dịch đã bị hủy (Mã phản hồi: {vnpResponseCode}). Hệ thống <strong>KHÔNG</strong> tính là đã mua đơn hàng này. Sản phẩm vẫn được lưu giữ an toàn trong giỏ hàng của bạn.
               </p>
             </div>
           ) : (
@@ -305,10 +343,10 @@ export const PaymentResultPage: React.FC = () => {
             {isVNPayCallback && !isVNPaySuccess ? (
               <>
                 <Link to={PATHS.CART} className="result-btn-primary">
-                  Return to Cart & Retry
+                  Quay lại Giỏ hàng & Tiếp tục mua
                 </Link>
-                <Link to={PATHS.ACCOUNT.ORDERS} className="result-btn-secondary">
-                  View My Orders
+                <Link to={PATHS.HOME} className="result-btn-secondary">
+                  Về Trang chủ
                 </Link>
               </>
             ) : (

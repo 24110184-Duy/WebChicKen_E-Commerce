@@ -976,7 +976,7 @@ export const SellerProductListPage: React.FC = () => {
                               </span>
                             ) : p.status === 'PENDING_APPROVAL' ? (
                               <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, backgroundColor: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
-                                ⏳ Chờ Admin duyệt (Sức khỏe/Thuốc)
+                                ⏳ Chờ Admin duyệt
                               </span>
                             ) : null}
                           </div>

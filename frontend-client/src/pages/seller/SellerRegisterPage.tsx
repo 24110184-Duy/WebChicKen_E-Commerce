@@ -18,7 +18,8 @@ import {
   RotateCcw,
   AlertCircle,
 } from 'lucide-react'
-import { useAuthStore } from '../../app/store/authStore'
+import { useAuthStore, authStore } from '../../app/store/authStore'
+import { authApi } from '../../features/auth/api/authApi'
 import { PATHS } from '../../app/router/paths'
 import { toast } from '../../components/feedback/Toast'
 import { sellerApi, type SellerApplicationResponse } from '../../features/seller/api/sellerApi'
@@ -238,6 +239,9 @@ export const SellerRegisterPage: React.FC = () => {
       // 1. Kiểm tra nếu đã có gian hàng hoạt động trong CSDL
       const store = await sellerApi.getMyStore().catch(() => null)
       if (store && store.storeName) {
+        if (user?.id) localStorage.setItem(`seller_registered_${user.id}`, 'true')
+        authStore.updateUser({ roles: Array.from(new Set([...(user?.roles || []), 'SELLER'])) })
+        authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => {})
         setAlreadySeller(true)
         setExistingStoreName(store.storeName)
         setApplication(null)
@@ -249,6 +253,9 @@ export const SellerRegisterPage: React.FC = () => {
       const app = await sellerApi.getMyApplication().catch(() => null)
       if (app) {
         if (app.status === 'APPROVED') {
+          if (user?.id) localStorage.setItem(`seller_registered_${user.id}`, 'true')
+          authStore.updateUser({ roles: Array.from(new Set([...(user?.roles || []), 'SELLER'])) })
+          authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => {})
           setAlreadySeller(true)
           setExistingStoreName(app.shopName)
         } else {
@@ -646,12 +653,28 @@ export const SellerRegisterPage: React.FC = () => {
                 <span>Về Trang Chủ</span>
               </Link>
 
-              <Link
-                to={PATHS.SELLER.DASHBOARD}
+              <button
+                type="button"
+                onClick={async () => {
+                  if (user?.id) {
+                    localStorage.setItem(`seller_registered_${user.id}`, 'true')
+                  }
+                  if (user) {
+                    authStore.updateUser({ roles: Array.from(new Set([...(user.roles || []), 'SELLER'])) })
+                  }
+                  try {
+                    const newToken = await authApi.refreshToken()
+                    authStore.setAccessToken(newToken)
+                  } catch {
+                    // ignore
+                  }
+                  navigate(PATHS.SELLER.DASHBOARD, { replace: true })
+                }}
                 style={{
-                  textDecoration: 'none',
                   background: 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
                   color: '#0f172a',
+                  border: 'none',
+                  cursor: 'pointer',
                   padding: '10px 24px',
                   borderRadius: 8,
                   fontSize: 14,
@@ -663,7 +686,7 @@ export const SellerRegisterPage: React.FC = () => {
                 }}
               >
                 <span>Vào Kênh Người Bán</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>

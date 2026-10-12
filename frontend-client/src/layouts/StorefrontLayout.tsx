@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { WebChicKenLogo } from '../features/auth/components/WebChicKenLogo'
-import { useAuthStore } from '../app/store/authStore'
+import { useAuthStore, authStore } from '../app/store/authStore'
 import { useCartStore, cartStore } from '../app/store/cartStore'
 import { authApi } from '../features/auth/api/authApi'
+import { sellerApi } from '../features/seller/api/sellerApi'
 import { PATHS } from '../app/router/paths'
 import { catalogApi } from '../features/catalog/api/catalogApi'
 import type { Category } from '../features/catalog/types/catalogTypes'
@@ -35,18 +36,41 @@ export const StorefrontLayout: React.FC<StorefrontLayoutProps> = ({ children }) 
     }
   }
 
-  const handleSellerCenterClick = (e: React.MouseEvent) => {
+  const handleSellerCenterClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     if (!isAuthenticated) {
       navigate(PATHS.LOGIN, { state: { from: PATHS.SELLER.DASHBOARD } })
       return
     }
-    const isRegisteredSeller = isSeller || isAdmin || (user?.id ? localStorage.getItem(`seller_registered_${user.id}`) === 'true' : false)
-    if (isRegisteredSeller) {
+    const localFlag = user?.id ? localStorage.getItem(`seller_registered_${user.id}`) === 'true' : false
+    if (isSeller || isAdmin || localFlag) {
       navigate(PATHS.SELLER.DASHBOARD)
-    } else {
-      navigate(PATHS.SELLER.REGISTER)
+      return
     }
+
+    try {
+      const store = await sellerApi.getMyStore().catch(() => null)
+      if (store && store.storeName) {
+        if (user?.id) localStorage.setItem(`seller_registered_${user.id}`, 'true')
+        authStore.updateUser({ roles: Array.from(new Set([...(user?.roles || []), 'SELLER'])) })
+        authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => {})
+        navigate(PATHS.SELLER.DASHBOARD)
+        return
+      }
+
+      const app = await sellerApi.getMyApplication().catch(() => null)
+      if (app && app.status === 'APPROVED') {
+        if (user?.id) localStorage.setItem(`seller_registered_${user.id}`, 'true')
+        authStore.updateUser({ roles: Array.from(new Set([...(user?.roles || []), 'SELLER'])) })
+        authApi.refreshToken().then((tok) => authStore.setAccessToken(tok)).catch(() => {})
+        navigate(PATHS.SELLER.DASHBOARD)
+        return
+      }
+    } catch {
+      // ignore
+    }
+
+    navigate(PATHS.SELLER.REGISTER)
   }
 
   const handleLogout = async () => {

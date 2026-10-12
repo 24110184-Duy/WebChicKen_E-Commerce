@@ -4,8 +4,48 @@ import type {
   AdminUserPageResponse,
   BanUserRequest,
   UnbanUserRequest,
-  AccountBanInfo
+  AccountBanInfo,
+  AdminUserStatsResponse
 } from '../types'
+
+/**
+ * Lấy thống kê tổng quan người dùng theo vai trò và trạng thái (TASK-66)
+ */
+export async function fetchAdminUserStats(): Promise<AdminUserStatsResponse> {
+  try {
+    const resp = await httpClient.get<AdminUserStatsResponse>('/api/v1/admin/users/stats')
+    if (resp.data && (resp.data.totalUsers > 0 || resp.data.buyers > 0 || resp.data.sellers > 0)) {
+      return resp.data
+    }
+  } catch (err) {
+    console.warn('Endpoint /stats chưa phản hồi, sử dụng fallback từ danh sách:', err)
+  }
+
+  // Fallback an toàn: truy xuất danh sách người dùng để tổng hợp chính xác
+  try {
+    const fallbackList = await fetchAdminUsers({ page: 1, size: 100, status: 'ALL', role: 'ALL' })
+    const items = fallbackList.items || []
+    return {
+      totalUsers: fallbackList.total || items.length,
+      buyers: items.filter((u) => u.roles.includes('CUSTOMER')).length,
+      sellers: items.filter((u) => u.roles.includes('SELLER')).length,
+      bannedUsers: items.filter((u) => u.status === 'BANNED').length,
+      lockedUsers: items.filter((u) => u.status === 'LOCKED').length,
+      activeUsers: items.filter((u) => u.status === 'ACTIVE').length
+    }
+  } catch (e) {
+    console.warn('Lỗi khi tải dữ liệu fallback thống kê:', e)
+  }
+
+  return {
+    totalUsers: 0,
+    buyers: 0,
+    sellers: 0,
+    bannedUsers: 0,
+    lockedUsers: 0,
+    activeUsers: 0
+  }
+}
 
 /**
  * Lấy danh sách người dùng quản trị từ CSDL (hỗ trợ tìm kiếm, lọc theo trạng thái và vai trò, phân trang)

@@ -22,7 +22,8 @@ import type {
 import {
   fetchAdminUsers,
   banAdminUser,
-  unbanAdminUser
+  unbanAdminUser,
+  fetchAdminUserStats
 } from '../../features/admin/api/adminUserApi'
 import { BanUserModal } from '../../features/admin/components/BanUserModal'
 import { UnbanUserModal } from '../../features/admin/components/UnbanUserModal'
@@ -63,6 +64,23 @@ export const AdminUsersPage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500)
   }
 
+  const loadStats = useCallback(async () => {
+    try {
+      const s = await fetchAdminUserStats()
+      if (s) {
+        setStats({
+          total: s.totalUsers ?? 0,
+          active: s.activeUsers ?? 0,
+          customers: s.buyers ?? 0,
+          sellers: s.sellers ?? 0,
+          banned: s.bannedUsers ?? 0
+        })
+      }
+    } catch (err) {
+      console.warn('Lỗi khi tải thống kê người dùng:', err)
+    }
+  }, [])
+
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
@@ -78,17 +96,6 @@ export const AdminUsersPage: React.FC = () => {
       setTotalPages(data.totalPages)
       setTotalCount(data.total)
 
-      // Cập nhật thống kê sơ bộ nếu ở trang 1 và không tìm kiếm
-      if (!searchQuery && activeTab === 'ALL' && roleFilter === 'ALL') {
-        const allItems = data.items
-        setStats({
-          total: data.total,
-          active: allItems.filter((u) => u.status === 'ACTIVE').length,
-          customers: allItems.filter((u) => u.roles.includes('CUSTOMER')).length,
-          sellers: allItems.filter((u) => u.roles.includes('SELLER')).length,
-          banned: allItems.filter((u) => u.status === 'BANNED' || u.status === 'LOCKED').length
-        })
-      }
     } catch (err: any) {
       console.error('Lỗi khi tải danh sách người dùng:', err)
       setError(err?.message || 'Không thể tải danh sách tài khoản người dùng.')
@@ -100,6 +107,10 @@ export const AdminUsersPage: React.FC = () => {
   useEffect(() => {
     loadUsers()
   }, [loadUsers])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
 
   const handleOpenDetail = (user: AdminUserItem) => {
     setSelectedUser(user)
@@ -119,13 +130,20 @@ export const AdminUsersPage: React.FC = () => {
   const handleConfirmBan = async (userId: string, request: BanUserRequest) => {
     const res = await banAdminUser(userId, request)
     showToast(res.message || 'Đã khóa tài khoản thành công!')
-    await loadUsers()
+    await Promise.all([loadUsers(), loadStats()])
   }
 
   const handleConfirmUnban = async (userId: string, request: UnbanUserRequest) => {
     const res = await unbanAdminUser(userId, request)
     showToast(res.message || 'Đã mở khóa tài khoản thành công!')
-    await loadUsers()
+    await Promise.all([loadUsers(), loadStats()])
+  }
+
+  const handleResetFilters = () => {
+    setActiveTab('ALL')
+    setRoleFilter('ALL')
+    setSearchQuery('')
+    setPage(1)
   }
 
   return (
@@ -204,7 +222,10 @@ export const AdminUsersPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => loadUsers()}
+            onClick={() => {
+              loadUsers()
+              loadStats()
+            }}
             style={{
               padding: '8px 16px',
               fontSize: 13,
@@ -235,99 +256,94 @@ export const AdminUsersPage: React.FC = () => {
         >
           {/* Card 1: Tổng người dùng */}
           <div
-            onClick={() => {
-              setActiveTab('ALL')
-              setRoleFilter('ALL')
-            }}
             style={{
               padding: '16px 20px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
-              border: activeTab === 'ALL' && roleFilter === 'ALL' ? '2px solid #0284c7' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              border: '1px solid #e2e8f0',
+              cursor: 'default',
+              userSelect: 'none',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              position: 'relative'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>TỔNG THÀNH VIÊN</span>
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>TỔNG THÀNH VIÊN</span>
               <Users size={18} color="#0284c7" />
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', marginTop: 8 }}>
-              {stats.total || totalCount}
+              {stats.total ?? 0}
             </div>
             <span style={{ fontSize: 12, color: '#64748b' }}>Toàn bộ tài khoản sàn</span>
           </div>
 
           {/* Card 2: Khách hàng */}
           <div
-            onClick={() => {
-              setRoleFilter('CUSTOMER')
-            }}
             style={{
               padding: '16px 20px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
-              border: roleFilter === 'CUSTOMER' ? '2px solid #10b981' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              border: '1px solid #e2e8f0',
+              cursor: 'default',
+              userSelect: 'none',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              position: 'relative'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>KHÁCH HÀNG (BUYERS)</span>
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>KHÁCH HÀNG (BUYERS)</span>
               <ShoppingBag size={18} color="#059669" />
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', marginTop: 8 }}>
-              {stats.customers}
+              {stats.customers ?? 0}
             </div>
-            <span style={{ fontSize: 12, color: '#047857' }}>Người mua gà sạch</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Người mua gà sạch</span>
           </div>
 
           {/* Card 3: Nhà bán */}
           <div
-            onClick={() => {
-              setRoleFilter('SELLER')
-            }}
             style={{
               padding: '16px 20px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
-              border: roleFilter === 'SELLER' ? '2px solid #f59e0b' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              border: '1px solid #e2e8f0',
+              cursor: 'default',
+              userSelect: 'none',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              position: 'relative'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>GIAN HÀNG (SELLERS)</span>
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>GIAN HÀNG (SELLERS)</span>
               <Store size={18} color="#d97706" />
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#d97706', marginTop: 8 }}>
-              {stats.sellers}
+              {stats.sellers ?? 0}
             </div>
-            <span style={{ fontSize: 12, color: '#b45309' }}>Trang trại VietGAP</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Trang trại VietGAP</span>
           </div>
 
           {/* Card 4: Bị cấm */}
           <div
-            onClick={() => {
-              setActiveTab('BANNED')
-            }}
             style={{
               padding: '16px 20px',
               backgroundColor: '#ffffff',
               borderRadius: 12,
-              border: activeTab === 'BANNED' ? '2px solid #ef4444' : '1px solid #e2e8f0',
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              border: '1px solid #e2e8f0',
+              cursor: 'default',
+              userSelect: 'none',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              position: 'relative'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>TÀI KHOẢN BỊ CẤM</span>
+              <span style={{ fontSize: 13, color: '#64748b', fontWeight: 700 }}>TÀI KHOẢN BỊ CẤM</span>
               <Lock size={18} color="#dc2626" />
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: '#dc2626', marginTop: 8 }}>
-              {stats.banned}
+              {stats.banned ?? 0}
             </div>
-            <span style={{ fontSize: 12, color: '#b91c1c' }}>Thu hồi phiên tức thì</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Thu hồi phiên tức thì</span>
           </div>
         </div>
 
@@ -378,8 +394,12 @@ export const AdminUsersPage: React.FC = () => {
               <select
                 value={roleFilter}
                 onChange={(e) => {
-                  setRoleFilter(e.target.value as AdminUserRoleFilter)
+                  const newRole = e.target.value as AdminUserRoleFilter
+                  setRoleFilter(newRole)
                   setPage(1)
+                  if (activeTab === 'BANNED') {
+                    setActiveTab('ALL')
+                  }
                 }}
                 style={{
                   padding: '6px 12px',
@@ -397,6 +417,29 @@ export const AdminUsersPage: React.FC = () => {
                 <option value="SELLER">🏪 Nhà bán hàng (Seller)</option>
                 <option value="ADMIN">🛡️ Quản trị viên (Admin)</option>
               </select>
+
+              {(searchQuery || activeTab !== 'ALL' || roleFilter !== 'ALL') && (
+                <button
+                  onClick={handleResetFilters}
+                  title="Xóa tất cả bộ lọc"
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#f8fafc',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#475569',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <RotateCcw size={12} />
+                  <span>Xóa lọc</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -491,12 +534,71 @@ export const AdminUsersPage: React.FC = () => {
           ) : users.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
               <Users size={36} color="#cbd5e1" style={{ margin: '0 auto 12px auto' }} />
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#475569' }}>
-                Không tìm thấy tài khoản người dùng nào
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#334155' }}>
+                {activeTab === 'BANNED'
+                  ? (roleFilter === 'CUSTOMER'
+                      ? 'Không có khách hàng nào đang bị cấm'
+                      : roleFilter === 'SELLER'
+                        ? 'Không có gian hàng nào đang bị cấm'
+                        : 'Không có tài khoản người dùng nào đang bị cấm')
+                  : 'Không tìm thấy tài khoản người dùng nào'}
               </p>
-              <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#94a3b8' }}>
-                Vui lòng thử tìm kiếm với từ khóa khác hoặc bỏ các bộ lọc
+              <p style={{ margin: '6px 0 16px 0', fontSize: 13, color: '#64748b' }}>
+                {activeTab === 'BANNED'
+                  ? 'Tất cả tài khoản thành viên đều đang tuân thủ tiêu chuẩn và hoạt động bình thường.'
+                  : 'Vui lòng thử tìm kiếm với từ khóa khác hoặc xóa bỏ các bộ lọc để xem toàn bộ danh sách.'}
               </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {activeTab === 'BANNED' && (
+                  <button
+                    onClick={() => {
+                      setActiveTab('ALL')
+                      setPage(1)
+                    }}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: 8,
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)'
+                    }}
+                  >
+                    <Users size={14} />
+                    <span>
+                      Xem tất cả {roleFilter === 'CUSTOMER' ? 'Khách hàng' : roleFilter === 'SELLER' ? 'Gian hàng' : 'Tài khoản'}
+                    </span>
+                  </button>
+                )}
+                {(searchQuery || activeTab !== 'ALL' || roleFilter !== 'ALL') && (
+                  <button
+                    onClick={handleResetFilters}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: 8,
+                      backgroundColor: '#0f172a',
+                      color: '#ffffff',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Đặt lại tất cả bộ lọc</span>
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>

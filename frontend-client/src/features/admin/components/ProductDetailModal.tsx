@@ -5,8 +5,11 @@ import {
   CheckCircle2,
   XCircle,
   Package,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import type { AdminProductItem } from '../types'
+import { formatMoney } from '../../../shared/lib/formatMoney'
 
 export interface ProductDetailModalProps {
   isOpen: boolean
@@ -28,10 +31,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!isOpen || !product) return null
 
   const formatPrice = (minor: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(minor / 100)
+    return formatMoney(minor || 0)
   }
 
   const getStatusBadge = (status: string) => {
@@ -436,7 +436,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               Đóng
             </button>
 
-            {product.status !== 'INACTIVE' && (
+            {product.status === 'PENDING_APPROVAL' && (
               <button
                 onClick={() => onReject(product)}
                 disabled={isSubmitting}
@@ -455,11 +455,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 }}
               >
                 <XCircle size={16} />
-                <span>Từ Chối</span>
+                <span>Từ Chối Duyệt</span>
               </button>
             )}
 
-            {product.status !== 'ACTIVE' && (
+            {product.status === 'ACTIVE' && (
+              <button
+                onClick={() => onReject(product)}
+                disabled={isSubmitting}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  border: 'none',
+                  backgroundColor: '#fef3c7',
+                  color: '#b45309',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <EyeOff size={16} />
+                <span>Tạm Ẩn Khỏi Sàn</span>
+              </button>
+            )}
+
+            {product.status === 'PENDING_APPROVAL' && (
               <button
                 onClick={() => onApprove(product)}
                 disabled={isSubmitting}
@@ -479,6 +502,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               >
                 <CheckCircle2 size={16} />
                 <span>Phê Duyệt Lên Sàn</span>
+              </button>
+            )}
+
+            {product.status === 'INACTIVE' && (
+              <button
+                onClick={() => onApprove(product)}
+                disabled={isSubmitting}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: 'none',
+                  backgroundColor: '#16a34a',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  boxShadow: '0 2px 8px rgba(22, 163, 74, 0.35)',
+                }}
+              >
+                <Eye size={16} />
+                <span>Gỡ Ẩn & Kích Hoạt Mở Bán Lại</span>
               </button>
             )}
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ShieldAlert, EyeOff } from 'lucide-react'
+import { ShieldAlert, EyeOff, Eye } from 'lucide-react'
 import type { Product } from '../../features/catalog/types/catalogTypes'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { useAuthStore } from '../../app/store/authStore'
@@ -8,7 +8,7 @@ import { AdminProductActionModal } from '../../features/admin/components/AdminPr
 
 interface ProductCardProps {
   product: Product
-  onModerated?: (productId: string, action: 'HIDE' | 'DELETE') => void
+  onModerated?: (productId: string, action: 'HIDE' | 'DELETE' | 'UNHIDE') => void
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }) => {
@@ -16,16 +16,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
   const [imgSrc, setImgSrc] = useState(product.thumbnailUrl)
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
   const [isModerated, setIsModerated] = useState(false)
-  const [moderatedAction, setModeratedAction] = useState<'HIDE' | 'DELETE' | null>(null)
+  const [moderatedAction, setModeratedAction] = useState<'HIDE' | 'DELETE' | 'UNHIDE' | null>(null)
+
+  const isInactive = product.status === 'INACTIVE' || (isModerated && moderatedAction === 'HIDE')
 
   const handleImageError = () => {
     // Fallback image if remote url fails
     setImgSrc('https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=600&q=80')
   }
 
-  const handleModerationSuccess = (action: 'HIDE' | 'DELETE') => {
-    setIsModerated(true)
-    setModeratedAction(action)
+  const handleModerationSuccess = (action: 'HIDE' | 'DELETE' | 'UNHIDE') => {
+    if (action === 'UNHIDE') {
+      setIsModerated(false)
+      setModeratedAction(null)
+      product.status = 'ACTIVE'
+    } else {
+      setIsModerated(true)
+      setModeratedAction(action)
+      if (action === 'HIDE') {
+        product.status = 'INACTIVE'
+      }
+    }
     if (onModerated) {
       onModerated(product.id, action)
     }
@@ -34,7 +45,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
   return (
     <>
       <div style={{ position: 'relative' }}>
-        <Link to={`/products/${product.id}`} className="product-card" style={isModerated ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+        <Link to={`/products/${product.id}`} className="product-card" style={isModerated && moderatedAction === 'DELETE' ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
           <div className="product-card-img-wrap" style={{ position: 'relative' }}>
             <img
               src={imgSrc}
@@ -57,7 +68,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
             )}
 
             {/* Nút hành động nhanh của Quản Trị Viên khi lướt sàn */}
-            {isAdmin && !isModerated && (
+            {isAdmin && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -65,15 +76,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
                   e.stopPropagation()
                   setIsAdminModalOpen(true)
                 }}
-                title="Quản Trị Viên: Tạm ẩn hoặc Gỡ bỏ sản phẩm vi phạm"
+                title={
+                  isInactive
+                    ? 'Quản Trị Viên: Sản phẩm đang ẩn - Bấm để Gỡ ẩn hoặc Xóa'
+                    : 'Quản Trị Viên: Tạm ẩn hoặc Gỡ bỏ sản phẩm vi phạm'
+                }
                 style={{
                   position: 'absolute',
                   top: 8,
                   right: 8,
                   zIndex: 10,
-                  backgroundColor: '#dc2626',
+                  backgroundColor: isInactive ? '#16a34a' : '#dc2626',
                   color: '#ffffff',
-                  border: '1px solid #b91c1c',
+                  border: isInactive ? '1px solid #15803d' : '1px solid #b91c1c',
                   borderRadius: 6,
                   padding: '3px 8px',
                   fontSize: 11,
@@ -88,8 +103,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
                 onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               >
-                <ShieldAlert style={{ width: 12, height: 12 }} />
-                <span>Ẩn / Gỡ</span>
+                {isInactive ? (
+                  <>
+                    <Eye style={{ width: 12, height: 12 }} />
+                    <span>Gỡ Ẩn</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert style={{ width: 12, height: 12 }} />
+                    <span>Ẩn / Gỡ</span>
+                  </>
+                )}
               </button>
             )}
 
@@ -164,6 +188,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onModerated }
         productId={product.id}
         productName={product.name}
         productImage={imgSrc}
+        currentStatus={isInactive ? 'INACTIVE' : product.status}
         onClose={() => setIsAdminModalOpen(false)}
         onSuccess={handleModerationSuccess}
       />

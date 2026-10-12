@@ -129,6 +129,15 @@ export interface AdminUserPageResponse {
   totalPages: number
 }
 
+export interface AdminUserStatsResponse {
+  totalUsers: number
+  buyers: number
+  sellers: number
+  bannedUsers: number
+  lockedUsers: number
+  activeUsers: number
+}
+
 // ==========================================
 // Admin Audit Logging Types (TASK-67)
 // ==========================================

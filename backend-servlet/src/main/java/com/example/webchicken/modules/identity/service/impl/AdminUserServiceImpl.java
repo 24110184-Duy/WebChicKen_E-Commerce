@@ -233,6 +233,25 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .toList();
     }
 
+    @Override
+    public java.util.Map<String, Object> getUserStats() {
+        long totalUsers = userDAO.countAll(null, null, null);
+        long buyers = userDAO.countAll(null, null, "CUSTOMER");
+        long sellers = userDAO.countAll(null, null, "SELLER");
+        long banned = userDAO.countAll(null, "BANNED", null);
+        long locked = userDAO.countAll(null, "LOCKED", null);
+        long active = userDAO.countAll(null, "ACTIVE", null);
+
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalUsers", totalUsers);
+        stats.put("buyers", buyers);
+        stats.put("sellers", sellers);
+        stats.put("bannedUsers", banned);
+        stats.put("lockedUsers", locked);
+        stats.put("activeUsers", active);
+        return stats;
+    }
+
     // ── Helper Mappers ─────────────────────────────────────────────────────────
 
     private AdminUserResponse toAdminUserResponse(UserEntity user) {

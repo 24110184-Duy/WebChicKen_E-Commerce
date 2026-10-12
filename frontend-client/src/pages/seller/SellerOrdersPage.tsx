@@ -157,8 +157,8 @@ export const SellerOrdersPage: React.FC = () => {
   const tabCounts = useMemo(() => {
     return {
       ALL: allOrders.length,
-      UNPAID: allOrders.filter((o) => o.paymentStatus === 'UNPAID').length,
-      TO_SHIP: allOrders.filter((o) => o.status === 'CONFIRMED' || o.status === 'PENDING').length,
+      UNPAID: allOrders.filter((o) => o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED').length,
+      TO_SHIP: allOrders.filter((o) => (o.status === 'CONFIRMED' || (o.status === 'PENDING' && o.paymentMethod === 'COD')) && o.paymentStatus !== 'UNPAID').length,
       SHIPPING: allOrders.filter((o) => o.status === 'SHIPPING').length,
       COMPLETED: allOrders.filter((o) => o.status === 'DELIVERED').length,
       CANCELLATION: allOrders.filter((o) => o.status === 'CANCELLED').length,
@@ -180,9 +180,10 @@ export const SellerOrdersPage: React.FC = () => {
     return allOrders.filter((order) => {
       // 1. Lọc theo Tab trạng thái vòng đời đơn hàng
       if (activeTab === 'UNPAID') {
-        if (order.paymentStatus !== 'UNPAID') return false
+        if (order.paymentStatus !== 'UNPAID' || order.status === 'CANCELLED') return false
       } else if (activeTab === 'TO_SHIP') {
-        if (order.status !== 'CONFIRMED' && order.status !== 'PENDING') return false
+        if (order.paymentStatus === 'UNPAID' && order.paymentMethod !== 'COD') return false
+        if (order.status !== 'CONFIRMED' && (order.status !== 'PENDING' || order.paymentMethod !== 'COD')) return false
       } else if (activeTab === 'SHIPPING') {
         if (order.status !== 'SHIPPING') return false
       } else if (activeTab === 'COMPLETED') {

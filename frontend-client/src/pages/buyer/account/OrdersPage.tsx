@@ -87,7 +87,7 @@ export const OrdersPage: React.FC = () => {
             storeName: 'TechZone Official Store',
             orderDate: parsed.createdAt || new Date().toISOString(),
             status: currentLocalStatus,
-            paymentStatus: parsed.paymentMethod === 'COD' ? 'UNPAID' : 'PAID',
+            paymentStatus: (parsed.paymentStatus as any) || 'UNPAID',
             paymentMethod: parsed.paymentMethod || 'COD',
             totalAmountMinor: parsed.grandTotalMinor || 499000,
             shippingFeeMinor: parsed.shippingTotalMinor || 25000,
@@ -222,10 +222,17 @@ export const OrdersPage: React.FC = () => {
     }
   }
 
-  const getStatusBadge = (status: OrderStatus) => {
+  const getStatusBadge = (status: OrderStatus, paymentStatus?: string, paymentMethod?: string) => {
+    if (status === 'PENDING' && paymentStatus === 'UNPAID' && paymentMethod !== 'COD') {
+      return (
+        <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+          ⏳ Chờ quét mã QR thanh toán
+        </span>
+      )
+    }
     switch (status) {
       case 'PENDING':
-        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">Pending</span>
+        return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800">Pending (COD)</span>
       case 'CONFIRMED':
         return <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-800">Confirmed</span>
       case 'SHIPPING':
@@ -353,7 +360,7 @@ export const OrdersPage: React.FC = () => {
                         #{order.orderCode}
                       </span>
                     </div>
-                    <div>{getStatusBadge(order.status)}</div>
+                    <div>{getStatusBadge(order.status, order.paymentStatus, order.paymentMethod)}</div>
                   </div>
 
                   {/* Items List */}

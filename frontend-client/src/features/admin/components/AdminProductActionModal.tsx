@@ -2,10 +2,12 @@ import React, { useState } from 'react'
 import {
   ShieldAlert,
   EyeOff,
+  Eye,
   Trash2,
   X,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react'
 import { adminProductApi } from '../api/adminProductApi'
 
@@ -16,7 +18,7 @@ export interface AdminProductActionModalProps {
   productImage?: string
   currentStatus?: string
   onClose: () => void
-  onSuccess: (action: 'HIDE' | 'DELETE', reason: string) => void
+  onSuccess: (action: 'HIDE' | 'DELETE' | 'UNHIDE', reason: string) => void
 }
 
 const PRESET_VIOLATION_REASONS = [
@@ -43,10 +45,30 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
 
   if (!isOpen) return null
 
+  const isInactive = currentStatus === 'INACTIVE'
+
   const handleSelectPreset = (reason: string) => {
     setSelectedPreset(reason)
     setCustomReason(reason)
     setError('')
+  }
+
+  const handleUnhideProduct = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const note = customReason.trim() || 'Quản trị viên đã kiểm tra và gỡ ẩn / mở bán lại sản phẩm trên sàn.'
+      await adminProductApi.reviewProduct(productId, {
+        status: 'ACTIVE',
+        moderationNote: note
+      })
+      onSuccess('UNHIDE', note)
+      onClose()
+    } catch (err: any) {
+      setError(err?.message || 'Không thể gỡ ẩn sản phẩm.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleHideProduct = async () => {
@@ -116,7 +138,7 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
           width: '100%',
           overflow: 'hidden',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          border: '1px solid #fee2e2',
+          border: isInactive ? '1px solid #bbf7d0' : '1px solid #fee2e2',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -124,8 +146,8 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
         <div
           style={{
             padding: '18px 24px',
-            backgroundColor: '#fef2f2',
-            borderBottom: '1px solid #fee2e2',
+            backgroundColor: isInactive ? '#f0fdf4' : '#fef2f2',
+            borderBottom: isInactive ? '1px solid #dcfce7' : '1px solid #fee2e2',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -137,21 +159,25 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
                 width: 38,
                 height: 38,
                 borderRadius: 10,
-                backgroundColor: '#dc2626',
+                backgroundColor: isInactive ? '#16a34a' : '#dc2626',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#ffffff',
               }}
             >
-              <ShieldAlert size={20} />
+              {isInactive ? <CheckCircle2 size={20} /> : <ShieldAlert size={20} />}
             </div>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#991b1b', margin: 0 }}>
-                Quản Trị Viên: Can Thiệp Sản Phẩm Trên Sàn
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: isInactive ? '#15803d' : '#991b1b', margin: 0 }}>
+                {isInactive
+                  ? 'Quản Trị Viên: Gỡ Ẩn / Mở Lại Sản Phẩm'
+                  : 'Quản Trị Viên: Can Thiệp Sản Phẩm Trên Sàn'}
               </h3>
-              <p style={{ fontSize: 12, color: '#b91c1c', margin: '2px 0 0' }}>
-                Tạm ẩn hoặc gỡ bỏ sản phẩm không đạt chuẩn chất lượng / an toàn người dùng
+              <p style={{ fontSize: 12, color: isInactive ? '#166534' : '#b91c1c', margin: '2px 0 0' }}>
+                {isInactive
+                  ? 'Sản phẩm này hiện đang bị tạm ẩn. Bạn có thể mở bán lại hoặc gỡ vĩnh viễn khỏi sàn.'
+                  : 'Tạm ẩn hoặc gỡ bỏ sản phẩm không đạt chuẩn chất lượng / an toàn người dùng'}
               </p>
             </div>
           </div>
@@ -316,31 +342,57 @@ export const AdminProductActionModal: React.FC<AdminProductActionModalProps> = (
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Nút 1: Tạm ẩn sản phẩm */}
-              <button
-                type="button"
-                onClick={handleHideProduct}
-                disabled={loading}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: 8,
-                  border: '1px solid #d97706',
-                  backgroundColor: '#f59e0b',
-                  color: '#ffffff',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)',
-                }}
-              >
-                {loading ? <RefreshCw size={15} className="animate-spin" /> : <EyeOff size={15} />}
-                <span>Tạm Ẩn Sản Phẩm</span>
-              </button>
+              {isInactive ? (
+                /* Nút Gỡ Ẩn / Mở Bán Lại */
+                <button
+                  type="button"
+                  onClick={handleUnhideProduct}
+                  disabled={loading}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: 8,
+                    border: '1px solid #16a34a',
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)',
+                  }}
+                >
+                  {loading ? <RefreshCw size={15} className="animate-spin" /> : <Eye size={15} />}
+                  <span>Gỡ Ẩn & Mở Bán Lại</span>
+                </button>
+              ) : (
+                /* Nút Tạm Ẩn Sản Phẩm */
+                <button
+                  type="button"
+                  onClick={handleHideProduct}
+                  disabled={loading}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: 8,
+                    border: '1px solid #d97706',
+                    backgroundColor: '#f59e0b',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)',
+                  }}
+                >
+                  {loading ? <RefreshCw size={15} className="animate-spin" /> : <EyeOff size={15} />}
+                  <span>Tạm Ẩn Sản Phẩm</span>
+                </button>
+              )}
 
-              {/* Nút 2: Gỡ bỏ vĩnh viễn */}
+              {/* Nút Gỡ bỏ vĩnh viễn khỏi sàn */}
               <button
                 type="button"
                 onClick={handleDeleteProduct}

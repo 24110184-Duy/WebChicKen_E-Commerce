@@ -7,6 +7,7 @@ import {
   XCircle,
   Clock,
   Eye,
+  EyeOff,
   RotateCcw,
   AlertCircle,
   Package,
@@ -20,18 +21,23 @@ import type {
 } from '../../features/admin/types'
 import { ProductDetailModal } from '../../features/admin/components/ProductDetailModal'
 import { ProductRejectModal } from '../../features/admin/components/ProductRejectModal'
+import { ProductUnhideModal } from '../../features/admin/components/ProductUnhideModal'
+import { formatMoney } from '../../shared/lib/formatMoney'
 
 export const AdminProductsPage: React.FC = () => {
   const [products, setProducts] = useState<AdminProductItem[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activeTab, setActiveTab] = useState<ProductModerationFilterTab>('PENDING_APPROVAL')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [showHiddenInAll, setShowHiddenInAll] = useState<boolean>(false)
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<AdminProductItem | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
   const [rejectingProduct, setRejectingProduct] = useState<AdminProductItem | null>(null)
   const [isRejectModalOpen, setIsRejectModalOpen] = useState<boolean>(false)
+  const [unhidingProduct, setUnhidingProduct] = useState<AdminProductItem | null>(null)
+  const [isUnhideModalOpen, setIsUnhideModalOpen] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   // Toast notification
@@ -73,22 +79,24 @@ export const AdminProductsPage: React.FC = () => {
   const stats = useMemo(() => {
     const total = products.length
     const pending = products.filter((p) => p.status === 'PENDING_APPROVAL').length
-    const botApproved = products.filter((p) => p.moderatedBy === 'BOT_AUTO_APPROVER').length
+    const botApproved = products.filter((p) => p.status === 'ACTIVE' && p.moderatedBy === 'BOT_AUTO_APPROVER').length
     const adminApproved = products.filter((p) => p.status === 'ACTIVE' && p.moderatedBy !== 'BOT_AUTO_APPROVER').length
     const active = products.filter((p) => p.status === 'ACTIVE').length
     const inactive = products.filter((p) => p.status === 'INACTIVE').length
     return { total, pending, botApproved, adminApproved, active, inactive }
   }, [products])
 
-  // Filter & Search
+  // Filter & Search (Hướng A: Cách ly triệt để sản phẩm đã ẩn)
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       // 1. Tab filter
       if (activeTab === 'PENDING_APPROVAL' && p.status !== 'PENDING_APPROVAL') return false
       if (activeTab === 'ACTIVE' && p.status !== 'ACTIVE') return false
-      if (activeTab === 'BOT_APPROVED' && p.moderatedBy !== 'BOT_AUTO_APPROVER') return false
+      if (activeTab === 'BOT_APPROVED' && (p.status !== 'ACTIVE' || p.moderatedBy !== 'BOT_AUTO_APPROVER')) return false
       if (activeTab === 'ADMIN_APPROVED' && (p.status !== 'ACTIVE' || p.moderatedBy === 'BOT_AUTO_APPROVER')) return false
       if (activeTab === 'INACTIVE' && p.status !== 'INACTIVE') return false
+      // Tab Tất Cả: Mặc định loại bỏ sản phẩm đã ẩn/khóa, trừ khi Admin chủ động bật tùy chọn hiển thị
+      if (activeTab === 'ALL' && !showHiddenInAll && p.status === 'INACTIVE') return false
 
       // 2. Search query
       if (searchQuery.trim()) {
@@ -104,7 +112,7 @@ export const AdminProductsPage: React.FC = () => {
 
       return true
     })
-  }, [products, activeTab, searchQuery])
+  }, [products, activeTab, searchQuery, showHiddenInAll])
 
   // Handlers
   const handleOpenDetail = (p: AdminProductItem) => {
@@ -112,11 +120,51 @@ export const AdminProductsPage: React.FC = () => {
     setIsDetailModalOpen(true)
   }
 
+  const handleOpenUnhide = (p: AdminProductItem) => {
+    setUnhidingProduct(p)
+    setIsUnhideModalOpen(true)
+  }
+
+  const handleConfirmUnhide = async (note: string) => {
+    if (!unhidingProduct) return
+    setIsSubmitting(true)
+    try {
+      await adminProductApi.reviewProduct(unhidingProduct.id, {
+        status: 'ACTIVE',
+        moderationNote: note || 'Quản trị viên đã kiểm tra và gỡ ẩn / mở bán lại sản phẩm trên sàn.'
+      })
+      showToast(
+        `Đã gỡ ẩn thành công sản phẩm "${unhidingProduct.name}" và cho phép mở bán lại trên toàn sàn!`,
+        'success'
+      )
+      setIsUnhideModalOpen(false)
+      setIsDetailModalOpen(false)
+      setUnhidingProduct(null)
+      loadProducts()
+    } catch (err: any) {
+      console.error(err)
+      const msg = err?.message || err?.error?.message || 'Có lỗi xảy ra khi gỡ ẩn sản phẩm.'
+      showToast(msg, 'error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleApprove = async (p: AdminProductItem) => {
     setIsSubmitting(true)
     try {
-      await adminProductApi.reviewProduct(p.id, { status: 'ACTIVE' })
-      showToast(`Đã phê duyệt sản phẩm "${p.name}" cho phép mở bán công khai!`, 'success')
+      await adminProductApi.reviewProduct(p.id, {
+        status: 'ACTIVE',
+        moderationNote: p.status === 'INACTIVE'
+          ? 'Quản trị viên đã kiểm tra và gỡ ẩn / mở bán lại sản phẩm trên sàn.'
+          : 'Quản trị viên đã phê duyệt sản phẩm lên sàn.'
+      })
+      showToast(
+        p.status === 'INACTIVE'
+          ? `Đã gỡ ẩn và mở bán lại sản phẩm "${p.name}"!`
+          : `Đã phê duyệt sản phẩm "${p.name}" cho phép mở bán công khai!`,
+        'success'
+      )
       setIsDetailModalOpen(false)
       loadProducts()
     } catch (err: any) {
@@ -136,13 +184,19 @@ export const AdminProductsPage: React.FC = () => {
   const handleConfirmReject = async (reason: string) => {
     if (!rejectingProduct) return
     setIsSubmitting(true)
+    const isHiding = rejectingProduct.status === 'ACTIVE'
     try {
       await adminProductApi.reviewProduct(rejectingProduct.id, {
         status: 'INACTIVE',
         rejectionReason: reason,
+        moderationNote: isHiding
+          ? (reason || 'Quản trị viên đã tạm ẩn sản phẩm khỏi sàn WebChicKen.')
+          : (reason || 'Quản trị viên đã từ chối phê duyệt sản phẩm lên sàn.'),
       })
       showToast(
-        `Đã từ chối kiểm duyệt sản phẩm "${rejectingProduct.name}".`,
+        isHiding
+          ? `Đã tạm ẩn sản phẩm "${rejectingProduct.name}". Sản phẩm đã được chuyển vào mục "Sản phẩm đã ẩn / Khóa".`
+          : `Đã từ chối kiểm duyệt sản phẩm "${rejectingProduct.name}".`,
         'success'
       )
       setIsRejectModalOpen(false)
@@ -159,10 +213,7 @@ export const AdminProductsPage: React.FC = () => {
   }
 
   const formatPrice = (minor: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(minor / 100)
+    return formatMoney(minor || 0)
   }
 
   return (
@@ -232,13 +283,10 @@ export const AdminProductsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Bento KPI Cards (5 Thẻ chỉ số) */}
+        {/* 3. Bento KPI Cards (Khối hiển thị chỉ số tổng quan - Đã block click) */}
         <div className="mod-kpi-grid">
           {/* Card 1: Chờ Admin duyệt */}
-          <div
-            onClick={() => setActiveTab('PENDING_APPROVAL')}
-            className={`mod-kpi-card pending ${activeTab === 'PENDING_APPROVAL' ? 'active' : ''}`}
-          >
+          <div className="mod-kpi-card pending">
             <div className="mod-kpi-header">
               <span className="mod-kpi-label">CHỜ ADMIN DUYỆT</span>
               <div className="mod-kpi-icon">
@@ -246,14 +294,23 @@ export const AdminProductsPage: React.FC = () => {
               </div>
             </div>
             <div className="mod-kpi-value">{stats.pending}</div>
-            <span className="mod-kpi-sub">Nghi vấn thuốc / an toàn</span>
+            <span className="mod-kpi-sub">Nghi vấn an toàn</span>
           </div>
 
-          {/* Card 2: Bot tự duyệt */}
-          <div
-            onClick={() => setActiveTab('BOT_APPROVED')}
-            className={`mod-kpi-card bot ${activeTab === 'BOT_APPROVED' ? 'active' : ''}`}
-          >
+          {/* Card 2: Đang mở bán */}
+          <div className="mod-kpi-card live">
+            <div className="mod-kpi-header">
+              <span className="mod-kpi-label">ĐANG MỞ BÁN</span>
+              <div className="mod-kpi-icon">
+                <CheckCircle2 size={17} />
+              </div>
+            </div>
+            <div className="mod-kpi-value">{stats.active}</div>
+            <span className="mod-kpi-sub">Kinh doanh trên sàn</span>
+          </div>
+
+          {/* Card 3: Bot tự duyệt */}
+          <div className="mod-kpi-card bot">
             <div className="mod-kpi-header">
               <span className="mod-kpi-label">BOT TỰ DUYỆT</span>
               <div className="mod-kpi-icon">
@@ -264,11 +321,8 @@ export const AdminProductsPage: React.FC = () => {
             <span className="mod-kpi-sub">Đạt chuẩn thông thường</span>
           </div>
 
-          {/* Card 3: Admin đã duyệt */}
-          <div
-            onClick={() => setActiveTab('ADMIN_APPROVED')}
-            className={`mod-kpi-card approved ${activeTab === 'ADMIN_APPROVED' ? 'active' : ''}`}
-          >
+          {/* Card 4: Admin đã duyệt */}
+          <div className="mod-kpi-card approved">
             <div className="mod-kpi-header">
               <span className="mod-kpi-label">ADMIN ĐÃ DUYỆT</span>
               <div className="mod-kpi-icon">
@@ -279,34 +333,28 @@ export const AdminProductsPage: React.FC = () => {
             <span className="mod-kpi-sub">Thẩm định an toàn</span>
           </div>
 
-          {/* Card 4: Bị từ chối / Tạm khóa */}
-          <div
-            onClick={() => setActiveTab('INACTIVE')}
-            className={`mod-kpi-card rejected ${activeTab === 'INACTIVE' ? 'active' : ''}`}
-          >
+          {/* Card 5: Sản phẩm Đã Ẩn / Khóa */}
+          <div className="mod-kpi-card rejected">
             <div className="mod-kpi-header">
-              <span className="mod-kpi-label">TỪ CHỐI / TẠM KHÓA</span>
+              <span className="mod-kpi-label">SẢN PHẨM ĐÃ ẨN</span>
               <div className="mod-kpi-icon">
-                <XCircle size={17} />
+                <EyeOff size={17} />
               </div>
             </div>
             <div className="mod-kpi-value">{stats.inactive}</div>
-            <span className="mod-kpi-sub">Vi phạm hoặc chưa đạt</span>
+            <span className="mod-kpi-sub">Đã tạm ẩn khỏi sàn</span>
           </div>
 
-          {/* Card 5: Tổng sản phẩm */}
-          <div
-            onClick={() => setActiveTab('ALL')}
-            className={`mod-kpi-card total ${activeTab === 'ALL' ? 'active' : ''}`}
-          >
+          {/* Card 6: Tổng kho sàn */}
+          <div className="mod-kpi-card total">
             <div className="mod-kpi-header">
-              <span className="mod-kpi-label">TỔNG SẢN PHẨM</span>
+              <span className="mod-kpi-label">TỔNG KHO SÀN</span>
               <div className="mod-kpi-icon">
                 <Package size={17} />
               </div>
             </div>
             <div className="mod-kpi-value">{stats.total}</div>
-            <span className="mod-kpi-sub">Toàn sàn WebChicKen</span>
+            <span className="mod-kpi-sub">Bao gồm cả hàng ẩn</span>
           </div>
         </div>
 
@@ -317,11 +365,12 @@ export const AdminProductsPage: React.FC = () => {
             <div className="mod-tabs-group">
               {(
                 [
-                  { key: 'PENDING_APPROVAL', label: 'Chờ Admin duyệt (Sức khỏe)', count: stats.pending },
+                  { key: 'PENDING_APPROVAL', label: 'Chờ Admin duyệt', count: stats.pending },
+                  { key: 'ACTIVE', label: 'Đang mở bán', count: stats.active },
                   { key: 'BOT_APPROVED', label: 'Bot AI duyệt', count: stats.botApproved },
                   { key: 'ADMIN_APPROVED', label: 'Admin đã duyệt', count: stats.adminApproved },
-                  { key: 'INACTIVE', label: 'Bị từ chối', count: stats.inactive },
-                  { key: 'ALL', label: 'Tất cả', count: stats.total },
+                  { key: 'INACTIVE', label: 'Sản phẩm đã ẩn / Khóa', count: stats.inactive },
+                  { key: 'ALL', label: 'Tất cả kho', count: stats.total },
                 ] as const
               ).map((tab) => (
                 <button
@@ -335,16 +384,33 @@ export const AdminProductsPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Search Box */}
-            <div className="mod-search-box">
-              <Search size={16} className="mod-search-icon" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm tên sản phẩm, người duyệt, ghi chú..."
-                className="mod-search-input"
-              />
+            {/* Toolbar Right: Toggle showHiddenInAll (khi ở Tab Tất cả kho) + Search Box */}
+            <div className="mod-toolbar-right">
+              {activeTab === 'ALL' && (
+                <label
+                  className="mod-toggle-hidden"
+                  title="Hiển thị cả các sản phẩm đang bị tạm ẩn hoặc khóa trong tab Tất cả kho"
+                >
+                  <input
+                    type="checkbox"
+                    checked={showHiddenInAll}
+                    onChange={(e) => setShowHiddenInAll(e.target.checked)}
+                  />
+                  <span>Hiện cả sản phẩm đã ẩn ({stats.inactive})</span>
+                </label>
+              )}
+
+              {/* Search Box */}
+              <div className="mod-search-box">
+                <Search size={16} className="mod-search-icon" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm tên sản phẩm, người duyệt, ghi chú..."
+                  className="mod-search-input"
+                />
+              </div>
             </div>
           </div>
 
@@ -368,10 +434,50 @@ export const AdminProductsPage: React.FC = () => {
                 </p>
                 <button
                   className="mod-empty-action-btn"
-                  onClick={() => setActiveTab('ALL')}
+                  onClick={() => setActiveTab('ACTIVE')}
+                >
+                  <CheckCircle2 size={15} />
+                  <span>Xem sản phẩm đang mở bán ({stats.active})</span>
+                </button>
+              </div>
+            ) : activeTab === 'INACTIVE' && stats.inactive === 0 && !searchQuery.trim() ? (
+              // Empty State khi không có sản phẩm nào bị ẩn
+              <div className="mod-empty-state">
+                <div className="mod-empty-icon-wrap safe">
+                  <CheckCircle2 size={38} />
+                </div>
+                <h3 className="mod-empty-title">
+                  Không có sản phẩm nào bị ẩn hoặc khóa
+                </h3>
+                <p className="mod-empty-desc">
+                  Toàn bộ sản phẩm hợp lệ đều đang hoạt động kinh doanh bình thường trên sàn WebChicKen.
+                </p>
+                <button
+                  className="mod-empty-action-btn"
+                  onClick={() => setActiveTab('ACTIVE')}
                 >
                   <Package size={15} />
-                  <span>Xem danh sách tất cả ({stats.total}) sản phẩm trên sàn</span>
+                  <span>Xem danh sách đang mở bán ({stats.active})</span>
+                </button>
+              </div>
+            ) : activeTab === 'ACTIVE' && stats.active === 0 && !searchQuery.trim() ? (
+              // Empty State khi chưa có sản phẩm nào đang mở bán
+              <div className="mod-empty-state">
+                <div className="mod-empty-icon-wrap neutral">
+                  <Package size={38} />
+                </div>
+                <h3 className="mod-empty-title">
+                  Chưa có sản phẩm nào đang mở bán
+                </h3>
+                <p className="mod-empty-desc">
+                  Hiện chưa có sản phẩm nào ở trạng thái kinh doanh mở bán trên sàn.
+                </p>
+                <button
+                  className="mod-empty-action-btn"
+                  onClick={() => setActiveTab('PENDING_APPROVAL')}
+                >
+                  <Clock size={15} />
+                  <span>Xem sản phẩm chờ duyệt ({stats.pending})</span>
                 </button>
               </div>
             ) : (
@@ -486,8 +592,8 @@ export const AdminProductsPage: React.FC = () => {
                           {p.status === 'INACTIVE' && (
                             <div>
                               <span className="mod-status-pill rejected">
-                                <XCircle size={13} />
-                                <span>Bị Từ Chối</span>
+                                <EyeOff size={13} />
+                                <span>Đã Tạm Ẩn / Gỡ</span>
                               </span>
                               {p.rejectionReason && (
                                 <div
@@ -586,10 +692,23 @@ export const AdminProductsPage: React.FC = () => {
                               <button
                                 onClick={() => handleOpenReject(p)}
                                 disabled={isSubmitting}
-                                title="Tạm khóa / Hạ khỏi sàn"
-                                className="mod-btn-action reject"
+                                title="Tạm ẩn sản phẩm khỏi sàn"
+                                className="mod-btn-action pause"
                               >
-                                Tạm khóa
+                                <EyeOff size={13} />
+                                <span>Tạm Ẩn</span>
+                              </button>
+                            )}
+
+                            {p.status === 'INACTIVE' && (
+                              <button
+                                onClick={() => handleOpenUnhide(p)}
+                                disabled={isSubmitting}
+                                title="Gỡ ẩn và cho phép mở bán lại trên toàn sàn"
+                                className="mod-btn-action unhide"
+                              >
+                                <Eye size={13} />
+                                <span>Gỡ Ẩn Sản Phẩm</span>
                               </button>
                             )}
                           </div>
@@ -608,7 +727,14 @@ export const AdminProductsPage: React.FC = () => {
           isOpen={isDetailModalOpen}
           product={selectedProduct}
           onClose={() => setIsDetailModalOpen(false)}
-          onApprove={handleApprove}
+          onApprove={(p) => {
+            if (p.status === 'INACTIVE') {
+              setIsDetailModalOpen(false)
+              handleOpenUnhide(p)
+            } else {
+              handleApprove(p)
+            }
+          }}
           onReject={(p) => {
             setIsDetailModalOpen(false)
             handleOpenReject(p)
@@ -621,6 +747,14 @@ export const AdminProductsPage: React.FC = () => {
           productName={rejectingProduct?.name || ''}
           onClose={() => setIsRejectModalOpen(false)}
           onConfirm={handleConfirmReject}
+          isSubmitting={isSubmitting}
+        />
+
+        <ProductUnhideModal
+          isOpen={isUnhideModalOpen}
+          product={unhidingProduct}
+          onClose={() => setIsUnhideModalOpen(false)}
+          onConfirm={handleConfirmUnhide}
           isSubmitting={isSubmitting}
         />
       </div>

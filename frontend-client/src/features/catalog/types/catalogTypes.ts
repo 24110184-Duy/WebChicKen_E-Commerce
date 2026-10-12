@@ -34,6 +34,8 @@ export interface Product {
   soldCount: number
   isFlashDeal?: boolean
   discountPercent?: number
+  rejectionReason?: string
+  moderationNote?: string
   createdAt: string
 }
 

@@ -32,6 +32,28 @@ function loadSavedUser(): User | null {
   }
 }
 
+function parseJwtRoles(token: string): string[] | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2) return null
+    const base64Url = parts[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    const payload = JSON.parse(jsonPayload)
+    if (payload?.roles && Array.isArray(payload.roles)) {
+      return payload.roles
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 const initialSavedUser = loadSavedUser()
 
 let state: AuthState = {
@@ -69,14 +91,24 @@ export const authStore = {
   },
 
   setAuth: (user: User, accessToken: string) => {
+    const jwtRoles = parseJwtRoles(accessToken)
+    const effectiveRoles = jwtRoles && jwtRoles.length > 0
+      ? Array.from(new Set([...(user.roles || []), ...jwtRoles]))
+      : user.roles
+
+    const finalUser = {
+      ...user,
+      roles: effectiveRoles,
+    }
+
     state = {
-      user,
+      user: finalUser,
       accessToken,
       isAuthenticated: true,
       isInitialized: true,
     }
     try {
-      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(user))
+      sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(finalUser))
     } catch {
       // Ignore storage errors
     }
@@ -101,8 +133,24 @@ export const authStore = {
   },
 
   setAccessToken: (accessToken: string) => {
+    let updatedUser = state.user
+    const jwtRoles = parseJwtRoles(accessToken)
+    if (jwtRoles && updatedUser) {
+      const mergedRoles = Array.from(new Set([...(updatedUser.roles || []), ...jwtRoles]))
+      updatedUser = {
+        ...updatedUser,
+        roles: mergedRoles,
+      }
+      try {
+        sessionStorage.setItem(USER_SESSION_KEY, JSON.stringify(updatedUser))
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
     state = {
       ...state,
+      user: updatedUser,
       accessToken,
       isAuthenticated: true,
     }
@@ -143,13 +191,19 @@ configureAuthTokenHandlers(
 export function useAuthStore() {
   const current = useSyncExternalStore(authStore.subscribe, authStore.getState, authStore.getState)
 
+  const isRegisteredSeller = current.user?.id
+    ? localStorage.getItem(`seller_registered_${current.user.id}`) === 'true'
+    : false
+
+  const isSeller = isRegisteredSeller || (current.user?.roles.some((r) => ['SELLER', 'SUPER_ADMIN', 'MODERATOR', 'ADMIN'].includes(r)) ?? false)
+
   return {
     ...current,
     login: authStore.setAuth,
     logout: authStore.logout,
     updateUser: authStore.updateUser,
     isAdmin: current.user?.roles.some((r) => ['SUPER_ADMIN', 'MODERATOR', 'ADMIN'].includes(r)) ?? false,
-    isSeller: current.user?.roles.some((r) => ['SELLER', 'SUPER_ADMIN', 'MODERATOR', 'ADMIN'].includes(r)) ?? false,
+    isSeller,
     isCustomer: current.user?.roles.includes('CUSTOMER') ?? true,
   }
 }

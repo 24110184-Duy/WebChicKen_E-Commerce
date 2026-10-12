@@ -37,4 +37,9 @@ public interface AdminUserService {
      * Lấy lịch sử cấm/khóa của một tài khoản.
      */
     List<AccountBanResponse> getBanHistory(String userId);
+
+    /**
+     * Lấy thống kê số lượng người dùng theo vai trò và trạng thái.
+     */
+    java.util.Map<String, Object> getUserStats();
 }

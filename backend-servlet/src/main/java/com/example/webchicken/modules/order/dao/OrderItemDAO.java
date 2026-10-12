@@ -1,6 +1,7 @@
 package com.example.webchicken.modules.order.dao;
 
 import com.example.webchicken.infrastructure.persistence.BaseDAO;
+import com.example.webchicken.modules.order.model.entity.OrderEntity;
 import com.example.webchicken.modules.order.model.entity.OrderItemEntity;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -42,7 +43,13 @@ public class OrderItemDAO extends BaseDAO {
         }
         return executeQuery(em -> {
             List<Object[]> rows = em.createQuery(
-                    "SELECT i.productId, SUM(i.quantity) FROM OrderItemEntity i WHERE i.productId IN :productIds GROUP BY i.productId",
+                    "SELECT i.productId, SUM(i.quantity) FROM OrderItemEntity i, OrderEntity o " +
+                    "WHERE i.orderId = o.id " +
+                    "  AND o.status NOT IN (com.example.webchicken.common.enums.OrderStatus.CANCELLED, com.example.webchicken.common.enums.OrderStatus.RETURNED) " +
+                    "  AND (o.paymentStatus = com.example.webchicken.common.enums.PaymentStatus.PAID " +
+                    "       OR (o.paymentMethod = com.example.webchicken.modules.order.model.enums.PaymentMethod.COD AND o.status IN (com.example.webchicken.common.enums.OrderStatus.CONFIRMED, com.example.webchicken.common.enums.OrderStatus.SHIPPING, com.example.webchicken.common.enums.OrderStatus.DELIVERED))) " +
+                    "  AND i.productId IN :productIds " +
+                    "GROUP BY i.productId",
                     Object[].class)
                     .setParameter("productIds", productIds)
                     .getResultList();
