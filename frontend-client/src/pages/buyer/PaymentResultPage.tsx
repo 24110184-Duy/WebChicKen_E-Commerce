@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { StorefrontLayout } from '../../layouts/StorefrontLayout'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
+import { orderApi } from '../../features/orders/api/orderApi'
+import { cartStore } from '../../app/store/cartStore'
 
 interface OrderItem {
   id?: string
@@ -17,28 +19,25 @@ interface OrderItem {
 
 interface OrderData {
   orderCode: string
-  createdAt: string
-  recipient: {
-    recipientName: string
-    phoneNumber: string
-    streetAddress: string
-    district: string
-    city: string
+  createdAt?: string
+  recipient?: {
+    recipientName?: string
+    phoneNumber?: string
+    streetAddress?: string
+    district?: string
+    city?: string
   }
-  shippingMethod: {
-    name: string
-    estimatedTime: string
+  shippingMethod?: {
+    name?: string
+    estimatedTime?: string
   }
-  paymentMethod: string
+  paymentMethod?: string
   items?: OrderItem[]
   merchandiseSubtotalMinor?: number
   shippingTotalMinor?: number
   voucherDiscountMinor?: number
-  grandTotalMinor: number
+  grandTotalMinor?: number
 }
-
-import { orderApi } from '../../features/orders/api/orderApi'
-import { cartStore } from '../../app/store/cartStore'
 
 export const PaymentResultPage: React.FC = () => {
   const [searchParams] = useSearchParams()
@@ -98,49 +97,52 @@ export const PaymentResultPage: React.FC = () => {
             sessionStorage.removeItem('webchicken_pending_qr_items')
           }
         } catch {}
+
+        // Tải thông tin đơn hàng thật từ server nếu sessionStorage rỗng
+        if (vnpTxnRef) {
+          orderApi.getOrderByCode(vnpTxnRef).then((backendOrder) => {
+            if (backendOrder) {
+              setOrder({
+                orderCode: backendOrder.orderCode,
+                createdAt: backendOrder.orderDate,
+                recipient: {
+                  recipientName: backendOrder.recipientName,
+                  phoneNumber: backendOrder.recipientPhone,
+                  streetAddress: backendOrder.shippingAddress,
+                },
+                shippingMethod: {
+                  name: 'Tiêu chuẩn',
+                  estimatedTime: '1 - 2 ngày làm việc',
+                },
+                paymentMethod: backendOrder.paymentMethod || 'VNPAY',
+                items: backendOrder.items?.map((it: any) => ({
+                  productId: it.productId,
+                  name: it.productName,
+                  skuName: it.skuName || it.variantName,
+                  priceMinor: it.unitPriceAtPurchaseMinor || it.unitPriceMinor || it.priceMinor || 0,
+                  imageUrl: it.imageUrl,
+                  quantity: it.quantity,
+                })),
+                grandTotalMinor: backendOrder.totalAmountMinor,
+              })
+            }
+          }).catch(() => {})
+        }
       }
     }
   }, [isVNPayCallback, isVNPaySuccess, vnpTxnRef, vnpResponseCode])
 
-  const defaultOrder: OrderData = {
-    orderCode: vnpTxnRef || `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-583099`,
-    createdAt: new Date().toISOString(),
-    recipient: {
-      recipientName: 'Nguyen Van A',
-      phoneNumber: '0901234567',
-      streetAddress: '123 Nguyen Hue Boulevard, Ben Nghe Ward',
-      district: 'District 1',
-      city: 'Ho Chi Minh City',
-    },
-    shippingMethod: {
-      name: 'Express Delivery 2H',
-      estimatedTime: 'Trong vòng 2 giờ (Giao hỏa tốc)',
-    },
-    paymentMethod: isVNPayCallback ? 'VNPAY' : 'COD',
-    items: [
-      {
-        productId: 'prod-1',
-        name: 'Tai Nghe Bluetooth Không Dây Chống Ồn ANC',
-        skuName: 'Màu Đen Nhám (Matte Black)',
-        priceMinor: 499000,
-        quantity: 1,
-        imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
-      },
-    ],
-    merchandiseSubtotalMinor: 165000,
-    shippingTotalMinor: 25000,
-    voucherDiscountMinor: 25000,
-    grandTotalMinor: vnpAmountStr ? Math.floor(Number(vnpAmountStr) / 100) : 165000,
-  }
-
-  const currentOrder = order || defaultOrder
-  const displayOrderCode = vnpTxnRef || currentOrder.orderCode
-  const displayAmountMinor = vnpAmountStr ? Math.floor(Number(vnpAmountStr) / 100) : currentOrder.grandTotalMinor
+  const displayOrderCode = vnpTxnRef || order?.orderCode || 'N/A'
+  const displayAmountMinor = vnpAmountStr
+    ? Math.floor(Number(vnpAmountStr) / 100)
+    : (order?.grandTotalMinor || 0)
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(displayOrderCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (displayOrderCode !== 'N/A') {
+      navigator.clipboard.writeText(displayOrderCode)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   const handlePrint = () => {
@@ -154,7 +156,7 @@ export const PaymentResultPage: React.FC = () => {
         BANK_TRANSFER: 'VietQR / Instant Bank Transfer',
         VNPAY: 'VNPAY-QR / Online Payment (Sandbox)',
         BANKING: 'VietQR / Bank Transfer',
-      }[currentOrder.paymentMethod] || currentOrder.paymentMethod
+      }[order?.paymentMethod || 'COD'] || (order?.paymentMethod || 'COD')
 
   return (
     <StorefrontLayout>
@@ -234,9 +236,11 @@ export const PaymentResultPage: React.FC = () => {
               <span>Order Reference Number</span>
               <div className="result-code-group">
                 <span className="result-order-code">{displayOrderCode}</span>
-                <button type="button" onClick={handleCopyCode} className="result-copy-btn no-print">
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
+                {displayOrderCode !== 'N/A' && (
+                  <button type="button" onClick={handleCopyCode} className="result-copy-btn no-print">
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -274,27 +278,40 @@ export const PaymentResultPage: React.FC = () => {
               </>
             )}
 
-            <div className="result-order-row">
-              <span>Recipient Name</span>
-              <span style={{ fontWeight: 600 }}>{currentOrder.recipient.recipientName}</span>
-            </div>
+            {order?.recipient?.recipientName && (
+              <div className="result-order-row">
+                <span>Recipient Name</span>
+                <span style={{ fontWeight: 600 }}>{order.recipient.recipientName}</span>
+              </div>
+            )}
 
-            <div className="result-order-row">
-              <span>Contact Phone</span>
-              <span>{currentOrder.recipient.phoneNumber}</span>
-            </div>
+            {order?.recipient?.phoneNumber && (
+              <div className="result-order-row">
+                <span>Contact Phone</span>
+                <span>{order.recipient.phoneNumber}</span>
+              </div>
+            )}
 
-            <div className="result-order-row">
-              <span>Delivery Address</span>
-              <span>
-                {currentOrder.recipient.streetAddress}, {currentOrder.recipient.district}, {currentOrder.recipient.city}
-              </span>
-            </div>
+            {order?.recipient?.streetAddress && (
+              <div className="result-order-row">
+                <span>Delivery Address</span>
+                <span>
+                  {order.recipient.streetAddress}
+                  {order.recipient.district ? `, ${order.recipient.district}` : ''}
+                  {order.recipient.city ? `, ${order.recipient.city}` : ''}
+                </span>
+              </div>
+            )}
 
-            <div className="result-order-row">
-              <span>Shipping Service</span>
-              <span>{currentOrder.shippingMethod.name} ({currentOrder.shippingMethod.estimatedTime})</span>
-            </div>
+            {order?.shippingMethod?.name && (
+              <div className="result-order-row">
+                <span>Shipping Service</span>
+                <span>
+                  {order.shippingMethod.name}
+                  {order.shippingMethod.estimatedTime ? ` (${order.shippingMethod.estimatedTime})` : ''}
+                </span>
+              </div>
+            )}
 
             <div className="result-order-row">
               <span>Payment Method</span>
@@ -302,10 +319,10 @@ export const PaymentResultPage: React.FC = () => {
             </div>
 
             {/* Itemized Products */}
-            {currentOrder.items && currentOrder.items.length > 0 && (
+            {order?.items && order.items.length > 0 && (
               <div className="result-items-list">
-                <div className="result-items-header">Ordered Items ({currentOrder.items.length})</div>
-                {currentOrder.items.map((item, idx) => (
+                <div className="result-items-header">Ordered Items ({order.items.length})</div>
+                {order.items.map((item, idx) => (
                   <div key={idx} className="result-item-row">
                     <div className="result-item-left">
                       {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="result-item-thumb" />}

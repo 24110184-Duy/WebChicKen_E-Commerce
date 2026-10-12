@@ -34,14 +34,7 @@ export interface ProductFormModalProps {
   shopId?: string
 }
 
-const SAMPLE_PRODUCT_IMAGES = [
-  'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80',
-]
+
 
 export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   isOpen,
@@ -92,7 +85,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           ? initialProduct.imageUrls
           : initialProduct.thumbnailUrl
             ? [initialProduct.thumbnailUrl]
-            : [SAMPLE_PRODUCT_IMAGES[0]]
+            : []
       setImageUrls(initialImgs)
 
       if (initialProduct.variants && initialProduct.variants.length > 0) {
@@ -147,7 +140,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setCategoryId(categories.length > 0 ? categories[0].id : '')
       setDescription('')
       setStatus('PENDING_APPROVAL')
-      setImageUrls([SAMPLE_PRODUCT_IMAGES[0]])
+      setImageUrls([])
       setVariants([{ attribute: 'Bản Tiêu Chuẩn', basePriceMinor: 499000, stockQuantity: 100 }])
       setIsLoadingDetail(false)
     }
@@ -334,7 +327,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         }
       }
       if (!currentShopId) {
-        currentShopId = 's0000000-0000-0000-0000-000000000001'
+        setErrorMessage('Không tìm thấy thông tin gian hàng hợp lệ.')
+        setIsSubmitting(false)
+        return
       }
 
       if (imageUrls.some((url) => url.startsWith('data:'))) {
@@ -345,7 +340,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       const cleanImageUrls = imageUrls
         .filter((url) => url && !url.startsWith('data:'))
         .map((url) => url.trim())
-      const finalImageUrls = cleanImageUrls.length > 0 ? cleanImageUrls : [SAMPLE_PRODUCT_IMAGES[0]]
+      const finalImageUrls = cleanImageUrls
 
       if (isEditing && initialProduct) {
         const payload: UpdateProductPayload = {
@@ -722,37 +717,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 <span style={{ fontSize: 11.5, color: '#64748b' }}>
                   Supports JPG, PNG, WEBP, GIF (Max 5MB each)
                 </span>
-              </div>
-
-              {/* Quick Preset Samples */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>Quick demo photos:</span>
-                {SAMPLE_PRODUCT_IMAGES.slice(0, 3).map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      if (imageUrls.length >= 6) {
-                        setErrorMessage('Maximum 6 product images allowed.')
-                        return
-                      }
-                      if (!imageUrls.includes(url)) {
-                        setImageUrls((prev) => [...prev, url])
-                      }
-                    }}
-                    style={{
-                      padding: '2px 7px',
-                      borderRadius: 4,
-                      border: '1px solid #e2e8f0',
-                      background: '#ffffff',
-                      fontSize: 10.5,
-                      cursor: 'pointer',
-                      color: '#475569',
-                    }}
-                  >
-                    Sample #{idx + 1}
-                  </button>
-                ))}
               </div>
             </div>
           </div>

@@ -110,8 +110,8 @@ export const SellerProductListPage: React.FC = () => {
           }
         }
         if (!currentShopId) {
-          currentShopId = 's0000000-0000-0000-0000-000000000001'
-          setShopId(currentShopId)
+          currentShopId = ''
+          setShopId('')
         }
       }
 
@@ -237,8 +237,8 @@ export const SellerProductListPage: React.FC = () => {
         currentShopId = store.id
         setShopId(currentShopId)
       } else {
-        currentShopId = 's0000000-0000-0000-0000-000000000001'
-        setShopId(currentShopId)
+        currentShopId = ''
+        setShopId('')
       }
     }
 
@@ -273,8 +273,8 @@ export const SellerProductListPage: React.FC = () => {
         currentShopId = store.id
         setShopId(currentShopId)
       } else {
-        currentShopId = 's0000000-0000-0000-0000-000000000001'
-        setShopId(currentShopId)
+        currentShopId = ''
+        setShopId('')
       }
     }
     if (!currentShopId) return
@@ -293,8 +293,11 @@ export const SellerProductListPage: React.FC = () => {
       if (user?.roles.some((r) => ['ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(r))) {
         await adminProductApi.unhideProduct(product.id)
       } else {
-        let currentShopId = shopId || product.storeId || 's0000000-0000-0000-0000-000000000001'
-        await sellerApi.changeProductStatus(currentShopId, product.id, 'ACTIVE')
+        let currentShopId = shopId || product.storeId || ''
+        if (!currentShopId) {
+          toast.error('Không tìm thấy thông tin gian hàng.')
+          return
+        }
       }
       toast.success(`Đã bỏ ẩn và mở bán lại sản phẩm "${product.name}" thành công!`)
       loadProducts()
@@ -355,8 +358,8 @@ export const SellerProductListPage: React.FC = () => {
         currentShopId = store.id
         setShopId(currentShopId)
       } else {
-        currentShopId = 's0000000-0000-0000-0000-000000000001'
-        setShopId(currentShopId)
+        currentShopId = ''
+        setShopId('')
       }
     }
     if (!currentShopId) return

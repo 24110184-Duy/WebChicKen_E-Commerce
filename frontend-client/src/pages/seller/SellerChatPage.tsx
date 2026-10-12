@@ -50,48 +50,19 @@ export const SellerChatPage: React.FC = () => {
     }
   }
 
-  // Thêm tin nhắn từ khách hàng mẫu để kiểm thử hỗ trợ đa khách hàng đồng thời
-  const handleAddTestConversation = async () => {
-    if (!storeId) return
-    const samplePool = [
-      { id: 'c0000000-0000-0000-0000-000000000001', name: 'Nguyễn Văn A', text: 'Shop ơi cho em hỏi sản phẩm này còn size L không ạ?' },
-      { id: 'cust_mai_anh_02', name: 'Mai Anh', text: 'Dạ shop có hỗ trợ giao hỏa tốc trong 2 giờ tại TP.HCM không ạ?' },
-      { id: 'cust_hoang_nam_03', name: 'Hoàng Nam', text: 'Đơn hàng của mình đang chuẩn bị hàng chưa shop ơi?' },
-      { id: 'cust_le_thu_04', name: 'Lê Thu Trang', text: 'Chất liệu vải này giặt máy có bị co rút hay phai màu không shop?' }
-    ]
-    const existingIds = new Set(conversations.map((c) => c.customerId))
-    const candidate = samplePool.find((item) => !existingIds.has(item.id)) || samplePool[0]
-
-    try {
-      await chatApi.sendMessage({
-        storeId,
-        customerId: candidate.id,
-        content: candidate.text,
-        role: 'customer'
-      })
-      await fetchConversations()
-      setActiveCustomerId(candidate.id)
-    } catch (err) {
-      console.warn('Lỗi khi thêm hội thoại thử nghiệm:', err)
-    }
-  }
-
   // 1. Lấy thông tin Shop của Seller hiện tại
   useEffect(() => {
     sellerApi.getMyStore().then((store) => {
       if (store?.id) {
         setStoreId(store.id)
         setStoreInfo(store)
-      } else if (user?.id) {
-        // Fallback default store
-        const fallback = { id: 's0000000-0000-0000-0000-000000000001', storeName: user.username || user.fullName || 'Gian Hàng Của Bạn' }
-        setStoreId(fallback.id)
-        setStoreInfo(fallback)
+      } else {
+        setStoreId('')
+        setStoreInfo(null)
       }
     }).catch(() => {
-      const fallback = { id: 's0000000-0000-0000-0000-000000000001', storeName: 'Gian Hàng Của Bạn' }
-      setStoreId(fallback.id)
-      setStoreInfo(fallback)
+      setStoreId('')
+      setStoreInfo(null)
     })
   }, [user])
 
@@ -360,27 +331,6 @@ export const SellerChatPage: React.FC = () => {
                 </span>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <button
-                    type="button"
-                    onClick={handleAddTestConversation}
-                    style={{
-                      background: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      color: '#b45309',
-                      cursor: 'pointer',
-                      padding: '3px 8px',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      transition: 'all 0.15s ease'
-                    }}
-                    title="Mô phỏng tin nhắn từ khách hàng mới để kiểm thử đa khách hàng"
-                  >
-                    <span>+ Khách mẫu</span>
-                  </button>
 
                   <button
                     type="button"

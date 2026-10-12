@@ -98,8 +98,8 @@ export const ProductDetailPage: React.FC = () => {
       imageUrl: selectedImage || product.thumbnailUrl || (product.imageUrls && product.imageUrls[0]) || '',
       quantity,
       availableStock: stock,
-      storeId: product.storeId || 'store-1',
-      storeName: product.storeName || 'Official Store',
+      storeId: product.storeId || '',
+      storeName: product.storeName || '',
     })
 
     toast.success(`Đã thêm ${quantity} x "${product.name}" vào giỏ hàng!`)

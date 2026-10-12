@@ -52,47 +52,16 @@ export interface CreateAddressRequest {
 export const customerApi = {
   /** GET /api/v1/customers/profile */
   getProfile: async (): Promise<UserProfileResponse> => {
-    try {
-      const res = await httpClient.get<UserProfileResponse>('/customers/profile')
-      if (res.data) return res.data
-    } catch (err) {
-      console.warn('[customerApi.getProfile] Error fetching profile:', err)
-    }
-    // Fallback nếu chưa kết nối backend
-    return {
-      userId: 'usr-current',
-      email: '',
-      fullName: '',
-      phone: '',
-      status: 'ACTIVE',
-      tier: 'STANDARD',
-      loyaltyPoint: 0,
-      roles: ['CUSTOMER'],
-    }
+    const res = await httpClient.get<UserProfileResponse>('/customers/profile')
+    if (res.data) return res.data
+    throw new Error('Failed to fetch profile')
   },
 
   /** PUT /api/v1/customers/profile */
   updateProfile: async (payload: UpdateProfileRequest): Promise<UserProfileResponse> => {
-    try {
-      const res = await httpClient.put<UserProfileResponse>('/customers/profile', payload)
-      if (res.data) return res.data
-    } catch (err) {
-      console.warn('[customerApi.updateProfile] Error updating profile:', err)
-    }
-    // Fallback — trả lại payload như đã gửi
-    return {
-      userId: 'usr-current',
-      email: payload.email || '',
-      fullName: payload.fullName,
-      phone: payload.phone || '',
-      status: 'ACTIVE',
-      tier: 'STANDARD',
-      loyaltyPoint: 0,
-      roles: ['CUSTOMER'],
-      logoUrl: payload.logoUrl,
-      gender: payload.gender,
-      dateOfBirth: payload.dateOfBirth,
-    }
+    const res = await httpClient.put<UserProfileResponse>('/customers/profile', payload)
+    if (res.data) return res.data
+    throw new Error('Failed to update profile')
   },
 
   /** GET /api/v1/customers/addresses */
@@ -100,44 +69,26 @@ export const customerApi = {
     try {
       const res = await httpClient.get<AddressResponse[]>('/customers/addresses')
       if (res.data) return res.data
-    } catch (err) {
-      console.warn('[Mock] customerApi.getAddresses — Backend offline:', err)
+    } catch {
+      // Return empty list if no addresses
     }
     return []
   },
 
   /** POST /api/v1/customers/addresses */
   createAddress: async (payload: CreateAddressRequest): Promise<AddressResponse> => {
-    try {
-      const res = await httpClient.post<AddressResponse>('/customers/addresses', payload)
-      if (res.data) return res.data
-    } catch (err) {
-      console.warn('[Mock] customerApi.createAddress — Backend offline:', err)
-    }
-    // Mock fallback
-    return {
-      addressId: `addr-${Date.now()}`,
-      userId: 'usr-mock',
-      createdAt: new Date().toISOString(),
-      ...payload,
-    }
+    const res = await httpClient.post<AddressResponse>('/customers/addresses', payload)
+    if (res.data) return res.data
+    throw new Error('Failed to create address')
   },
 
   /** PUT /api/v1/customers/addresses/{addressId}/default */
   setDefaultAddress: async (addressId: string): Promise<void> => {
-    try {
-      await httpClient.put<void>(`/customers/addresses/${addressId}/default`, {})
-    } catch (err) {
-      console.warn('[Mock] customerApi.setDefaultAddress — Backend offline:', err)
-    }
+    await httpClient.put<void>(`/customers/addresses/${addressId}/default`, {})
   },
 
-  /** DELETE /api/v1/customers/addresses/{addressId} */
+  /** DELETE /api/v1/customers/addresses/{addressId}` */
   deleteAddress: async (addressId: string): Promise<void> => {
-    try {
-      await httpClient.delete<void>(`/customers/addresses/${addressId}`)
-    } catch (err) {
-      console.warn('[Mock] customerApi.deleteAddress — Backend offline:', err)
-    }
+    await httpClient.delete<void>(`/customers/addresses/${addressId}`)
   },
 }

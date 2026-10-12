@@ -121,9 +121,9 @@ export const SellerShipmentPage: React.FC = () => {
     cod: true,
   })
   const [pickupAddress, setPickupAddress] = useState({
-    senderName: user?.fullName || 'ChickyMart Shop',
-    phone: user?.phone || '0901234567',
-    address: '123 Đường Số 1, Phường Tân Phú, TP. Hồ Chí Minh',
+    senderName: user?.fullName || '',
+    phone: user?.phone || '',
+    address: '',
   })
 
   // Dữ liệu đơn hàng
@@ -207,8 +207,8 @@ export const SellerShipmentPage: React.FC = () => {
           }
         }
         if (!currentShopId) {
-          currentShopId = 's0000000-0000-0000-0000-000000000001'
-          setShopId(currentShopId)
+          currentShopId = ''
+          setShopId('')
         }
       }
 

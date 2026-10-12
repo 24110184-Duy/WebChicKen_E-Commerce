@@ -1,10 +1,5 @@
 import type { Category, Product, ProductFilter } from '../types/catalogTypes'
 import { httpClient } from '../../../shared/api/httpClient'
-
-export const MOCK_CATEGORIES: Category[] = []
-
-export const MOCK_PRODUCTS: Product[] = []
-
 export const catalogApi = {
   getCategories: async (): Promise<Category[]> => {
     try {

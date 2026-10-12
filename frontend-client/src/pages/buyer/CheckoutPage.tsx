@@ -5,7 +5,7 @@ import { useCartStore } from '../../app/store/cartStore'
 import { formatMoney } from '../../shared/lib/formatMoney'
 import { PATHS } from '../../app/router/paths'
 import {
-  MOCK_SHIPPING_METHODS,
+  SHIPPING_METHODS,
   type ShippingMethod,
   type Voucher,
 } from '../../features/cart/types/cartTypes'
@@ -73,7 +73,7 @@ export const CheckoutPage: React.FC = () => {
 
   // Shipping Method Selection per Store
   const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethod>(
-    MOCK_SHIPPING_METHODS[0]
+    SHIPPING_METHODS[0]
   )
 
   // Payment Method Selection
@@ -317,7 +317,7 @@ export const CheckoutPage: React.FC = () => {
         sessionStorage.setItem('webchicken_pending_qr_items', JSON.stringify(selectedItems))
         sessionStorage.setItem('webchicken_last_order', JSON.stringify(orderSummary))
         sessionStorage.removeItem('webchicken_checkout_voucher')
-        const vnpayUrl = await paymentApi.createVNPayUrl(primaryOrderCode, grandTotalMinor)
+        const vnpayUrl = await paymentApi.createVNPayUrl(primaryOrderCode)
         if (vnpayUrl) {
           setIsSubmitting(false)
           window.location.href = vnpayUrl
@@ -459,7 +459,7 @@ export const CheckoutPage: React.FC = () => {
                   Select Delivery Service
                 </label>
                 <div className="checkout-shipping-pills">
-                  {MOCK_SHIPPING_METHODS.map((method) => {
+                  {SHIPPING_METHODS.map((method) => {
                     const isSelected = selectedShippingMethod.id === method.id
                     return (
                       <div

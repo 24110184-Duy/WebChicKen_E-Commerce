@@ -56,7 +56,7 @@ export interface ShippingMethod {
   feeMinor: number
 }
 
-export const MOCK_SHIPPING_METHODS: ShippingMethod[] = [
+export const SHIPPING_METHODS: ShippingMethod[] = [
   {
     id: 'ship-standard',
     name: 'Standard Eco Shipping',
@@ -70,5 +70,3 @@ export const MOCK_SHIPPING_METHODS: ShippingMethod[] = [
     feeMinor: 40000,
   },
 ]
-
-export const MOCK_VOUCHERS: Voucher[] = []
