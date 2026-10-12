@@ -28,7 +28,7 @@ public class VNPayGateway implements PaymentGateway {
         this.tmnCode = getEnvOrDefault("VNP_TMN_CODE", "NPV0WRB3");
         this.hashSecret = getEnvOrDefault("VNP_HASH_SECRET", "XDYQCWUMBVXKGOYLTEFJNAPKPJKRYOMV");
         this.payUrl = getEnvOrDefault("VNP_PAY_URL", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
-        this.returnUrl = getEnvOrDefault("VNP_RETURN_URL", "http://localhost:5173/buyer/payment/result");
+        this.returnUrl = getEnvOrDefault("VNP_RETURN_URL", "https://web-chic-ken-e-commerce.vercel.app/buyer/payment/result");
     }
 
     public VNPayGateway(String tmnCode, String hashSecret, String payUrl, String returnUrl) {
@@ -49,9 +49,10 @@ public class VNPayGateway implements PaymentGateway {
     @Override
     public String createPaymentUrl(String orderCode, long amountMinor, String orderInfo, String ipAddress) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        LocalDateTime now = LocalDateTime.now();
-        String createDate = now.format(formatter);
-        String expireDate = now.plusMinutes(15).format(formatter);
+        // VNPay requires timestamps strictly in Vietnam timezone (GMT+7)
+        java.time.ZonedDateTime nowVietnam = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        String createDate = nowVietnam.format(formatter);
+        String expireDate = nowVietnam.plusMinutes(15).format(formatter);
 
         // VNPay standard: amount in minor units multiplied by 100
         long vnpAmount = amountMinor * 100;
