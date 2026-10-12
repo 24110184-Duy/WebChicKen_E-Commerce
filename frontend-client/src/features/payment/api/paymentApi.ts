@@ -27,12 +27,6 @@ export const paymentApi = {
           isDefault: true,
         },
         {
-          code: 'BANK_TRANSFER',
-          name: 'VietQR / Bank Transfer',
-          description: 'Instant verification via QR code',
-          isDefault: false,
-        },
-        {
           code: 'VNPAY',
           name: 'VNPAY-QR / Online Payment (Sandbox)',
           description: 'Pay securely via ATM Card, VietQR, or Visa/MasterCard',

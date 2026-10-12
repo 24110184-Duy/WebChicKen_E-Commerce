@@ -265,8 +265,7 @@ public class PaymentServiceImpl implements PaymentService {
     public List<PaymentMethodResponse> getAvailablePaymentMethods() {
         return List.of(
                 new PaymentMethodResponse("COD", "Cash On Delivery (COD)", "Pay with cash upon delivery", true),
-                new PaymentMethodResponse("VNPAY", "VNPAY-QR Gateway", "Pay via ATM card, QR Code or VNPAY e-wallet", false),
-                new PaymentMethodResponse("BANKING", "Bank Transfer", "Direct bank transfer via VietQR", false)
+                new PaymentMethodResponse("VNPAY", "VNPAY-QR Gateway", "Pay via ATM card, QR Code or VNPAY e-wallet", false)
         );
     }
 }
