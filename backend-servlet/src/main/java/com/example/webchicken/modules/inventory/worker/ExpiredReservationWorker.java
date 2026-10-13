@@ -74,30 +74,7 @@ public class ExpiredReservationWorker {
         log.info("Released stock for SKU [{}] with quantity [{}] from expired reservation [{}]",
                 reservation.getSkuId(), reservation.getQuantity(), reservation.getId());
 
-        // 3. Nếu giữ chỗ này liên kết với một đơn hàng, tự động hủy đơn quá hạn qua OrderStateMachine
-        String orderId = reservation.getOrderId();
-        if (orderId != null && !orderId.isBlank() && orderDAO != null && orderStateMachine != null) {
-            Optional<OrderEntity> orderOpt = orderDAO.findById(orderId);
-            if (orderOpt.isPresent()) {
-                OrderEntity order = orderOpt.get();
-                // Chỉ hủy nếu đơn hàng vẫn đang ở PENDING (chưa được xác nhận thanh toán kịp lúc)
-                if (order.getStatus() == OrderStatus.PENDING) {
-                    try {
-                        orderStateMachine.transition(
-                                order,
-                                OrderStatus.CANCELLED,
-                                OrderActorType.SYSTEM,
-                                "RESERVATION_WORKER",
-                                "Stock reservation TTL expired (payment timeout)"
-                        );
-                        log.info("Automatically cancelled pending order [{}] due to reservation expiration", order.getOrderCode());
-                    } catch (Exception ex) {
-                        log.warn("Could not cancel order [{}] via state machine: {}", order.getOrderCode(), ex.getMessage());
-                    }
-                } else {
-                    log.info("Order [{}] is in status [{}], skipping auto-cancellation.", order.getOrderCode(), order.getStatus());
-                }
-            }
-        }
+        // 3. Đã loại bỏ cơ chế tự động hủy đơn hàng:
+        // Đơn hàng giữ nguyên trạng thái PENDING để khách hàng / người bán chủ động xử lý thủ công.
     }
 }

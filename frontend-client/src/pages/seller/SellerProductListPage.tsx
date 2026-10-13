@@ -124,8 +124,7 @@ export const SellerProductListPage: React.FC = () => {
     } catch {
       setAllProducts([])
     } finally {
-
-
+      setLoading(false)
     }
   }, [shopId, user?.id])
 

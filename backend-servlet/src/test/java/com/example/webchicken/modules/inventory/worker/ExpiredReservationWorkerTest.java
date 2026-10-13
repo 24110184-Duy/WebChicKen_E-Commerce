@@ -60,8 +60,8 @@ public class ExpiredReservationWorkerTest {
     }
 
     @Test
-    @DisplayName("Should automatically cancel pending order via OrderStateMachine when reservation expires")
-    void testRunCleanup_WithPendingOrder_CancelsOrderViaStateMachine() {
+    @DisplayName("Should NOT cancel pending order via OrderStateMachine when reservation expires")
+    void testRunCleanup_WithPendingOrder_DoesNotCancelOrder() {
         StockReservationEntity reservation = new StockReservationEntity(
                 "res-002",
                 "sku-chicken-002",
@@ -83,13 +83,7 @@ public class ExpiredReservationWorkerTest {
 
         assertEquals(1, cleanedCount);
         verify(inventoryDAO).releaseStockAtomic("sku-chicken-002", 2);
-        verify(orderStateMachine).transition(
-                eq(pendingOrder),
-                eq(OrderStatus.CANCELLED),
-                eq(OrderActorType.SYSTEM),
-                eq("RESERVATION_WORKER"),
-                eq("Stock reservation TTL expired (payment timeout)")
-        );
+        verify(orderStateMachine, never()).transition(any(), any(), any(), any(), any());
     }
 
     @Test
