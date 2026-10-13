@@ -282,8 +282,8 @@ public class HttpEmailServiceImpl implements EmailService {
                         ? ("<span style='color:#6b7280; font-size:12px; display:block; margin-top:2px;'>Phân loại: " + escapeHtml(item.getVariantName()) + "</span>")
                         : "";
                 String imgHtml = (item.getImageUrl() != null && !item.getImageUrl().isBlank())
-                        ? ("<img src='" + escapeHtml(item.getImageUrl()) + "' alt='Product' style='width:52px; height:52px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; display:block; margin-right:12px;' />")
-                        : ("<div style='width:52px; height:52px; background-color:#f3f4f6; border-radius:8px; border:1px solid #e5e7eb; display:flex; align-items:center; justify-content:center; margin-right:12px; font-size:20px;'>📦</div>");
+                        ? ("<img src='" + escapeHtml(item.getImageUrl()) + "' alt='Product' style='width:52px; height:52px; object-fit:cover; border-radius:8px; border:1px solid #fef08a; display:block; margin-right:12px;' />")
+                        : ("<div style='width:52px; height:52px; background-color:#f3f4f6; border-radius:8px; border:1px solid #fef08a; display:flex; align-items:center; justify-content:center; margin-right:12px; font-size:20px;'>📦</div>");
 
                 long unitPrice = item.getUnitPriceAtPurchaseMinor();
                 int qty = item.getQuantity();
@@ -305,7 +305,7 @@ public class HttpEmailServiceImpl implements EmailService {
                         .append("<td style='padding:12px 14px; border-bottom:1px solid #f3f4f6; text-align:right; color:#4b5563;'>")
                         .append(formatMoney(unitPrice))
                         .append("</td>")
-                        .append("<td style='padding:12px 14px; border-bottom:1px solid #f3f4f6; text-align:right; font-weight:700; color:#ea580c;'>")
+                        .append("<td style='padding:12px 14px; border-bottom:1px solid #f3f4f6; text-align:right; font-weight:700; color:#ca8a04;'>")
                         .append(formatMoney(subtotal))
                         .append("</td>")
                         .append("</tr>");
@@ -327,10 +327,10 @@ public class HttpEmailServiceImpl implements EmailService {
             <title>Đơn hàng #%s đã được giao thành công</title>
         </head>
         <body style="margin:0; padding:0; background-color:#f4f5f7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#374151; -webkit-font-smoothing:antialiased;">
-            <div style="max-width:620px; margin:28px auto; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.08); border:1px solid #e5e7eb;">
+            <div style="max-width:620px; margin:28px auto; background-color:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(202,138,4,0.15); border:1px solid #fef08a;">
                 
                 <!-- Header Banner với Linh Vật WebChicKen -->
-                <div style="background:linear-gradient(135deg, #ea580c 0%%, #f97316 100%%); padding:36px 24px; text-align:center; color:#ffffff;">
+                <div style="background:linear-gradient(135deg, #ca8a04 0%%, #eab308 50%%, #facc15 100%%); padding:36px 24px; text-align:center; color:#ffffff;">
                     <div style="display:inline-block; background-color:#ffffff; padding:10px; border-radius:50%%; box-shadow:0 8px 24px rgba(0,0,0,0.18); margin-bottom:12px;">
                         <img src="%s" 
                              alt="WebChicKen Mascot" 
@@ -348,11 +348,11 @@ public class HttpEmailServiceImpl implements EmailService {
                 <div style="padding:28px 24px;">
                     
                     <!-- Lời Cảm Ơn Mua Sắm & Thông Báo Giao Hàng -->
-                    <div style="background:linear-gradient(to right, #fff7ed, #ffedd5); border-left:4px solid #ea580c; border-radius:10px; padding:18px 20px; margin-bottom:24px;">
-                        <h2 style="margin:0 0 8px; font-size:17px; font-weight:700; color:#9a3412;">
+                    <div style="background:#fefce8; border:1px solid #fef08a; border-left:4px solid #eab308; border-radius:10px; padding:18px 20px; margin-bottom:24px;">
+                        <h2 style="margin:0 0 8px; font-size:17px; font-weight:700; color:#854d0e;">
                             Xin chào %s, cảm ơn bạn đã lựa chọn WebChicKen! 🧡
                         </h2>
-                        <p style="margin:0; font-size:14px; line-height:1.6; color:#7c2d12;">
+                        <p style="margin:0; font-size:14px; line-height:1.6; color:#713f12;">
                             Đơn hàng <strong>#%s</strong> của bạn đã được nhân viên vận chuyển giao thành công đến địa chỉ nhận hàng. Chúng tôi vô cùng trân trọng sự tin tưởng và đồng hành của bạn cùng cửa hàng!
                         </p>
                     </div>
@@ -371,7 +371,7 @@ public class HttpEmailServiceImpl implements EmailService {
                         <table style="width:100%%; font-size:13px; border-collapse:collapse;">
                             <tr>
                                 <td style="padding:4px 0; color:#6b7280; width:140px;">Mã đơn hàng:</td>
-                                <td style="padding:4px 0; font-weight:700; color:#ea580c;">#%s</td>
+                                <td style="padding:4px 0; font-weight:700; color:#ca8a04;">#%s</td>
                             </tr>
                             <tr>
                                 <td style="padding:4px 0; color:#6b7280;">Ngày đặt hàng:</td>
@@ -397,7 +397,7 @@ public class HttpEmailServiceImpl implements EmailService {
                         🛍️ Chi tiết sản phẩm đã giao
                     </h3>
                     <div style="overflow-x:auto; margin-bottom:20px;">
-                        <table style="width:100%%; font-size:13px; border-collapse:collapse; border-radius:10px; overflow:hidden; border:1px solid #e5e7eb;">
+                        <table style="width:100%%; font-size:13px; border-collapse:collapse; border-radius:10px; overflow:hidden; border:1px solid #fef08a;">
                             <thead>
                                 <tr style="background-color:#f9fafb; color:#4b5563;">
                                     <th style="padding:10px 14px; text-align:left; font-weight:600;">Sản phẩm</th>
@@ -424,20 +424,10 @@ public class HttpEmailServiceImpl implements EmailService {
                         </div>
                         <div style="display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid #e5e7eb; margin-top:4px; font-size:16px; font-weight:800;">
                             <span style="color:#111827;">Tổng thanh toán:</span>
-                            <span style="color:#ea580c;">%s</span>
+                            <span style="color:#ca8a04;">%s</span>
                         </div>
                     </div>
 
-                    <!-- Nút Bấm Đánh Giá Sản Phẩm (CTA) -->
-                    <div style="text-align:center; padding:22px 0 10px; border-top:1px solid #f3f4f6;">
-                        <p style="margin:0 0 14px; font-size:14px; color:#4b5563;">
-                            ⭐ <strong>Bạn có hài lòng với kiện hàng này không?</strong><br>
-                            Hãy dành ít phút chia sẻ đánh giá để nhận xu tích lũy từ WebChicKen nhé!
-                        </p>
-                        <a href="%s" style="display:inline-block; background:linear-gradient(135deg, #ea580c 0%%, #f97316 100%%); color:#ffffff; font-weight:700; font-size:14px; padding:12px 30px; border-radius:9999px; text-decoration:none; box-shadow:0 4px 14px rgba(234,88,12,0.28);">
-                            ⭐ Đánh giá sản phẩm ngay
-                        </a>
-                    </div>
                 </div>
 
                 <!-- Footer Chân Trang -->
@@ -463,8 +453,7 @@ public class HttpEmailServiceImpl implements EmailService {
                 itemsTableRows.toString(),
                 formatMoney(shippingFee),
                 formatMoney(discount),
-                formatMoney(totalAmount),
-                escapeHtml(orderDetailLink)
+                formatMoney(totalAmount)
         );
     }
 
