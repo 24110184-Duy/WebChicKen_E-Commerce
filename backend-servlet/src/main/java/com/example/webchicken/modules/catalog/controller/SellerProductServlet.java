@@ -128,10 +128,10 @@ public class SellerProductServlet extends BaseApiServlet {
             verifyOwnership(req, path.shopId());
 
             CreateProductRequest body = readBody(req, CreateProductRequest.class);
-            // Đảm bảo sản phẩm mới luôn gắn với shopId và bắt buộc qua phê duyệt của Admin
-            ProductStatus desiredStatus = (body.status() == ProductStatus.INACTIVE)
-                    ? ProductStatus.INACTIVE
-                    : ProductStatus.PENDING_APPROVAL;
+            // Chuyển trạng thái mong muốn của Seller sang ProductService để BOT AI xử lý kiểm duyệt 2 nhánh
+            ProductStatus desiredStatus = (body.status() != null)
+                    ? body.status()
+                    : ProductStatus.ACTIVE;
 
             String effectiveStoreId = path.shopId();
             AuthenticatedUser user = getAuthenticatedUser(req);

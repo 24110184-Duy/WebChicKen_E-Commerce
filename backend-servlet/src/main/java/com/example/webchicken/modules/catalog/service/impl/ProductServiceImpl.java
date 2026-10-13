@@ -133,31 +133,28 @@ public class ProductServiceImpl implements ProductService {
             initialStatus = ProductStatus.INACTIVE;
             moderationNote = "Bản nháp lưu tạm của Người bán";
         } else {
-            initialStatus = ProductStatus.PENDING_APPROVAL;
-            moderatedBy = null;
             if (isHealthOrSafetyRisk(request.name(), request.description())) {
+                // Nhánh 1: Chứa từ khóa nghi vấn / rủi ro y tế / an toàn sức khỏe -> Giữ PENDING_APPROVAL chờ Admin duyệt
+                initialStatus = ProductStatus.PENDING_APPROVAL;
+                moderatedBy = null;
                 moderationNote = "Cảnh báo rủi ro sức khỏe/y tế: Phát hiện yếu tố hoặc từ khóa liên quan đến dược phẩm, thuốc hoặc an toàn người dùng. Yêu cầu Quản trị viên trực tiếp thẩm định giấy phép & chất lượng trước khi mở bán.";
-                log.warn("Sản phẩm mới [{}] chứa từ khóa sức khỏe/thuốc/an toàn. Chuyển vào hàng đợi chờ Quản trị viên duyệt.", request.name());
+                log.warn("Sản phẩm mới [{}] chứa từ khóa sức khỏe/thuốc/an toàn. Chuyển vào hàng đợi chờ Quản trị viên duyệt (PENDING_APPROVAL).", request.name());
             } else {
-                moderationNote = "Sản phẩm mới chờ Quản trị viên kiểm duyệt thông tin & hình ảnh trước khi mở bán.";
-                log.info("Sản phẩm mới [{}] được chuyển vào hàng đợi chờ Quản trị viên duyệt (PENDING_APPROVAL).", request.name());
+                // Nhánh 2: Hàng hóa thương mại thông thường, an toàn -> BOT AI tự động phê duyệt ngay lập tức (ACTIVE)
+                initialStatus = ProductStatus.ACTIVE;
+                moderatedBy = "SYSTEM: AUTO_APPROVE_BOT";
+                moderationNote = "Hệ thống tự động phê duyệt: Sản phẩm thỏa mãn tiêu chuẩn an toàn nội dung và danh mục của sàn.";
+                log.info("Sản phẩm mới [{}] đạt tiêu chuẩn an toàn, hệ thống BOT đã tự động phê duyệt mở bán (ACTIVE).", request.name());
             }
         }
 
         String effectiveStoreId = request.storeId();
-        if (storeDAO != null) {
-            if (effectiveStoreId == null || !storeDAO.existsById(effectiveStoreId)) {
-                java.util.Optional<com.example.webchicken.modules.shop.model.entity.StoreEntity> fb =
-                        storeDAO.findById("s0000000-0000-0000-0000-000000000001");
-                if (fb.isPresent()) {
-                    effectiveStoreId = fb.get().getId();
-                } else {
-                    java.util.List<com.example.webchicken.modules.shop.model.entity.StoreEntity> any = storeDAO.findAll(1, 1);
-                    if (!any.isEmpty()) {
-                        effectiveStoreId = any.get(0).getId();
-                    }
-                }
-            }
+        if (effectiveStoreId == null || effectiveStoreId.trim().isEmpty()) {
+            throw new ValidationException("Cửa hàng (storeId) là bắt buộc khi tạo sản phẩm.");
+        }
+        effectiveStoreId = effectiveStoreId.trim();
+        if (storeDAO != null && !storeDAO.existsById(effectiveStoreId)) {
+            throw new NotFoundException("Không tìm thấy cửa hàng với storeId: " + effectiveStoreId);
         }
 
         ProductEntity product = new ProductEntity(
@@ -264,8 +261,21 @@ public class ProductServiceImpl implements ProductService {
                 if (product.getStatus() == ProductStatus.PENDING_APPROVAL || product.getRejectionReason() != null) {
                     throw new ValidationException("Sản phẩm cần có sự phê duyệt của Quản trị viên (Admin) trước khi có thể mở bán công khai.");
                 }
+                // Nếu xuất phát từ bản nháp INACTIVE và yêu cầu mở bán (ACTIVE):
+                String checkName = request.name() != null ? request.name() : product.getName();
+                String checkDesc = request.description() != null ? request.description() : product.getDescription();
+                if (isHealthOrSafetyRisk(checkName, checkDesc)) {
+                    product.setStatus(ProductStatus.PENDING_APPROVAL);
+                    product.setModeratedBy(null);
+                    product.setModerationNote("Cảnh báo rủi ro sức khỏe/y tế: Phát hiện yếu tố hoặc từ khóa liên quan đến dược phẩm, thuốc hoặc an toàn người dùng. Yêu cầu Quản trị viên trực tiếp thẩm định trước khi mở bán.");
+                } else {
+                    product.setStatus(ProductStatus.ACTIVE);
+                    product.setModeratedBy("SYSTEM: AUTO_APPROVE_BOT");
+                    product.setModerationNote("Hệ thống tự động phê duyệt: Sản phẩm thỏa mãn tiêu chuẩn an toàn nội dung và danh mục của sàn.");
+                }
+            } else {
+                product.setStatus(request.status());
             }
-            product.setStatus(request.status());
         }
 
         product.setUpdatedAt(LocalDateTime.now());
