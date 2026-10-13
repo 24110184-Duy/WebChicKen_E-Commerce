@@ -24,11 +24,15 @@ public class ProductDAO extends BaseDAO {
     private void ensureProductColumnsExist() {
         try {
             executeInTransaction(em -> {
-                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(500)").executeUpdate();
-                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS moderated_by VARCHAR(100)").executeUpdate();
-                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS moderation_note VARCHAR(500)").executeUpdate();
+                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(500)")
+                        .executeUpdate();
+                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS moderated_by VARCHAR(100)")
+                        .executeUpdate();
+                em.createNativeQuery("ALTER TABLE products ADD COLUMN IF NOT EXISTS moderation_note VARCHAR(500)")
+                        .executeUpdate();
             });
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     public Optional<ProductEntity> findById(String id) {
@@ -55,7 +59,7 @@ public class ProductDAO extends BaseDAO {
             if ("newest".equalsIgnoreCase(filter.sort())) {
                 jpql.append(" ORDER BY p.createdAt DESC");
             } else {
-                jpql.append(" ORDER BY p.createdAt DESC");
+                jpql.append(" ORDER BY p.createdAt ASC");
             }
 
             TypedQuery<ProductEntity> q = em.createQuery(jpql.toString(), ProductEntity.class);
@@ -112,7 +116,8 @@ public class ProductDAO extends BaseDAO {
     public void deleteById(String id) {
         executeInTransaction(em -> {
             ProductEntity ref = em.find(ProductEntity.class, id);
-            if (ref != null) em.remove(ref);
+            if (ref != null)
+                em.remove(ref);
         });
     }
 }

@@ -14,10 +14,13 @@ import java.io.IOException;
 /**
  * Lớp cơ sở (Base Class) cho toàn bộ Servlet API trong hệ thống:
  * <ul>
- *   <li>Cung cấp bộ tuần tự hóa/giải tuần tự hóa JSON {@link ObjectMapper}.</li>
- *   <li>Hỗ trợ lấy đối tượng Service từ {@link jakarta.servlet.ServletContext}.</li>
- *   <li>Các phương thức tiện ích đọc request body: {@link #readBody(HttpServletRequest, Class)}.</li>
- *   <li>Các phương thức tiện ích trả phản hồi HTTP chuẩn: {@link #ok}, {@link #created}, {@link #badRequest},...</li>
+ * <li>Cung cấp bộ tuần tự hóa/giải tuần tự hóa JSON {@link ObjectMapper}.</li>
+ * <li>Hỗ trợ lấy đối tượng Service từ
+ * {@link jakarta.servlet.ServletContext}.</li>
+ * <li>Các phương thức tiện ích đọc request body:
+ * {@link #readBody(HttpServletRequest, Class)}.</li>
+ * <li>Các phương thức tiện ích trả phản hồi HTTP chuẩn: {@link #ok},
+ * {@link #created}, {@link #badRequest},...</li>
  * </ul>
  */
 public abstract class BaseApiServlet extends HttpServlet {
@@ -103,7 +106,8 @@ public abstract class BaseApiServlet extends HttpServlet {
 
     protected int getIntParam(HttpServletRequest req, String name, int defaultValue) {
         String val = req.getParameter(name);
-        if (val == null || val.isBlank()) return defaultValue;
+        if (val == null || val.isBlank())
+            return defaultValue;
         try {
             return Integer.parseInt(val.trim());
         } catch (NumberFormatException e) {
@@ -113,7 +117,8 @@ public abstract class BaseApiServlet extends HttpServlet {
 
     protected long getLongParam(HttpServletRequest req, String name, long defaultValue) {
         String val = req.getParameter(name);
-        if (val == null || val.isBlank()) return defaultValue;
+        if (val == null || val.isBlank())
+            return defaultValue;
         try {
             return Long.parseLong(val.trim());
         } catch (NumberFormatException e) {
@@ -126,4 +131,3 @@ public abstract class BaseApiServlet extends HttpServlet {
         return (val != null && !val.isBlank()) ? val.trim() : defaultValue;
     }
 }
-

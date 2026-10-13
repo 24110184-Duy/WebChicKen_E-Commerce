@@ -106,7 +106,7 @@ export const SellerProductListPage: React.FC = () => {
                 currentShopId = parsed.id
                 setShopId(currentShopId)
               }
-            } catch {}
+            } catch { }
           }
         }
         if (!currentShopId) {
@@ -124,7 +124,8 @@ export const SellerProductListPage: React.FC = () => {
     } catch {
       setAllProducts([])
     } finally {
-      setLoading(false)
+
+
     }
   }, [shopId, user?.id])
 
@@ -369,7 +370,7 @@ export const SellerProductListPage: React.FC = () => {
       try {
         await sellerApi.deleteStoreProduct(currentShopId, id)
         successCount++
-      } catch {}
+      } catch { }
     }
     toast.success(`Đã xóa thành công ${successCount} sản phẩm!`)
     setSelectedIds([])
